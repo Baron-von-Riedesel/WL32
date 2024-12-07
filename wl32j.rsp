@@ -1,0 +1,6 @@
+wlmain wlparse wlparcon wlsetup
+patchrel
+wlfeed wlfile wlmemory wlconv wlbuffer wltable
+wlp1mod wlp1lib wlp1res
+wlp2mod wlp2lib wlp2res
+wlmap wlprog wlterm wlerror
