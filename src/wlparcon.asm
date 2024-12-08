@@ -223,7 +223,6 @@ ASSUME	ds:DGROUP
 ;* External code routines    *
 ;*****************************
 
-EXTRN	AllocateMemory:PROC,ResizeMemory:PROC
 EXTRN	CheckCurrentDirectory:PROC
 EXTRN	DOSErrorExit:PROC
 EXTRN	InternalErrorExit:PROC

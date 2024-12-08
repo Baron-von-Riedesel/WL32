@@ -147,7 +147,6 @@ ASSUME	ds:DGROUP
 ;* Code routines             *
 ;*****************************
 
-EXTRN	AllocateMemory:PROC,ResizeMemory:PROC,ReleaseMemory:PROC
 EXTRN	CheckExtension:PROC
 EXTRN	DisplayReadFileFeedback:PROC
 EXTRN	DOSErrorExit:PROC,BadOBJModuleExit:PROC

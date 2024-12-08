@@ -373,7 +373,6 @@ ASSUME	ds:DGROUP
 ;* External code routines    *
 ;*****************************
 
-EXTRN	AllocateMemory:PROC,ResizeMemory:PROC,ReleaseMemory:PROC
 EXTRN	Alloc16KZeroBlock:PROC,Alloc64KIOBlock:PROC
 EXTRN	BadOBJModuleExit:PROC,LinkerErrorExit:PROC
 EXTRN	ConvertToUpperCase:PROC
@@ -392,7 +391,6 @@ EXTRN	ReadFile:PROC
 EXTRN	ReadIndex:PROC,ReadIndexDecCX:PROC
 EXTRN	ReadNameString:PROC
 EXTRN	ReadWordDecCX:PROC
-EXTRN	ResizeMemory32:PROC
 EXTRN	ScanAhead:PROC
 EXTRN	SetOBJBuffer:PROC
 

@@ -140,7 +140,6 @@ ASSUME	ds:DGROUP
 ;* External code routines    *
 ;*****************************
 
-EXTRN	AllocateMemory:PROC,ResizeMemory:PROC
 EXTRN	DisplayReadFileFeedback:PROC
 EXTRN	GetPubSymEntry:PROC
 EXTRN	LoadLIBModule:PROC

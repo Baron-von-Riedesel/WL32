@@ -39,11 +39,8 @@ endif
 ;* Public declarations       *
 ;*****************************
 
-PUBLIC	AllocateMemory,ResizeMemory,ReleaseMemory
-PUBLIC	ResizeMemory32
 PUBLIC	Alloc16KZeroBlock,Alloc64KIOBlock
 PUBLIC	Zero64KIOBlock
-PUBLIC	AllocateBigMemory
 
 ;*****************************
 ;* Data begins               *

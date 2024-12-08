@@ -168,8 +168,6 @@ ASSUME	ds:DGROUP
 ;* External code routines    *
 ;*****************************
 
-EXTRN	AllocateMemory:PROC
-EXTRN	AllocateBigMemory:PROC,ReleaseMemory:PROC
 EXTRN	CreateFile:PROC
 EXTRN	DisplayLinkInfo:PROC
 EXTRN	NormalDSSISource:PROC,NormalESDIDest:PROC

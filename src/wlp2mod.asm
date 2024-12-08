@@ -295,7 +295,6 @@ ASSUME	ds:DGROUP
 ;* External code routines    *
 ;*****************************
 
-EXTRN	AllocateMemory:PROC
 EXTRN	BadOBJModuleExit:PROC
 EXTRN	DisplayProcFileFeedback:PROC
 EXTRN	GetPubSymEntry:PROC
@@ -316,10 +315,6 @@ IFDEF SYMBOLPACK
 EXTRN	CheckCompressedSymbol:PROC
 EXTRN	Pass2ClipperCheck:PROC
 EXTRN	ReadDword:PROC
-ENDIF
-
-IFDEF DLLSUPPORT
-EXTRN	ResizeMemory32:PROC
 ENDIF
 
 ;*****************************

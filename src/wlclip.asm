@@ -142,7 +142,6 @@ ASSUME	ds:DGROUP
 ;* External code routines    *
 ;*****************************
 
-EXTRN	AllocateMemory:PROC
 EXTRN	LinkerErrorExit:PROC
 EXTRN	ReadByte:PROC
 EXTRN	ReadByteDecCX:PROC

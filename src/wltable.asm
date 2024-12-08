@@ -186,7 +186,6 @@ ASSUME	ds:DGROUP
 ;* External code routines    *
 ;*****************************
 
-EXTRN	AllocateMemory:PROC
 EXTRN	BadOBJModuleExit:PROC
 EXTRN	LinkerErrorExit:PROC
 EXTRN	NormalizeErrorExit:PROC

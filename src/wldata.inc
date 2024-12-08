@@ -80,3 +80,10 @@ IFDEF DLLSUPPORT
 GLOBAL	TotalEXPDEFCount:DWORD	; total count of EXPDEFs
 GLOBAL	TotalIMPDEFCount:DWORD	; total count of IMPDEFs
 ENDIF
+
+;--- wlmemory.asm
+AllocateMemory PROTO
+AllocateBigMemory PROTO
+ResizeMemory   PROTO
+ResizeMemory32 PROTO
+ReleaseMemory  PROTO

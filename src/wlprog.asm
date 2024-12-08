@@ -106,7 +106,7 @@ CONST ENDS
 
 _DATA	SEGMENT WORD PUBLIC USE16 'DATA'
 
-EXEHeaderStruc	STRUC
+MZHeaderStruc	STRUC
 	ehSig1	DB	?		; EXE file signature bytes
 	ehSig2	DB	?
 	ehFileLenMod512	DW	?	; length of file modulo 512
@@ -123,9 +123,9 @@ EXEHeaderStruc	STRUC
 	ehRelOffset	DW	?	; offset of first relocation item in file
 	ehOvlNumber	DB	?	; overlay number (unused)
 	ehFiller	DB	3 DUP (?)	; unused
-EXEHeaderStruc	ENDS
+MZHeaderStruc	ENDS
 
-ExeHeader	EXEHeaderStruc	<'M','Z',0,1,0,32,0,0ffffh,0,0,0,0,0,1eh,0>
+MZHeader	MZHeaderStruc	<'M','Z',0,1,0,32,0,0ffffh,0,0,0,0,0,1eh,0>
 
 NewHeaderStruc	STRUC
 	NewID		db	'3'	; signature bytes
@@ -223,7 +223,6 @@ ASSUME	ds:DGROUP
 ;* External code routines    *
 ;*****************************
 
-EXTRN	AllocateBigMemory:PROC
 EXTRN	CaselessStrCmp:PROC
 EXTRN	CreateFile:PROC
 EXTRN	DisplayLinkInfo:PROC
@@ -237,7 +236,6 @@ EXTRN	ReadByte:PROC,ReadByteDecCX:PROC
 EXTRN	ReadFile:PROC
 EXTRN	ReadWordCX:PROC,ReadIndexDecCX:PROC,ReadWordDecCX:PROC
 EXTRN	ReadDwordDecCX:PROC
-EXTRN	ReleaseMemory:PROC
 EXTRN	ScanAhead:PROC
 EXTRN	SeekToEndOfFile:PROC
 EXTRN	WriteFile:PROC
@@ -257,6 +255,8 @@ ENDIF
 ;* CREATEPROGRAMFILE         *
 ;*****************************
 
+MZHDRUNIT equ 512
+
 ; create the program
 
 CreateProgramFile	PROC
@@ -266,21 +266,21 @@ CreateProgramFile	PROC
 	cmp	IsCreateEXEOption,OFF	; see if building EXE file
 	je	cpfprot			; no, creating protected mode file
 
-	call	WriteEXEHeader	; write the EXE header, dummy placeholders
-	call	WriteEXERelEntries	; write EXE relocation entries
-	call	PadEXEHeader	; pad EXE header to proper amount
+	call	WriteMZHeader	; write the EXE header, dummy placeholders
+	call	WriteMZRelEntries	; write EXE relocation entries
+	call	PadMZHeader	; pad EXE header to proper amount
 
 	mov	eax,RelocEntryCount
 	shl	eax,2			; dword per relocation entry (x4)
-	mov	dx,EXEHeader.ehRelOffset	; get header system bytes, not relocation entries
+	mov	dx, MZHeader.ehRelOffset	; get header system bytes, not relocation entries
 	movzx	edx,dx
 	add	eax,edx			; add system bytes to relocation entry bytes for total used header size
-	add	eax,511			; round up to next 512-byte boundary
-	and	ax,0fe00h		; mask size to boundary
+	add	eax,MZHDRUNIT-1	; round up to next 512-byte boundary
+	and	ax,not MZHDRUNIT-1	; mask size to boundary
 	mov	ExecutableHeaderSize,eax	; save executable file header size
 	call	WriteEXEBody	; write the EXE body, program image
-	call	SetupEXEHeader	; setup EXE header
-	call	WriteEXEHeader	; write true EXE header values
+	call	SetupMZHeader	; setup EXE header
+	call	WriteMZHeader	; write true EXE header values
 	ret
 
 ; creating 3P protected mode EXE file
@@ -1882,8 +1882,8 @@ extenderfound:
 	jne	wderet			; yes, leave DOS extender size at 0, no extender setup
 
 ; read the EXE header of WL32
-	mov	cx,SIZE EXEHeaderStruc
-	mov	dx,OFFSET DGROUP:EXEHeader
+	mov	cx,SIZE MZHeaderStruc
+	mov	dx,OFFSET DGROUP:MZHeader
 	call	ReadFile
 
 ; rewind back to start of file
@@ -1893,10 +1893,10 @@ extenderfound:
 	int	21h
 
 ; compute DOS extender size
-	mov	ax,EXEHeader.ehFileSizePages
+	mov	ax,MZHeader.ehFileSizePages
 	movzx	eax,ax
 	shl	eax,9			; convert 512-byte pages to bytes
-	mov	dx,EXEHeader.ehFileLenMod512
+	mov	dx,MZHeader.ehFileLenMod512
 	movzx	edx,dx
 	add	eax,edx
 	or	edx,edx			; see if exact boundary match
@@ -1954,16 +1954,16 @@ OpenExecutableFile	PROC
 OpenExecutableFile	ENDP
 
 ;*****************************
-;* SETUPEXEHEADER            *
+;* SETUPMZHEADER             *
 ;*****************************
 
-; setup EXE header variables
+; setup MZ header variables
 
-SetupEXEHeader	PROC
+SetupMZHeader	PROC
 	mov	ax,WORD PTR EntrySegmentValue	; set program starting address
-	mov	EXEHeader.ehCS,ax
+	mov	MZHeader.ehCS,ax
 	mov	ax,WORD PTR EntryOffsetValue
-	mov	EXEHeader.ehIP,ax
+	mov	MZHeader.ehIP,ax
 
 	cmp	WORD PTR _ENDSegDefPtr+2,0	; see if stack segment in program
 	je	seh2			; no
@@ -1973,7 +1973,7 @@ SetupEXEHeader	PROC
 	and	dl,0fh			; keep nonsegment value
 	xor	dh,dh			; dx holds offset from canonical segment
 	shr	eax,4			; convert to paragraphs
-	mov	EXEHeader.ehSS,ax	; save EXE SS value
+	mov	MZHeader.ehSS,ax	; save EXE SS value
 
 	mov	ax,fs:[bx+WORD PTR MasterSegDefRecStruc.mssSegLength]
 
@@ -1992,30 +1992,30 @@ END COMMENT !
 
 sehstack:
 	add	ax,dx			; compute SP value
-	mov	EXEHeader.ehSP,ax	; save EXE SP value
+	mov	MZHeader.ehSP,ax	; save EXE SP value
 
 seh2:
 	mov	eax,RelocEntryCount
-	mov	EXEHeader.ehNumRelEntries,ax	; set number of relocation entries
+	mov	MZHeader.ehNumRelEntries,ax	; set number of relocation entries
 
 	shl	eax,2			; dword per relocation entry (x4)
-	mov	dx,EXEHeader.ehRelOffset	; get header system bytes, not relocation entries
+	mov	dx,MZHeader.ehRelOffset	; get header system bytes, not relocation entries
 	movzx	edx,dx
 	add	eax,edx			; add system bytes to relocation entry bytes for total used header size
-	add	eax,511			; round up to next 512-byte boundary
-	and	ax,0fe00h		; mask size to boundary
+	add	eax,MZHDRUNIT-1	; round up to next 512-byte boundary
+	and	ax,not MZHDRUNIT-1	; mask size to boundary
 	mov	edx,eax			; save header size in bytes
 	shr	eax,4			; convert to paragraphs
-	mov	EXEHeader.ehHeaderSize,ax
+	mov	MZHeader.ehHeaderSize,ax
 
 	mov	eax,edx			; get header size to bytes
 	add	eax,HighestOffsetWritten	; add in highest offset written to with data
 	mov	dx,ax
-	and	dx,511			; dx holds size of file modulo 512
-	mov	EXEHeader.ehFileLenMod512,dx
-	add	eax,511			; round up to next 512-byte page
+	and	dx,512-1		; dx holds size of file modulo 512
+	mov	MZHeader.ehFileLenMod512,dx
+	add	eax,512-1		; round up to next 512-byte page
 	shr	eax,9			; convert file size to 512-byte pages
-	mov	EXEHeader.ehFileSizePages,ax
+	mov	MZHeader.ehFileSizePages,ax
 
 ; compute minimum number of paragraphs needed above program by subtracting
 ; the highest written offset from the program image size and rounding to
@@ -2024,37 +2024,37 @@ seh2:
 	sub	eax,HighestOffsetWritten
 	add	eax,14			; adjust offset to relative 1, round up to next paragraph
 	shr	eax,4			; convert to paragraphs
-	mov	EXEHeader.ehMinAlloc,ax
+	mov	MZHeader.ehMinAlloc,ax
 
 	ret
-SetupEXEHeader	ENDP
+SetupMZHeader	ENDP
 
 ;*****************************
-;* WRITEEXEHEADER            *
+;* WRITEMZHEADER             *
 ;*****************************
 
-; write EXE header
+; write MZ header
 
-WriteEXEHeader	PROC
+WriteMZHeader	PROC
 	mov	bx,ExecutableFileHandle	; rewind file in case not at beginning
 	xor	cx,cx
 	mov	dx,cx
 	mov	ax,4200h		; move file pointer relative start of file
 	int	21h
 
-	mov	dx,OFFSET DGROUP:EXEHeader
-	mov	cx,SIZE EXEHeaderStruc
+	mov	dx,OFFSET DGROUP:MZHeader
+	mov	cx,SIZE MZHeaderStruc
 	call	WriteFile
 	ret
-WriteEXEHeader	ENDP
+WriteMZHeader	ENDP
 
 ;*****************************
-;* WRITEEXERELENTRIES        *
+;* WRITEMZRELENTRIES         *
 ;*****************************
 
-; write EXE relocation entries
+; write MZ relocation entries
 
-WriteEXERelEntries	PROC
+WriteMZRelEntries	PROC
 	mov	esi,RelocEntryCount
 	or	esi,esi
 	je	werret			; no relocation entries
@@ -2120,19 +2120,19 @@ werwrite:
 
 werret:
 	ret
-WriteEXERelEntries	ENDP
+WriteMZRelEntries	ENDP
 
 ;*****************************
-;* PADEXEHEADER              *
+;* PADMZHEADER              *
 ;*****************************
 
 ; zero pad EXE header to ehHeaderSize*16-byte boundary
 
-PadEXEHeader	PROC
+PadMZHeader	PROC
 	mov	ax,WORD PTR RelocEntryCount
 	shl	ax,2			; dword per entry (x4)
-	add	ax,EXEHeader.ehRelOffset	; add in nonrelocation entries
-	mov	cx,EXEHeader.ehHeaderSize
+	add	ax,MZHeader.ehRelOffset	; add in nonrelocation entries
+	mov	cx,MZHeader.ehHeaderSize
 	shl	cx,4			; *16
 	mov	dx,cx
 	dec	dx				; remainder bits below boundary
@@ -2149,7 +2149,7 @@ PadEXEHeader	PROC
 
 pehret:
 	ret
-PadEXEHeader	ENDP
+PadMZHeader	ENDP
 
 ;*****************************
 ;* WRITEEXEBODY              *

@@ -394,7 +394,6 @@ ASSUME	ds:DGROUP
 ;* External code routines    *
 ;*****************************
 
-EXTRN	AllocateMemory:PROC,ResizeMemory:PROC
 EXTRN	DOSErrorExit:PROC
 EXTRN	InternalErrorExit:PROC
 EXTRN	LinkerErrorExit:PROC
