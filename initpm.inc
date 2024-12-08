@@ -19,6 +19,8 @@ EXECRM ends
 
 CONST segment word public 'DATA'
 
+DGROUP group CONST
+
 szPath db 'PATH='
 
 if ?32BIT
@@ -37,7 +39,7 @@ _TEXT segment word public 'CODE'
 
 ;--- DPMI initialization
 
-initpm proc
+InitPM proc
 
     mov ax, 1687h           ; DPMI host installed?
     int 2fh
@@ -113,7 +115,7 @@ errexit:
     int 21h
     mov ax, 4CFFh
     int 21h
-initpm endp
+InitPM endp
 
 ;*** search and load hdpmixx.exe
 

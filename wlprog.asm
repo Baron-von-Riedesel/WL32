@@ -577,7 +577,11 @@ w3psdone:
 
 	shl	cx,3			; 8 bytes (2 dwords) per segment
 	mov	bx,ExecutableFileHandle
-	xor	dx,dx
+
+;--- fixed: clear hiword(edx) for WriteFile() - in original WL32, this was done by CW DOS extender
+;	xor	dx,dx
+	xor	edx,edx
+
 	push	ds			; save ds -> wl32 data
 	mov	ds,IOBlockSeg	; ds:dx -> i/o buffer block
 	call	WriteFile	; write the segment entries
@@ -1802,6 +1806,18 @@ WriteImportEntries	ENDP
 
 ENDIF
 
+CopyCWStub proc
+	mov si, offset CWStubExeName
+	push ds
+	pop es
+wdenameloop:
+	lodsb
+	stosb
+	cmp al,0
+	jne wdenameloop
+	ret
+CopyCWStub endp
+
 ;*****************************
 ;* WRITEDOSEXTENDER          *
 ;*****************************
@@ -1809,39 +1825,56 @@ ENDIF
 ; write DOS extender from start of WL32.EXE
 ; destroys ax,bx,cx,dx,di,si,es
 
-WriteDOSExtender	PROC
-	xor	ax,ax
-	mov	di,ax
-	mov	es,PSP
-	mov	es,es:[2ch]		; es:di -> environment block strings
+;--- this has been adjusted. Since WL32.EXE is no longer a "CauseWay" app, 
+;--- the DOS extender is read from file CWSTUB.EXE, either in current dir or
+;--- where WL32.EXE is located.
+
+CONST segment
+CWStubExeName db "CWSTUB.EXE",0
+CONST ends
+
+WriteDOSExtender PROC
+
+	mov di, OFFSET DGROUP:CurrentFileName
+	mov dx, di
+	call CopyCWStub
+	mov ax,3D40h		; read only, deny none access
+	int 21h
+	jnc extenderfound
+
+;--- if not found in curr dir, search in WL32.EXE dir
+
+	xor ax,ax
+    mov di,ax
+	mov es,PSP
+	mov es,es:[2ch]		; es:di -> environment block strings
 
 wdeenvloop:
-	mov	cx,07fffh		; must find end before 32K
-	repne	scasb		; find end of environment string
-	scasb				; see if end of environment block
-	jne	wdeenvloop		; no
+	mov cx,07fffh		; must find end before 32K
+	repne scasb		; find end of environment string
+	scasb			; see if end of environment block
+	jne wdeenvloop		; no
+	add di, 2		; adjust di past word value, es:di -> WL32.EXE's name
+	mov si, di		; ds:si -> WL32 name
+	mov di, OFFSET DGROUP:CurrentFileName
+	mov dx, di
+wdenameloop2:
+	lodsb es:[si]
+	mov [di], al
+	inc di
+	cmp al, '\'
+	jnz @F
+	mov dx, di
+@@:
+	cmp al, 0
+	jne wdenameloop2
+	mov di, dx
+	call CopyCWStub
+	mov dx, OFFSET DGROUP:CurrentFileName
+	mov al, 40h		; read only, deny none access
+	call OpenFile
+extenderfound:
 
-	add	di,2			; adjust di past word value, es:di -> WL32.EXE's name
-	push	ds
-	push	es
-	pop	ds
-	pop	es				; es -> wl32 data, ds -> environment block
-	push	es			; save -> wl32 data back to stack
-	mov	si,di			; ds:si -> WL32 name
-	mov	di,OFFSET DGROUP:CurrentFileName
-	mov	dx,di
-	xor	al,al
-
-; place WL32 file name in CurrentFileName
-wdenameloop:
-	movsb
-	cmp	al,ds:[si-1]	; see if null terminator transferred
-	jne	wdenameloop		; no
-
-; dx -> file name
-	pop	ds				; restore ds -> wl32 data
-	mov	al,40h			; read only, deny none access
-	call	OpenFile
 	mov	bx,ax			; save file handle
 	mov	WL32FileHandle,ax
 

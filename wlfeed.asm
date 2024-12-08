@@ -111,10 +111,10 @@ IFDEF WATCOM_ASM
 				DB	' /ds         set DS to SS at startup'
 				DB	CR,LF
 ENDIF
-				DB	' /ex         create DOS EXE-format file'
+				DB	' /ex         create DOS MZ EXE-format file'
 				DB	CR,LF
 IFDEF WATCOM_ASM
-				DB	' /f          create FLAT memory model executable'
+				DB	' /f          create FLAT model CauseWay executable (needs CWSTUB.EXE)'
 				DB	CR,LF
 ENDIF
 				DB	' /fl         use Fast Load EXE file DOS extender feature'
