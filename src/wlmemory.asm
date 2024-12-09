@@ -108,7 +108,8 @@ AllocateMemory	PROC
 	push	cx			; save critical registers
 	push	ebx
 IF	_DOSMEMFN
-	mov	bx,dx
+;	mov	bx,dx
+	movzx	ebx,dx		; adjustment: clear hiword(ebx)
 	add	bx,15
 	mov	cl,4
 	shr	bx,cl
@@ -184,10 +185,10 @@ ResizeMemory	PROC
 IF	_DOSMEMFN
 	push	es
 	mov	es,ax
-	mov	bx,dx
-	add	bx,15
-	mov	cl,4
-	shr	bx,cl
+;	mov	bx,dx
+	movzx	ebx,dx		; adjustment: clear hiword(ebx)
+	add	ebx,16-1
+	shr	ebx,4
 	mov	ah,4ah
 	int	21h
 	pop	es
@@ -224,10 +225,10 @@ ResizeMemory32	PROC
 	push	ax
 IF	_DOSMEMFN
 	push	es
-	mov	es,ax
-	mov	bx,dx
-	add	bx,15
-	shr	bx,4
+	mov	es,ax			; fixed: did set BX=DX only, hiword(ebx) untouched
+	mov	ebx,edx
+	add	ebx,16-1
+	shr	ebx,4
 	mov	ah,4ah
 	int	21h
 	pop	es

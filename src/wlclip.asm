@@ -246,7 +246,7 @@ ParseClipperSymbols	PROC
 ; parse through each symbol table entry
 pcssymloop:
 	push	dx			; save count of symbol table entries
-	mov	di,OFFSET DGROUP:SymbolBuffer	; es:di -> destination
+	mov	di,OFFSET SymbolBuffer	; es:di -> destination
 
 	cmp	si,SIZEIOBUFFBLK-15	; see if at changeover point to next block
 	jb	pcsfasttrans	; no
@@ -256,7 +256,7 @@ pcssymloop:
 
 pcsslowloop:
 	call	ReadDwordDecCX
-	mov	ds:[di],eax		; save symbol name
+	mov	[di],eax		; save symbol name
 	add	di,4
 	dec	bp				; drop count of symbol words to save
 	jne	pcsslowloop
@@ -360,7 +360,7 @@ GetClipSymEntry	PROC
 gcscomploop:
 	or	ax,ax			; see if any names left, null selector if not
 	je	gcsnomatch		; no
-	mov	si,OFFSET DGROUP:SymbolBuffer
+	mov	si,OFFSET SymbolBuffer
 	mov	bx,di			; ax:bx -> stored name
 	mov	es,ax			; es:di -> stored name
 	mov	cx,5
@@ -410,7 +410,7 @@ gcsinit:
 
 	push	gs
 	pop	es				; es:di -> clipper symbol entry
-	mov	si,OFFSET DGROUP:SymbolBuffer	; ds:si -> new symbol name
+	mov	si,OFFSET SymbolBuffer	; ds:si -> new symbol name
 	movsd				; copy ten name chars
 	movsd
 	movsw
@@ -701,7 +701,7 @@ FixupClipperTokens	PROC
 	mov	ax,gs:[IOBuffHeaderStruc.ibhsClipModPtr]
 	mov	CurrentClipperModPtr,ax	; update current clipper module pointer
 
-	mov	bx,OFFSET DGROUP:Clipper5SymbolTable
+	mov	bx,OFFSET Clipper5SymbolTable
 	xor	al,al
 	cmp	OldParseProc,al	; see if parsing new procedure
 	jne	fctscanloop		; no
@@ -744,7 +744,7 @@ fctscanloop:
 	pop	di				; es:di -> segdef entry
 	mov	gs,WORD PTR es:[di+IndSegDefRecStruc.isdrModulePtr]	; gs -> current buffer base
 	lgs	si,gs:[IOBuffHeaderStruc.ibhsFileNamePtr]	; gs:si -> file name
-	mov	dx,OFFSET DGROUP:CompBuffSource	; string to printer after transfer
+	mov	dx,OFFSET CompBuffSource	; string to printer after transfer
 	push	ds
 	pop	es
 	mov	di,dx			; es:di -> string destination
@@ -776,10 +776,10 @@ fctnotasciiz:
 ; check if token has symbol that requires fixing up
 	push	cx			; save critical register
 	mov	cx,17			; seventeen possibilities for Clipper 5
-	mov	di,OFFSET DGROUP:Clipper5TokenList	; di -> list of tokens that require fixup
+	mov	di,OFFSET Clipper5TokenList	; di -> list of tokens that require fixup
 
 fctcomploop:
-	cmp	ah,ds:[di]		; see if a match
+	cmp	ah,[di]		; see if a match
 	je	fcttokmatch		; yes
 	inc	di				; try next
 	dec	cx
@@ -951,17 +951,17 @@ pstcomploop:
 ; buffer wrap/overflow
 pstof2:
 	sub	si,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)
-	mov	ds,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	ds,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	jmp	SHORT psttransfer
 
 pstdioverf:
 	mov	di,IOBUFFSYSVARSIZE
-	mov	es,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	es,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	jmp	SHORT psttrans1
 
 pstsioverf:
 	mov	si,IOBUFFSYSVARSIZE
-	mov	ds,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	ds,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	jmp	SHORT psttrans2
 
 psttransfer:
@@ -1010,7 +1010,7 @@ psttransdone:
 	cmp	si,IOBUFFSYSVARSIZE	; check for buffer wrap
 	jae	pstnocomp		; no wrap
 	add	si,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust for buffer wrap
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsParentPtr]	; previous block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsParentPtr]	; previous block in chain
 
 pstnocomp:
 	add	bx,5			; move to next symbol table entry, if any
@@ -1024,7 +1024,7 @@ pstnocomp:
 ; buffer wrap/overflow
 pstof1:
 	sub	si,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 
 pstdonechk:
 	or	cx,cx

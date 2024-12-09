@@ -22,7 +22,7 @@ jwasm -nologo                           -FoBuild\ src\wlterm.asm
 jwasm -nologo                           -FoBuild\ src\wlerror.asm
 jwasm -nologo                           -FoBuild\ src\patchrel.asm
 cd Build
-wl32.exe /ex /m /cs @..\wl32.rsp
+wl32.exe /ex /q /m /cs @..\wl32.rsp
 rem \msvc\bin\link /NON/MAP/NOLOGO @..\wl32.rsp;
 rem jwlink.exe format dos f {@..\wl32j.rsp} n wl32.exe op q,m
 cd ..

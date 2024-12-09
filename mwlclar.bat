@@ -22,5 +22,6 @@ jwasm -nologo           -FoBldClar\ src\wlterm.asm
 jwasm -nologo           -FoBldClar\ src\wlerror.asm
 jwasm -nologo           -FoBldClar\ src\patchrel.asm
 cd BldClar
-jwlink format dos f {@..\wl32clar.rsp} n wl32.exe op q,m
+wl32.exe /ex /m /cs @..\wl32clar.rsp
+rem jwlink format dos f {@..\wl32claj.rsp} n wl32.exe op q,m
 cd ..

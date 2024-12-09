@@ -103,43 +103,43 @@ ErrorTableStop	=	$
 ; set bit 7 the file name to print
 ErrorInfo	=	$
 	DB	WORDVALUEPRINT
-	DW	OFFSET DGROUP:InternalText
+	DW	OFFSET InternalText
 	DB	0
-	DW	OFFSET DGROUP:DOSVersionText
+	DW	OFFSET DOSVersionText
 	DB	TEXTSTRINGPRINT OR FILENAMESTRING
-	DW	OFFSET DGROUP:RSPLineLenText
+	DW	OFFSET RSPLineLenText
 	DB	TEXTSTRINGPRINT OR FILENAMESTRING
-	DW	OFFSET DGROUP:BadOptionText
+	DW	OFFSET BadOptionText
 	DB	TEXTSTRINGPRINT OR FILENAMESTRING
-	DW	OFFSET DGROUP:RSPNestLevelText
+	DW	OFFSET RSPNestLevelText
 	DB	0
-	DW	OFFSET DGROUP:AllocFailText
+	DW	OFFSET AllocFailText
 	DB	0
-	DW	OFFSET DGROUP:SizeFailText
+	DW	OFFSET SizeFailText
 	DB	0
-	DW	OFFSET DGROUP:NoOBJFileText
+	DW	OFFSET NoOBJFileText
 	DB	TEXTSTRINGPRINT OR WORDVALUEPRINT OR FILENAMESTRING
-	DW	OFFSET DGROUP:BadOBJRecText
+	DW	OFFSET BadOBJRecText
 	DB	TEXTSTRINGPRINT OR WORDVALUEPRINT OR FILENAMESTRING
-	DW	OFFSET DGROUP:UnsupOBJRecText
+	DW	OFFSET UnsupOBJRecText
 	DB	0
-	DW	OFFSET DGROUP:ReleaseFailText
+	DW	OFFSET ReleaseFailText
 	DB	TEXTSTRINGPRINT OR WORDVALUEPRINT OR FILENAMESTRING
-	DW	OFFSET DGROUP:BadOBJLenText
+	DW	OFFSET BadOBJLenText
 	DB	TEXTSTRINGPRINT OR WORDVALUEPRINT OR FILENAMESTRING
-	DW	OFFSET DGROUP:PoorFormOBJText
+	DW	OFFSET PoorFormOBJText
 	DB	TEXTSTRINGPRINT
-	DW	OFFSET DGROUP:SegLen64KText
+	DW	OFFSET SegLen64KText
 	DB	TEXTSTRINGPRINT OR FILENAMESTRING
-	DW	OFFSET DGROUP:BadLIBText
+	DW	OFFSET BadLIBText
 	DB	TEXTSTRINGPRINT
-	DW	OFFSET DGROUP:Seg32BitEXEText
+	DW	OFFSET Seg32BitEXEText
 	DB	TEXTSTRINGPRINT OR FILENAMESTRING
-	DW	OFFSET DGROUP:ConfigLineLenText
+	DW	OFFSET ConfigLineLenText
 	DB	TEXTSTRINGPRINT OR FILENAMESTRING
-	DW	OFFSET DGROUP:BadConfigLineText
+	DW	OFFSET BadConfigLineText
 	DB	TEXTSTRINGPRINT OR WORDVALUEPRINT OR FILENAMESTRING
-	DW	OFFSET DGROUP:BadSymbolTokenText
+	DW	OFFSET BadSymbolTokenText
 
 ; end specific error code feedback messages
 
@@ -246,19 +246,19 @@ DOSErrorTextStop	=	$
 DOSErrorTextTable	=	$
 	DB	2				; file not found
 	DB	FILENAMESTRING	; flag file name associated
-	DW	OFFSET DGROUP:FileNotFoundText
+	DW	OFFSET FileNotFoundText
 	DB	3				; path not found
 	DB	FILENAMESTRING
-	DW	OFFSET DGROUP:PathNotFoundText
+	DW	OFFSET PathNotFoundText
 	DB	4				; too many open files, no handles left
 	DB	FILENAMESTRING
-	DW	OFFSET DGROUP:NoHandlesText
+	DW	OFFSET NoHandlesText
 	DB	5				; access denied
 	DB	FILENAMESTRING
-	DW	OFFSET DGROUP:AccessDeniedText
+	DW	OFFSET AccessDeniedText
 	DB	8				; insufficient memory
 	DB	0				; no file name
-	DW	OFFSET DGROUP:OutOfMemoryText
+	DW	OFFSET OutOfMemoryText
 	DW	-1				; flags end of table
 
 FileNotFoundTextLen	DB	FileNotFoundTextStop-FileNotFoundText
@@ -368,7 +368,7 @@ EXTRN	TerminateToDOS:PROC
 ; destroy registers at will
 
 LinkerErrorExit	PROC
-	push	DGROUP
+	push	ss
 	pop	ds				; ds -> wl32 data
 	call	LinkerErrorFeedback
 ;@@@	call	CleanupForExit	; clean up any interim system changes made
@@ -391,7 +391,7 @@ LinkerErrorFeedback	PROC
 ; write string terminating CR/LF
 	push	dx			; save critical registers
 	push	cx
-	mov	dx,OFFSET DGROUP:CRLFText
+	mov	dx,OFFSET CRLFText
 	mov	cl,2
 	call	DisplayShortString
 	pop	cx				; restore critical registers
@@ -402,20 +402,20 @@ LinkerErrorFeedback	PROC
 	push	ds
 	pop	es				; es -> wl32 data
 	mov	ErrorWordValue,cx	; save associated error value, if any
-	mov	di,OFFSET DGROUP:ErrorTable	; es:di -> lookup table for errors
-	mov	cx,ds:[di-2]	; get number of entries in table
+	mov	di,OFFSET ErrorTable	; es:di -> lookup table for errors
+	mov	cx,[di-2]	; get number of entries in table
 	repne	scasb
 	je	founderr		; found the error entry
 
 ; error entry not found, unknown error code
-	mov	bx,OFFSET DGROUP:UnknownText
+	mov	bx,OFFSET UnknownText
 
 ledisp:
 	call	DisplayTextStringCRLF
 
 ; display fatal error message, exit
 lefatal:
-	mov	bx,OFFSET DGROUP:FatalLinkerText
+	mov	bx,OFFSET FatalLinkerText
 	call	DisplayTextStringCRLF
 	pop	ax				; restore error code
 	ret
@@ -424,22 +424,22 @@ lefatal:
 ; di -> entry just past match
 founderr:
 	dec	di				; di -> matching entry
-	sub	di,OFFSET DGROUP:ErrorTable	; di == error code offset
+	sub	di,OFFSET ErrorTable	; di == error code offset
 	mov	bx,di
 	add	di,di			; word offset
 	add	di,bx			; 3 byte (byte+word) offset
-	add	di,OFFSET DGROUP:ErrorInfo	; di -> entry in ErrorInfo table
+	add	di,OFFSET ErrorInfo	; di -> entry in ErrorInfo table
 	mov	si,dx			; si -> additional string to print, if any
-	mov	bx,ds:[di+1]	; bx -> initial string to print
-	test	BYTE PTR ds:[di],ANYTEXTPRINT
+	mov	bx,[di+1]	; bx -> initial string to print
+	test	BYTE PTR [di],ANYTEXTPRINT
 	je	ledisp			; no additional text to print, print only and continue
 
 ; additional text strings, don't print with CR/LF
 	call	DisplayTextStringNoCRLF
-	test	BYTE PTR ds:[di],TEXTSTRINGPRINT
+	test	BYTE PTR [di],TEXTSTRINGPRINT
 	je	le2				; no text string
 	mov	bx,si			; bx -> second string to print
-	test	BYTE PTR ds:[di],WORDVALUEPRINT
+	test	BYTE PTR [di],WORDVALUEPRINT
 	jne	leno1			; value string, no crlf after text
 	call	DisplayVarStringCRLF	; display variable length text string
 	jmp	SHORT le2
@@ -448,14 +448,14 @@ leno1:
 	call	DisplayVarStringNoCRLF	; display variable length text string
 
 le2:
-	test	BYTE PTR ds:[di],WORDVALUEPRINT
+	test	BYTE PTR [di],WORDVALUEPRINT
 	je	le3				; no word value string to print
 
 ; print word value in hex, value in cx
-	mov	bx,OFFSET DGROUP:ValueText
+	mov	bx,OFFSET ValueText
 	call	DisplayTextStringNoCRLF	; print 'value' string
 	push	di			; save -> error flags
-	mov	bx,OFFSET DGROUP:NumberBuffer	; bx -> string to print
+	mov	bx,OFFSET NumberBuffer	; bx -> string to print
 	mov	di,bx			; di -> number storage
 	mov	al,BYTE PTR ErrorWordValue+1
 	call	ByteToHexString	; convert byte in al to hex
@@ -483,7 +483,7 @@ LinkerErrorFeedback	ENDP
 ; destroy registers at will
 
 DOSErrorExit	PROC
-	push	DGROUP
+	push	ss
 	pop	ds				; ensure that ds -> data
 	call	DOSErrorFeedback
 ;@@@	call	CleanupForExit	; clean up any interim system changes made
@@ -508,18 +508,18 @@ DOSErrorFeedback	PROC
 	mov	si,dx			; si -> file name to print, if any
 
 ; write string terminating CR/LF
-	mov	dx,OFFSET DGROUP:CRLFText
+	mov	dx,OFFSET CRLFText
 	mov	cl,2
 	call	DisplayShortString
 
-	mov	bx,OFFSET DGROUP:DOSErrorText
+	mov	bx,OFFSET DOSErrorText
 	call	DisplayTextStringNoCRLF
-	mov	bx,OFFSET DGROUP:ValueText
+	mov	bx,OFFSET ValueText
 	call	DisplayTextStringNoCRLF	; print 'value' string
 
 	pop	ax				; ax == error code (al only)
 	push	ax			; restore to stack
-	mov	di,OFFSET DGROUP:NumberBuffer	; di -> number storage
+	mov	di,OFFSET NumberBuffer	; di -> number storage
 	mov	bx,di			; bx -> string to print
 	call	ByteToHexString	; convert byte in al to hex
 	mov	ax,'h'			; put hex 'h' identifier and null terminator on number
@@ -528,12 +528,12 @@ DOSErrorFeedback	PROC
 ; check for extra explanatory information
 	pop	ax				; ax == error code (al only)
 	push	ax			; restore to stack
-	mov	di,OFFSET DGROUP:DOSErrorTextTable
+	mov	di,OFFSET DOSErrorTextTable
 
 defloop:
-	cmp	WORD PTR ds:[di],-1	; see if at end of table to check
+	cmp	WORD PTR [di],-1	; see if at end of table to check
 	je	defcrlf			; yes, no string to bring, print number with crlf
-	cmp	al,ds:[di]		; see if entry in table
+	cmp	al,[di]		; see if entry in table
 	je	deffound		; yes
 	add	di,4			; move to next entry
 	jmp	SHORT defloop
@@ -543,24 +543,24 @@ deffound:
 	call	DisplayVarStringNoCRLF	; display error value
 
 ; see if file name to print
-	test	BYTE PTR ds:[di+1],FILENAMESTRING
+	test	BYTE PTR [di+1],FILENAMESTRING
 	je	defmess			; no file name to print
-	mov	bx,OFFSET DGROUP:WhichFileText
+	mov	bx,OFFSET WhichFileText
 	call	DisplayTextStringNoCRLF	; display file text
 	mov	bx,si
 	call	DisplayVarStringNoCRLF	; display file name
-	mov	dx,OFFSET DGROUP:SpaceText
+	mov	dx,OFFSET SpaceText
 	mov	cl,2
 	call	DisplayShortString
 
 ; display explanatory message in parentheses following filename or value
 defmess:
-	mov	dx,OFFSET DGROUP:LeftParenText
+	mov	dx,OFFSET LeftParenText
 	mov	cl,1
 	call	DisplayShortString
-	mov	bx,ds:[di+2]	; bx -> explanatory message
+	mov	bx,[di+2]	; bx -> explanatory message
 	call	DisplayTextStringNoCRLF	; show it
-	mov	bx,OFFSET DGROUP:RightParenText
+	mov	bx,OFFSET RightParenText
 	call	DisplayVarStringCRLF	; display final paren and do cr/lf
 	jmp	SHORT deffatal	; done, display fatal message
 
@@ -568,7 +568,7 @@ defcrlf:
 	call	DisplayVarStringCRLF	; display error value
 
 deffatal:
-	mov	bx,OFFSET DGROUP:FatalLinkerText
+	mov	bx,OFFSET FatalLinkerText
 	call	DisplayTextStringCRLF
 
 	pop	ax				; restore error code
@@ -588,7 +588,7 @@ DOSErrorFeedback	ENDP
 BadOBJModuleExit	PROC
 	xor	ch,ch			; zero high word of error value
 	mov	al,POORFORMOBJERRORCODE
-	mov	dx,OFFSET DGROUP:CurrentFileName
+	mov	dx,OFFSET CurrentFileName
 	call	LinkerErrorExit
 BadOBJModuleExit	ENDP
 
@@ -625,7 +625,7 @@ NormalizeErrorExit	PROC
 ; gs:bx -> original string, move to CompBuffSource
 	push	ds
 	pop	es
-	mov	di,OFFSET DGROUP:CompBuffSource	; es:di -> destination
+	mov	di,OFFSET CompBuffSource	; es:di -> destination
 	mov	cl,gs:[bx]		; get count of bytes to transfer
 	xor	ch,ch			; zap high byte
 	jcxz	nee2		; null name
@@ -642,7 +642,7 @@ neeloop:
 
 nee2:
 	pop	ax				; restore error code
-	mov	dx,OFFSET DGROUP:CompBuffSource	; dx -> string to print
+	mov	dx,OFFSET CompBuffSource	; dx -> string to print
 	call	LinkerErrorExit	; no return
 
 NormalizeErrorExit	ENDP
@@ -666,7 +666,7 @@ NormalizeWarnString	PROC
 	jne	nws2			; yes, move to DGROUP occurred
 
 ; gs:bx -> original string, move to CompBuffSource
-	mov	di,OFFSET DGROUP:CompBuffSource	; es:di -> destination
+	mov	di,OFFSET CompBuffSource	; es:di -> destination
 	mov	cl,gs:[bx]		; get count of bytes to transfer
 	xor	ch,ch			; zap high byte
 	jcxz	nws2		; null name
@@ -712,21 +712,21 @@ MultipleDefSymWarn	PROC
 
 ; write string terminating CR/LF
 mss2:
-	mov	dx,OFFSET DGROUP:CRLFText
+	mov	dx,OFFSET CRLFText
 	mov	cl,2
 	call	DisplayShortString
 
 	inc	WarningsCount	; bump count of warnings
-	mov	bx,OFFSET DGROUP:SymDefText
+	mov	bx,OFFSET SymDefText
 	call	DisplayTextStringNoCRLF
 	push	gs			; save -> public symbol info
 	lgs	bx,gs:[di+PubSymRecStruc.pssNamePtr]	; gs:bx -> symbol name
 	call	NormalizeWarnString	; make sure name doesn't straddle i/o buffer, put into DGROUP
-	mov	bx,OFFSET DGROUP:CompBuffSource
+	mov	bx,OFFSET CompBuffSource
 	call	DisplayVarStringNoCRLF	; display symbol name
 	pop	gs				; restore gs -> public symbol info
 
-	mov	bx,OFFSET DGROUP:DefinedInText
+	mov	bx,OFFSET DefinedInText
 	call	DisplayTextStringNoCRLF
 	mov	eax,gs:[di+PubSymRecStruc.pssModuleCount]
 	cmp	eax,FirstLIBModCount	; see if module is in library
@@ -769,7 +769,7 @@ mssobj:
 
 mssname:
 	lgs	si,gs:[IOBuffHeaderStruc.ibhsFileNamePtr]	; gs:si -> file name
-	mov	bx,OFFSET DGROUP:CompBuffSource	; string to printer after transfer
+	mov	bx,OFFSET CompBuffSource	; string to printer after transfer
 	mov	di,bx			; es:di -> string destination
 
 mdsloop:
@@ -779,9 +779,9 @@ mdsloop:
 	jne	mdsloop			; no
 	call	DisplayVarStringNoCRLF
 
-	mov	bx,OFFSET DGROUP:DuplicatedInText
+	mov	bx,OFFSET DuplicatedInText
 	call	DisplayTextStringNoCRLF
-	mov	bx,OFFSET DGROUP:CurrentFileName
+	mov	bx,OFFSET CurrentFileName
 	call	DisplayVarStringCRLF
 
 mdsret:
@@ -792,6 +792,22 @@ mdsret:
 	pop	cx
 	ret
 MultipleDefSymWarn	ENDP
+
+;--- adjustment: 32-bit segments in MZ exe are a warning only
+
+Seg32BitWarning PROC
+	pusha
+	push bx
+	mov bx,offset Seg32BitEXEText
+	call DisplayTextStringNoCRLF
+	pop bx
+	call NormalizeWarnString
+	mov bx, offset CompBuffSource
+	call DisplayVarStringCRLF
+	inc WarningsCount	; bump count of warnings
+	popa
+	ret
+Seg32BitWarning ENDP
 
 ;*****************************
 ;* UNRESEXTERNALWARN         *
@@ -813,24 +829,24 @@ UnresExternalWarn	PROC
 	jne	uewret			; feedback already given
 
 ; write string terminating CR/LF
-	mov	dx,OFFSET DGROUP:CRLFText
+	mov	dx,OFFSET CRLFText
 	mov	cl,2
 	call	DisplayShortString
 
 	inc	WarningsCount	; bump count of warnings
-	mov	bx,OFFSET DGROUP:UnresText
+	mov	bx,OFFSET UnresText
 	call	DisplayTextStringNoCRLF
 
 	lgs	bx,UnresSymPtr	; gs:bx -> symbol info
 	or		gs:[bx+PubSymRecStruc.pssFlags],UNRESFEEDSYMBOLFLAG	; flag feedback given
 	lgs	bx,gs:[bx+PubSymRecStruc.pssNamePtr]	; gs:bx -> symbol name
 	call	NormalizeWarnString	; make sure name doesn't straddle i/o buffer, put into DGROUP
-	mov	bx,OFFSET DGROUP:CompBuffSource
+	mov	bx,OFFSET CompBuffSource
 	call	DisplayVarStringNoCRLF	; display symbol name
 
-	mov	bx,OFFSET DGROUP:DeclaredInText
+	mov	bx,OFFSET DeclaredInText
 	call	DisplayTextStringNoCRLF
-	mov	bx,OFFSET DGROUP:CurrentFileName
+	mov	bx,OFFSET CurrentFileName
 	call	DisplayVarStringCRLF
 
 uewret:
@@ -853,11 +869,11 @@ UnknownOptionWarn	PROC
 	push	dx
 
 ; write string terminating CR/LF
-	mov	dx,OFFSET DGROUP:CRLFText
+	mov	dx,OFFSET CRLFText
 	mov	cl,2
 	call	DisplayShortString
 
-	mov	bx,OFFSET DGROUP:UnknownOptionText
+	mov	bx,OFFSET UnknownOptionText
 	call	DisplayTextStringNoCRLF
 	pop	bx				; bx -> option/command string
 	call	DisplayVarStringCRLF

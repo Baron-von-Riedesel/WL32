@@ -165,7 +165,7 @@ ENDIF
 
 ; set CurrentFileName buffer
 	lgs	bx,fs:[IOBuffHeaderStruc.ibhsFileNamePtr]	; gs:bx -> current file name
-	mov	di,OFFSET DGROUP:CurrentFileName
+	mov	di,OFFSET CurrentFileName
 
 modnameloop:
 	mov	al,gs:[bx]		; get file name char

@@ -21,6 +21,6 @@ ml -c -nologo                           -FoBuild\ src\wlterm.asm
 ml -c -nologo                           -FoBuild\ src\wlerror.asm
 ml -c -nologo                           -FoBuild\ src\patchrel.asm
 cd Build
-wl32.exe /ex /m /cs @..\wl32.rsp
+wl32.exe /ex /q /m /cs @..\wl32.rsp
 rem jwlink format dos f {@..\wl32j.rsp} n wl32.exe op q,m
 cd ..

@@ -161,8 +161,12 @@ EXTRN	Zero64KIOBlock:PROC
 ; return ax == file handle
 
 OpenFile	PROC
+;--- adjustment: clear hiword(edx)
+	push edx
+	movzx edx, dx
 	mov	ah,3dh			; open file
 	int	21h
+	pop edx
 	jnc	ofret
 
 ; error opening file, dx -> file name, al holds error code
@@ -181,9 +185,13 @@ OpenFile	ENDP
 ; return ax == file handle
 
 CreateFile	PROC
+;--- adjustment: clear hiword(edx)
+	push edx
+	movzx edx, dx
 	xor	cx,cx			; normal file attribute
 	mov	ah,3ch			; create or truncate file
 	int	21h
+	pop edx
 	jnc	cfret
 
 ; error creating file, dx -> file name, al holds error code
@@ -202,8 +210,15 @@ CreateFile	ENDP
 ; return ax == bytes read
 
 ReadFile	PROC
+;--- adjustment: clear hiwords(ecx,edx)
+	push edx
+	push ecx
+	movzx ecx, cx
+	movzx edx, dx
 	mov	ah,3fh			; read file
 	int	21h
+	pop ecx
+	pop edx
 	jnc	rfret
 
 ; error read file, dx -> file name, al holds error code
@@ -222,8 +237,15 @@ ReadFile	ENDP
 ; return ax == bytes written
 
 WriteFile	PROC
+;--- adjustment: clear hiwords(ecx,edx)
+	push edx
+	push ecx
+	movzx ecx, cx
+	movzx edx, dx
 	mov	ah,40h			; write file
 	int	21h
+	pop ecx
+	pop edx
 	jnc	wfret
 
 ; error writing file, dx -> file name, al holds error code
@@ -284,7 +306,7 @@ WriteFileVarString	ENDP
 
 OpenCurrentOBJ	PROC
 	push	es			; critical register modified in routine
-	mov	di,OFFSET DGROUP:CurrentFileName	; es:di -> file name storage
+	mov	di,OFFSET CurrentFileName	; es:di -> file name storage
 	mov	si,OBJNameOffset
 	push	si			; save -> original obj name offset
 	push	ds			; save ds -> wl32 data
@@ -292,13 +314,13 @@ OpenCurrentOBJ	PROC
 
 ocoloop:
 	movsb
-	cmp	BYTE PTR ds:[si-1],0
+	cmp	BYTE PTR [si-1],0
 	jne	ocoloop			; transfer to null terminator
 
 	pop	ds				; restore ds -> wl32 data
 	mov	OBJNameOffset,si	; update object module name offset for next read
 
-	mov	dx,OFFSET DGROUP:CurrentFileName
+	mov	dx,OFFSET CurrentFileName
 	mov	al,40h			; read-only, deny none access
 	call	OpenFile	; open object file, ax == handle
 	mov	CurrentFileHandle,ax	; save handle of file being read
@@ -576,7 +598,7 @@ LoadLIBModule	ENDP
 ; destroys ax,bx,cx,dx,di,si,es
 
 OpenCurrentLIB	PROC
-	mov	di,OFFSET DGROUP:CurrentFileName	; es:di -> file name storage
+	mov	di,OFFSET CurrentFileName	; es:di -> file name storage
 	mov	si,LIBNameOffset
 	push	si			; save -> original lib name offset
 	push	ds			; save ds -> wl32 data
@@ -586,13 +608,13 @@ OpenCurrentLIB	PROC
 
 ololoop:
 	movsb
-	cmp	BYTE PTR ds:[si-1],0
+	cmp	BYTE PTR [si-1],0
 	jne	ololoop			; transfer to null terminator
 
 	pop	ds				; restore ds -> wl32 data
 	mov	LIBNameOffset,si	; update library module name offset for next read
 
-	mov	dx,OFFSET DGROUP:CurrentFileName
+	mov	dx,OFFSET CurrentFileName
 	mov	al,40h			; read-only, deny none access
 	call	OpenFile	; open object file, ax == handle
 	mov	CurrentFileHandle,ax	; save handle of file being read
@@ -616,7 +638,7 @@ ololoop:
 ; read the library header first nine bytes, check that is valid file
 ; library system variables are contained in header
 olohead:
-	mov	dx,OFFSET DGROUP:LIBHeader
+	mov	dx,OFFSET LIBHeader
 	mov	cx,9
 	mov	bx,CurrentFileHandle
 	call	ReadFile
@@ -627,7 +649,7 @@ olohead:
 ; bad library format
 olobadlib:
 	mov	al,BADLIBERRORCODE
-	mov	dx,OFFSET DGROUP:CurrentFileName
+	mov	dx,OFFSET CurrentFileName
 	call	LinkerErrorExit	; no return
 
 ; seek to library dictionary

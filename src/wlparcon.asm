@@ -75,35 +75,35 @@ _BSS ENDS
 CONST	SEGMENT WORD PUBLIC USE16 'DATA'
 
 AssignCommands	DW	NUMCMDS
-		DW	OFFSET DGROUP:IGNOREText
+		DW	OFFSET IGNOREText
 		DW	IGNOREProc
-		DW	OFFSET DGROUP:TERMINATIONText
+		DW	OFFSET TERMINATIONText
 		DW	TERMINATIONProc
-		DW	OFFSET DGROUP:COMMENTText
+		DW	OFFSET COMMENTText
 		DW	COMMENTProc
-		DW	OFFSET DGROUP:DEFAULTText
+		DW	OFFSET DEFAULTText
 		DW	DEFAULTProc
-		DW	OFFSET DGROUP:OBJNAMEText
+		DW	OFFSET OBJNAMEText
 		DW	OBJNAMEProc
-		DW	OFFSET DGROUP:LIBNAMEText
+		DW	OFFSET LIBNAMEText
 		DW	LIBNAMEProc
-		DW	OFFSET DGROUP:LIBSEARCHText
+		DW	OFFSET LIBSEARCHText
 		DW	LIBSEARCHProc
-		DW	OFFSET DGROUP:NULLText
+		DW	OFFSET NULLText
 		DW	NULLProc
-		DW	OFFSET DGROUP:EXENAMEText
+		DW	OFFSET EXENAMEText
 		DW	EXENAMEProc
-		DW	OFFSET DGROUP:FILEDELETEText
+		DW	OFFSET FILEDELETEText
 		DW	FILEDELETEProc
-		DW	OFFSET DGROUP:OBJADDText
+		DW	OFFSET OBJADDText
 		DW	OBJADDProc
-		DW	OFFSET DGROUP:LIBADDText
+		DW	OFFSET LIBADDText
 		DW	LIBADDProc
-		DW	OFFSET DGROUP:RESPONSEEXTText
+		DW	OFFSET RESPONSEEXTText
 		DW	RESPONSEEXTProc
-		DW	OFFSET DGROUP:OBJAPPENDText
+		DW	OFFSET OBJAPPENDText
 		DW	OBJAPPENDProc
-		DW	OFFSET DGROUP:ISLIBText
+		DW	OFFSET ISLIBText
 		DW	ISLIBProc
 NUMCMDS equ ( $ - offset AssignCommands ) / 4
 
@@ -168,7 +168,7 @@ ISLIBText	DB	'=ISLIB'
 ISLIBTextStop	=	$
 
 StandAloneCommands	DW	1
-				DW	OFFSET DGROUP:FREEFORMATText
+				DW	OFFSET FREEFORMATText
 				DW	FREEFORMATProc
 
 FREEFORMATTextLen	DB	FREEFORMATTextStop-FREEFORMATText
@@ -246,22 +246,22 @@ EXTRN	SaveOBJLIBFileName:PROC
 ParseConfigFile	PROC
 	push	si			; save critical register
 	push	bx			; save bx -> option
-	or	WORD PTR ds:[bx+OPTLISTOFFARGFLAGS],IGNOREIFONFLAG	; turn on ignore flag
-	mov	dx,ds:[bx+OPTLISTOFFARGPTR]	; ds:dx -> file name
+	or	WORD PTR [bx+OPTLISTOFFARGFLAGS],IGNOREIFONFLAG	; turn on ignore flag
+	mov	dx,[bx+OPTLISTOFFARGPTR]	; ds:dx -> file name
 	mov	CurrentConfigFileNamePtr,dx	; keep pointer to configuration file name in case of error
 	call	CheckCurrentDirectory
 	jnc	pcfopen			; configuration file is present
 
 ; check EXE directory for configuration file, if no explicit path given
 	mov	di,dx
-	cmp	BYTE PTR ds:[di+1],':'	; see if drive spec
+	cmp	BYTE PTR [di+1],':'	; see if drive spec
 	je	pcfopen			; yes, force error
 	mov	al,'\'
 
 pcfscanloop:
 	scasb
 	je	pcfopen			; pathspec
-	cmp	BYTE PTR ds:[di-1],0	; see if at end of configuration file name
+	cmp	BYTE PTR [di-1],0	; see if at end of configuration file name
 	jne	pcfscanloop			; no
 
 ; seek out EXE pathspec from environment block, use it with configuration file name
@@ -272,7 +272,7 @@ pcfscanloop:
 
 pcfendloop:
 	lodsb				; get environment char
-	or	al,ds:[si]		; merge in next char
+	or	al,[si]		; merge in next char
 	jne	pcfendloop		; not at end of environment block
 	add	si,3			; si -> start of EXE file path
 	mov	di,si			; save -> start
@@ -288,7 +288,7 @@ pcfpathloop:
 
 calcpath:
 	mov	si,di			; ds:si -> start of file path
-	mov	di,OFFSET DGROUP:ConfigFileName	; es:di -> configuration file name slot
+	mov	di,OFFSET ConfigFileName	; es:di -> configuration file name slot
 
 pcfcalcloop:
 	movsb
@@ -302,7 +302,7 @@ pcfappendloop:
 	movsb
 	cmp	BYTE PTR [si-1],0	; transfer through null terminator
 	jne	pcfappendloop
-	mov	dx,OFFSET DGROUP:ConfigFileName	; ds:dx -> configuration file with pathspec
+	mov	dx,OFFSET ConfigFileName	; ds:dx -> configuration file with pathspec
 
 pcfopen:
 	mov	al,40h			; read-only, deny none access
@@ -311,7 +311,7 @@ pcfopen:
 
 pcfreadloop:
 	call	ReadConfigFile	; read config file
-	mov	si,OFFSET DGROUP:ConfigFileString
+	mov	si,OFFSET ConfigFileString
 
 pcflineloop:
 	lodsb				; get first char of line
@@ -336,7 +336,7 @@ pcfend:
 	mov	ah,3eh			; close file
 	int	21h
 	pop	bx				; restore bx -> option
-	and	WORD PTR ds:[bx+OPTLISTOFFARGFLAGS],NOT IGNOREIFONFLAG	; shut off ignore flag
+	and	WORD PTR [bx+OPTLISTOFFARGFLAGS],NOT IGNOREIFONFLAG	; shut off ignore flag
 	pop	si				; restore critical register
 	ret
 ParseConfigFile	ENDP
@@ -349,7 +349,7 @@ ParseConfigFile	ENDP
 ; destroys ax,bx,cx,dx,di
 
 ReadConfigFile	PROC
-	mov	dx,OFFSET DGROUP:ConfigFileString	; ds:dx -> read buffer
+	mov	dx,OFFSET ConfigFileString	; ds:dx -> read buffer
 	mov	cx,127			; read 127 bytes of response file
 	mov	bx,ConfigFileHandle
 	call	ReadFile	; read the file
@@ -373,10 +373,10 @@ ScanLoop:
 
 ScanDone:
 	mov	di,dx			; get LF offset
-	mov	BYTE PTR ds:[di+1],27	; write ESC past LF character
+	mov	BYTE PTR [di+1],27	; write ESC past LF character
 
 ;  file seek to character position after final CR/LF
-	sub	dx,OFFSET DGROUP:ConfigFileString	; dx == relative offset in buffer
+	sub	dx,OFFSET ConfigFileString	; dx == relative offset in buffer
 	mov	ax,126
 	sub	ax,dx			; ax == chars to reread on next pass (seek back from)
 	je	rcfret			; no bytes to reread
@@ -398,7 +398,7 @@ lineerr:
 ; read to end of response file
 ShortRead:
 	mov	bx,ax			; offset into buffer
-	mov	BYTE PTR ds:[bx+OFFSET DGROUP:ConfigFileString],0	; null terminate after final character read
+	mov	BYTE PTR [bx+OFFSET ConfigFileString],0	; null terminate after final character read
 	jmp	SHORT rcfret
 
 ReadConfigFile	ENDP
@@ -415,7 +415,7 @@ ReadConfigFile	ENDP
 ParseConfigCommand	PROC
 	dec	si				; back up to first char of configuration file line
 	mov	dx,si			; keep -> start of configuration file line
-	cmp	WORD PTR ds:[si],'/'+(256*'/')	; check for // comment
+	cmp	WORD PTR [si],'/'+(256*'/')	; check for // comment
 	jne	pccendloop
 	mov	dx,0ffffh
 
@@ -441,15 +441,15 @@ pccstartloop:
 	jbe	pccnoarg		; at start of command line
 
 pccchkeq:
-	cmp	BYTE PTR ds:[si],'='	; see if reached assignment
+	cmp	BYTE PTR [si],'='	; see if reached assignment
 	jne	pccstartloop	; no
 ;	mov	bx,si			; keep -> '='
 ;	jmp	SHORT pccstartloop
 
 pccchkobj:
-	cmp	DWORD PTR ds:[si+1],'JBO+'
+	cmp	DWORD PTR [si+1],'JBO+'
 	jne	pccnotobj
-	cmp	BYTE PTR ds:[si+5],':'
+	cmp	BYTE PTR [si+5],':'
 	jne	pccbadcom
 
 	add	si,6			; si -> first char of filename
@@ -457,22 +457,22 @@ pccchkobj:
 	jmp	SHORT pccret	; processing successful
 
 pccnotobj:
-;	cmp	DWORD PTR ds:[si+1],'BIL+'
+;	cmp	DWORD PTR [si+1],'BIL+'
 ;	jne	pccnotlib
-;	cmp	BYTE PTR ds:[si+5],':'
+;	cmp	BYTE PTR [si+5],':'
 ;	jne	pccbadcom
 ;@@@ code goes here
 ;	jmp	SHORT pccret	; processing successful
 
 pccnotlib:
-	cmp	BYTE PTR ds:[si+1],'@'	; see if environment variable dependent link file
+	cmp	BYTE PTR [si+1],'@'	; see if environment variable dependent link file
 	jne	pccchkev
 	inc	si				; si -> '@'
 	call	EvarLinkFileProc	; process file add command
 	jmp	SHORT pccret	; processing successful
 
 pccchkev:
-	cmp	WORD PTR ds:[si+1],'+'+(256*'/')
+	cmp	WORD PTR [si+1],'+'+(256*'/')
 	jne	pccnotadd
 	
 ; add option morphing
@@ -482,7 +482,7 @@ pccchkev:
 	jmp	SHORT pccret	; processing successful
 
 pccnotadd:
-	cmp	BYTE PTR ds:[si+1],'/'	; see if option morphing
+	cmp	BYTE PTR [si+1],'/'	; see if option morphing
 	jne	pccnotopt		; no
 	add	si,2			; si -> first char of option
 	call	OptionProc	; process option
@@ -490,7 +490,7 @@ pccnotadd:
 	jmp	SHORT pccret	; processing successful
 
 pccnotopt:
-	mov	bx,OFFSET DGROUP:AssignCommands
+	mov	bx,OFFSET AssignCommands
 
 ; ds:si -> start of command
 pccsearch:
@@ -503,7 +503,7 @@ pcccomploop:
 	add	bx,4			; bx -> assignment command string
 	mov	di,[bx]			; es:di -> assignment command string to try
 	xor	ch,ch
-	mov	cl,ds:[di-1]	; cx holds # of chars in string
+	mov	cl,[di-1]	; cx holds # of chars in string
 	repe	cmpsb		; see if match
 	je	pccmatch		; found a match
 	dec	bp				; drop count of strings to check
@@ -517,13 +517,13 @@ pccbadloop:
 	lodsb				; scan to end of command
 	cmp	al,' '
 	ja	pccbadloop		; not at end of command
-	mov	BYTE PTR ds:[si-1],0	; null terminate line
+	mov	BYTE PTR [si-1],0	; null terminate line
 	mov	al,BADCONFIGLINEERRORCODE
 	call	LinkerErrorExit
 
 ; matched existing command
 pccmatch:
-	call	WORD PTR ds:[bx+2]	; route to appropriate routine
+	call	WORD PTR [bx+2]	; route to appropriate routine
 
 pccret:
 	pop	si				; si -> past command
@@ -531,7 +531,7 @@ pccret:
 
 ; at start of command, this command has no argument translations
 pccnoarg:
-	mov	bx,OFFSET DGROUP:StandAloneCommands
+	mov	bx,OFFSET StandAloneCommands
 	jmp	SHORT pccsearch	; search for command
 
 ParseConfigCommand	ENDP
@@ -548,15 +548,15 @@ ParseConfigCommand	ENDP
 OptionProc	PROC
 	push	dx			; save critical register
 
-	mov	bx,OFFSET DGROUP:OptionList	; ds:bx -> link options
+	mov	bx,OFFSET OptionList	; ds:bx -> link options
 	mov	dx,si			; dx -> start of option
 
 opmainloop:
-	mov	di,ds:[bx]		; ds:di -> option text string prefixed by length byte
+	mov	di,[bx]		; ds:di -> option text string prefixed by length byte
 	cmp	di,-1			; see if end of option list
 	je	opfail			; yes
 
-	mov	cl,ds:[di]
+	mov	cl,[di]
 	xor	ch,ch			; cx holds length of text string
 	inc	di				; es:di -> option on record
 	mov	si,dx			; ds:si -> option to match
@@ -575,7 +575,7 @@ op2:
 	loop	opcharloop	; yes, check next option char
 
 ; options matched thru all chars, see if any more chars in given option string
-	cmp	BYTE PTR ds:[si],' '
+	cmp	BYTE PTR [si],' '
 	jbe	opsuccess		; no, successful match
 
 opnext:
@@ -586,7 +586,7 @@ opnext:
 opsuccess:
 	mov	si,dx
 	sub	si,2			; si -> '='
-	mov	BYTE PTR ds:[si],0	; null terminate after option chars (replace '=')
+	mov	BYTE PTR [si],0	; null terminate after option chars (replace '=')
 	dec	si				; si -> last char of default option
 	pop	dx				; dx -> start of configuration line
 	push	dx			; save back to stack
@@ -629,15 +629,15 @@ OptionProc	ENDP
 AddOptionProc	PROC
 	push	dx			; save critical register
 
-	mov	bx,OFFSET DGROUP:OptionList	; ds:bx -> link options
+	mov	bx,OFFSET OptionList	; ds:bx -> link options
 	mov	dx,si			; dx -> start of option
 
 aopmainloop:
-	mov	di,ds:[bx]		; ds:di -> option text string prefixed by length byte
+	mov	di,[bx]		; ds:di -> option text string prefixed by length byte
 	cmp	di,-1			; see if end of option list
 	je	aopfail			; yes
 
-	mov	cl,ds:[di]
+	mov	cl,[di]
 	xor	ch,ch			; cx holds length of text string
 	inc	di				; es:di -> option on record
 	mov	si,dx			; ds:si -> option to match
@@ -656,7 +656,7 @@ aop2:
 	loop	aopcharloop	; yes, check next option char
 
 ; options matched thru all chars, see if any more chars in given option string
-	cmp	BYTE PTR ds:[si],' '
+	cmp	BYTE PTR [si],' '
 	jbe	aopsuccess		; no, successful match
 
 aopnext:
@@ -667,7 +667,7 @@ aopnext:
 aopsuccess:
 	mov	si,dx
 	sub	si,3			; si -> '='
-	mov	BYTE PTR ds:[si],0	; null terminate after option chars (replace '=')
+	mov	BYTE PTR [si],0	; null terminate after option chars (replace '=')
 	dec	si				; si -> last char of default option
 	pop	dx				; dx -> start of configuration line
 	push	dx			; save back to stack
@@ -708,7 +708,7 @@ AddOptionProc	ENDP
 IGNOREProc	PROC
 	mov	si,ax
 	dec	si				; si -> ignore char
-	mov	al,ds:[si]		; al holds ignore char
+	mov	al,[si]		; al holds ignore char
 	mov	si,IgnoreCharCount
 	mov	[si+RSPFileIgnoreChar],al	; save the char to ignore
 	mov	ax,si
@@ -728,7 +728,7 @@ IGNOREProc	ENDP
 TERMINATIONProc	PROC
 	mov	si,ax
 	dec	si				; si -> termination char
-	mov	al,ds:[si]		; al holds termination char
+	mov	al,[si]		; al holds termination char
 	mov	ParseTermChar,al	; save it
 	ret
 TERMINATIONProc	ENDP
@@ -743,7 +743,7 @@ TERMINATIONProc	ENDP
 COMMENTProc	PROC
 	mov	si,ax
 	dec	si				; si -> comment char
-	mov	al,ds:[si]		; al holds comment char
+	mov	al,[si]		; al holds comment char
 	mov	RSPFileCommentChar,al	; save it
 	ret
 COMMENTProc	ENDP
@@ -806,7 +806,7 @@ FREEFORMATProc	ENDP
 
 OBJNAMEProc	PROC
 	mov	si,ax
-	mov	BYTE PTR ds:[si],0	; null terminate after name chars (replace '=')
+	mov	BYTE PTR [si],0	; null terminate after name chars (replace '=')
 	dec	si				; si -> last char of name
 	mov	al,' '
 
@@ -836,7 +836,7 @@ OBJNAMEProc	ENDP
 
 LIBNAMEProc	PROC
 	mov	si,ax
-	mov	BYTE PTR ds:[si],0	; null terminate after name (replace '=')
+	mov	BYTE PTR [si],0	; null terminate after name (replace '=')
 	dec	si				; si -> last char of name
 	mov	al,' '
 
@@ -866,7 +866,7 @@ LIBNAMEProc	ENDP
 
 LIBSEARCHProc	PROC
 	mov	si,ax
-	mov	BYTE PTR ds:[si],0	; null terminate after name (replace '=')
+	mov	BYTE PTR [si],0	; null terminate after name (replace '=')
 	dec	si				; si -> last char of name
 	mov	al,' '
 
@@ -896,7 +896,7 @@ LIBSEARCHProc	ENDP
 
 NULLProc	PROC
 	mov	si,ax
-	mov	BYTE PTR ds:[si],0	; null terminate after null chars (replace '=')
+	mov	BYTE PTR [si],0	; null terminate after null chars (replace '=')
 	dec	si				; si -> last char of null
 	mov	al,' '
 
@@ -926,7 +926,7 @@ NULLProc	ENDP
 
 EXENAMEProc	PROC
 	mov	si,ax
-	mov	BYTE PTR ds:[si],0	; null terminate after name chars (replace '=')
+	mov	BYTE PTR [si],0	; null terminate after name chars (replace '=')
 	dec	si				; si -> last char of name
 	mov	al,' '
 
@@ -956,7 +956,7 @@ EXENAMEProc	ENDP
 
 FILEDELETEProc	PROC
 	mov	si,ax
-	mov	BYTE PTR ds:[si],0	; null terminate after name chars (replace '=')
+	mov	BYTE PTR [si],0	; null terminate after name chars (replace '=')
 	dec	si				; si -> last char of name
 	mov	al,' '
 
@@ -986,7 +986,7 @@ FILEDELETEProc	ENDP
 
 OBJADDProc	PROC
 	mov	si,ax
-	mov	BYTE PTR ds:[si],0	; null terminate after name chars (replace '=')
+	mov	BYTE PTR [si],0	; null terminate after name chars (replace '=')
 	dec	si				; si -> last char of name
 	mov	al,' '
 
@@ -1028,7 +1028,7 @@ OBJADDProc	ENDP
 
 OBJAPPENDProc	PROC
 	mov	si,ax
-	mov	BYTE PTR ds:[si],0	; null terminate after name chars (replace '=')
+	mov	BYTE PTR [si],0	; null terminate after name chars (replace '=')
 	dec	si				; si -> last char of name
 	mov	al,' '
 
@@ -1058,7 +1058,7 @@ OBJAPPENDProc	ENDP
 
 ISLIBProc	PROC
 	mov	si,ax
-	mov	BYTE PTR ds:[si],0	; null terminate after name chars (replace '=')
+	mov	BYTE PTR [si],0	; null terminate after name chars (replace '=')
 	dec	si				; si -> last char of name
 	mov	al,' '
 
@@ -1088,7 +1088,7 @@ ISLIBProc	ENDP
 
 LIBADDProc	PROC
 	mov	si,ax
-	mov	BYTE PTR ds:[si],0	; null terminate after name chars (replace '=')
+	mov	BYTE PTR [si],0	; null terminate after name chars (replace '=')
 	dec	si				; si -> last char of name
 	mov	al,' '
 
@@ -1131,7 +1131,7 @@ LIBADDProc	ENDP
 
 RESPONSEEXTProc	PROC
 	mov	si,ax
-	mov	BYTE PTR ds:[si],0	; null terminate after null chars (replace '=')
+	mov	BYTE PTR [si],0	; null terminate after null chars (replace '=')
 	dec	si				; si -> last char of null
 	mov	al,' '
 
@@ -1148,7 +1148,7 @@ repsave:
 	push	es			; save critical register
 	push	ds
 	pop	es
-	mov	di,OFFSET DGROUP:LinkFileExtensionText	; es:di -> link file extension storage
+	mov	di,OFFSET LinkFileExtensionText	; es:di -> link file extension storage
 	movsd				; save extension
 	pop	es				; restore critical register
 	ret
@@ -1173,7 +1173,7 @@ FileAddOBJProc	PROC
 
 	pop	si				; si -> start of filename
 	sub	si,6			; si -> '='
-	mov	BYTE PTR ds:[si],0	; null terminate after option chars (replace '=')
+	mov	BYTE PTR [si],0	; null terminate after option chars (replace '=')
 	dec	si				; si -> last char of default option
 	pop	ax				; get morphing pointer out of way
 	pop	dx				; dx -> start of configuration line
@@ -1218,7 +1218,7 @@ EvarLinkFileProc	PROC
 
 	pop	si				; si -> @ preceded filename
 	dec	si				; si -> '='
-	mov	BYTE PTR ds:[si],0	; null terminate after option chars (replace '=')
+	mov	BYTE PTR [si],0	; null terminate after option chars (replace '=')
 	dec	si				; si -> last char of default option
 	pop	ax				; get morphing pointer out of way
 	pop	dx				; dx -> start of configuration line
@@ -1269,7 +1269,7 @@ smd2:
 	mov	di,si			; es:di -> morph string
 	repne	scasb
 
-	cmp	BYTE PTR ds:[di-2],'*'	; see if flush to end of line
+	cmp	BYTE PTR [di-2],'*'	; see if flush to end of line
 	jne	smdchkplus		; no
 	pop	eax				; get flags
 	or	eax,FLUSHLINEFLAG	; add flush line flag
@@ -1277,7 +1277,7 @@ smd2:
 	jmp	SHORT smdcount
 
 smdchkplus:
-	cmp	BYTE PTR ds:[di-2],'+'	; see if flush to end of option
+	cmp	BYTE PTR [di-2],'+'	; see if flush to end of option
 	jne	smdcount		; no
 	pop	eax				; get flags
 	or	eax,FLUSHOPTIONFLAG	; add flush option flag

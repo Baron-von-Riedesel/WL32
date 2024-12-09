@@ -125,7 +125,7 @@ ByteToHexString	ENDP
 
 DwordToDecimalString	PROC
 	push	di			; save di -> destination
-	mov	di,OFFSET DGROUP:TempBuffer
+	mov	di,OFFSET TempBuffer
 	xor	cx,cx			; init count of digits in number
 	mov	ebx,0ah			; number divisor, constant
 
@@ -146,11 +146,11 @@ divloop:
 
 revloop:
 	dec	bx				; bx -> char in reversed number
-	mov	al,ds:[bx]		; get char
+	mov	al,[bx]		; get char
 	stosb				; place in printing string
 	loop	revloop		; unrevers all chars in buffer
 
-	mov	BYTE PTR ds:[di],0	; null terminate string
+	mov	BYTE PTR [di],0	; null terminate string
 	ret
 DwordToDecimalString	ENDP
 

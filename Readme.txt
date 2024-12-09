@@ -68,16 +68,16 @@
 
  MWL32.BAT      create WL32 with JWasm and WL32
  MWL32M.BAT     use Masm v6+ instead of JWasm
- CLARIT.BAT
- CLIPIT.BAT
- DOALL.BAT      runs MWL32.BAT, CLARIT.BAT and CLIPIT.BAT
+ MWLCLAR.BAT
+ MWLCLIP.BAT
+ DOALL.BAT      runs MWL32.BAT, MWLCLAR.BAT and MWLCLIP.BAT
 
  Linker response files:
 
- WL32.RSP       if WL32 itself is used to create WL32.EXE
- WL32J.RSP      create WL32 with (J)Wlink
- WL32CLAR.RSP
- WL32CLIP.RSP
+ WL32.RSP       WL32 resp. file to build WL32.EXE
+ WL32J.RSP      (J)Wlink resp. file to build WL32.EXE
+ WL32CLAR.RSP   WL32 resp. file to build Clarion WL32.EXE
+ WL32CLIP.RSP   WL32 resp. file to build Clipper WL32.EXE
 
 
  2. LEGAL NOTES

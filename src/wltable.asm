@@ -113,7 +113,7 @@ CONST ENDS
 _DATA	SEGMENT WORD PUBLIC USE16 'DATA'
 
 IsAny32BitSegFlag	DB	0	; nonzero if any 32-bit segments
-
+	align 2
 TotalAbsSegCount	DW	0	; total count of absolute segments in program
 TotalRelSegCount	DW	0	; total count of relative (nonabsolute) segments
 TotalSegCount	DW	0	; total count of segments in program
@@ -223,16 +223,23 @@ GetMasterSegDefEntry	PROC
 	dec	di				; make relative zero
 	shl	di,2			; convert to dword offset
 	lfs	bx,gs:[di]		; fs:bx -> name to get hashcode of, from dword entries table
-	mov	WORD PTR SegDefSegNamePtr,bx	; save pointer to name
+	mov	WORD PTR SegDefSegNamePtr+0,bx	; save pointer to name
 	mov	WORD PTR SegDefSegNamePtr+2,fs
 	call	GetHashCode	; hash code returned in bx
 	shl	bx,2			; convert to dword offset
-	mov	ax,ds:[bx+WORD PTR SegDefHashTable+2]	; get hash code selector
+	mov	ax, WORD PTR [bx+SegDefHashTable+2]	; get hash code selector
 	or	ax,ax			; see if used
 	je	gmnouse			; no
 
+if 1
+    lar ax, ax
+    jz @F
+    int 3
+@@:
+endif    
+
 ; hash code used, check for collision or duplicate master segdef entry
-	lfs	bp,ds:[bx+SegDefHashTable]	; fs:bp -> master segdef entry of first segdef with same hash code
+	lfs	bp, [bx+SegDefHashTable]	; fs:bp -> master segdef entry of first segdef with same hash code
 	lgs	bx,gs:[di]		; gs:bx -> current segment name, not normalized
 	cmp	bx,SIZEIOBUFFBLK-MAXOBJRECNAME	; check for possible overflow, normalize name if so
 	jae	gmgsbx			; possible normalization needed
@@ -281,7 +288,7 @@ gmoldgr:
 	jmp	gmmainloop	; try next
 
 gmlenok:
-	mov	cl,ds:[si-1]
+	mov	cl,[si-1]
 	xor	ch,ch			; get # of bytes to check
 	mov	ax,cx			; save count of bytes
 	and	cx,1			; get odd byte
@@ -310,7 +317,7 @@ gm3:
 ; segment names match, check class names
 ; fs:bp -> master segdef entry on record
 gmsmatch:
-	push	DGROUP
+	push	ss
 	pop	ds				; ds -> wl32 data
 	lds	si,SegDefClassNamePtr	; ds:si -> current class name, not normalized
 	cmp	si,SIZEIOBUFFBLK-MAXOBJRECNAME	; see if normalization might be needed
@@ -326,7 +333,7 @@ gmlencmp:
 	cmpsb				; see if length byte matches
 	jne	gmcno			; no
 
-	mov	cl,ds:[si-1]
+	mov	cl,[si-1]
 	xor	ch,ch			; get # of bytes to check
 	mov	ax,cx			; save count of bytes
 	and	cx,1			; get odd byte
@@ -352,7 +359,7 @@ gmc3:
 ; class names match, segment names match, not an absolute segment, return pointer to entry
 ; fs:bp -> segdef entry on record
 gmcmatch:
-	push	DGROUP
+	push	ss
 	pop	ds				; ds -> wl32 data
 
 ; see if one or the other segments is private, if so fail match
@@ -380,7 +387,7 @@ gmnormd:
 
 ; no match on class names or private, check next segdef entry name, use higher pointer
 gmcno:
-	push	DGROUP
+	push	ss
 	pop	ds				; ds -> wl32 data
 	mov	gs,LNAMESIndexSel	; gs -> LNAMES table of pointers block
 	mov	di,SegmentNameIndex
@@ -409,7 +416,7 @@ gmnorms2:
 
 ; new segment, fs:bp -> parent; dl==0 if new name > parent, ==1 if parent > new
 gmnewseg:
-	push	DGROUP
+	push	ss
 	pop	ds				; ds -> wl32 data
 	mov	bx,fs
 	mov	si,bp			; save old fs:bp pointer in bx:si
@@ -462,9 +469,24 @@ gm32:
 	je	gmchkstk			; no
 
 ; can't have a 32-bit segment with DOS EXE file
+
+;--- adjustment: 32-bit segments in MZ exe are a warning only
+
+if 0
 	lgs	bx,SegDefSegNamePtr	; gs:bx -> nonnormalized text string
 	mov	al,SEG32BITEXEERRORCODE	; flag 32-bit segment with EXE file
 	call	NormalizeErrorExit	; normalize text string, do linker error exit
+else
+Seg32BitWarning PROTO
+	cmp IsSeg32Option, OFF	; warning off for 32-bit segments in MZ exe?
+	jnz gmchkstk
+	push gs
+	push bx
+	lgs	bx,SegDefSegNamePtr	; gs:bx -> nonnormalized text string
+	call Seg32BitWarning
+	pop bx
+	pop gs
+endif
 	jmp	gmchkstk
 
 gmnotstack:
@@ -489,11 +511,11 @@ gmsegname:
 	xor	eax,eax
 	mov	gs:[di+MasterSegDefRecStruc.mssSegLength],eax	; init segment length
 	mov	gs:[di+MasterSegDefRecStruc.mssGroupPtr],eax	; must init all of this pointer
-	mov	gs:[di+WORD PTR MasterSegDefRecStruc.mssNextSegPtr+2],ax	; init pointer selectors
-	mov	gs:[di+WORD PTR MasterSegDefRecStruc.mssFirstIndSegPtr+2],ax
-	mov	gs:[di+WORD PTR MasterSegDefRecStruc.mssLastIndSegPtr+2],ax
-	mov	gs:[di+WORD PTR MasterSegDefRecStruc.mssHigherNamePtr+2],ax	; init name pointer
-	mov	gs:[di+WORD PTR MasterSegDefRecStruc.mssLowerNamePtr+2],ax
+	mov	WORD PTR gs:[di+MasterSegDefRecStruc.mssNextSegPtr+2],ax	; init pointer selectors
+	mov	WORD PTR gs:[di+MasterSegDefRecStruc.mssFirstIndSegPtr+2],ax
+	mov	WORD PTR gs:[di+MasterSegDefRecStruc.mssLastIndSegPtr+2],ax
+	mov	WORD PTR gs:[di+MasterSegDefRecStruc.mssHigherNamePtr+2],ax	; init name pointer
+	mov	WORD PTR gs:[di+MasterSegDefRecStruc.mssLowerNamePtr+2],ax
 
 	cmp	SegDefChainFlag,OFF	; see if chaining segdef entries from previous
 	je	gmabschk		; no
@@ -504,14 +526,14 @@ gmsegname:
 	mov	fs,bx			; fs:si -> old entry
 	cmp	SegDefChainFlag,1	; see if new name is greater than parent
 	jne	gmlower			; no
-	mov	fs:[si+WORD PTR MasterSegDefRecStruc.mssHigherNamePtr+2],gs
-	mov	fs:[si+WORD PTR MasterSegDefRecStruc.mssHigherNamePtr],di
+	mov	WORD PTR fs:[si+MasterSegDefRecStruc.mssHigherNamePtr+2],gs
+	mov	WORD PTR fs:[si+MasterSegDefRecStruc.mssHigherNamePtr+0],di
 	jmp	gmret
 
 ; parent (old) name is greater than new name
 gmlower:
-	mov	fs:[si+WORD PTR MasterSegDefRecStruc.mssLowerNamePtr+2],gs
-	mov	fs:[si+WORD PTR MasterSegDefRecStruc.mssLowerNamePtr],di
+	mov	WORD PTR fs:[si+MasterSegDefRecStruc.mssLowerNamePtr+2],gs
+	mov	WORD PTR fs:[si+MasterSegDefRecStruc.mssLowerNamePtr+0],di
 
 gmret:
 	pop	es				; restore critical registers
@@ -523,8 +545,8 @@ gmabschk:
 	jne	gmabs2			; yes
 
 ; not an absolute segment, new hash code, save address
-	mov	ds:[bx+WORD PTR SegDefHashTable],di	; save hash code address
-	mov	ds:[bx+WORD PTR SegDefHashTable+2],gs
+	mov	word ptr [bx+SegDefHashTable+0],di	; save hash code address
+	mov	word ptr [bx+SegDefHashTable+2],gs
 	jmp	gmret		; one
 
 ; absolute segment, check for duplicate
@@ -538,13 +560,13 @@ gmabs:
 	mov	ax,SegFrameNumber	; get new absolute segment's frame number
 
 gmabsloop:
-	cmp	gs:[di+WORD PTR MasterSegDefRecStruc.mssSegOffset],ax	; see if frame numbers match
+	cmp	WORD PTR gs:[di+MasterSegDefRecStruc.mssSegOffset],ax	; see if frame numbers match
 	je	gmret			; yes, gs:di -> master segdef entry
 
 ; use higher name pointer to chain to next absolute segment entry
 	mov	bx,gs
 	mov	si,di			; save old gs:di pointer in bx:si
-	cmp	gs:[di+WORD PTR MasterSegDefRecStruc.mssHigherNamePtr+2],0	; see if next link in chain exists
+	cmp	WORD PTR gs:[di+MasterSegDefRecStruc.mssHigherNamePtr+2],0	; see if next link in chain exists
 	je	gmnouse			; no further links, unique absolute segment, bx:si -> last link
 	lgs	di,gs:[di+MasterSegDefRecStruc.mssHigherNamePtr]	; gs:di -> next link in chain
 	jmp	gmabsloop
@@ -561,12 +583,12 @@ gmabs2:
 
 ; not the first absolute segment, add chain link in previous entry (bx:si)
 	mov	fs,bx			; fs:si -> old entry
-	mov	fs:[si+WORD PTR MasterSegDefRecStruc.mssHigherNamePtr],di
-	mov	fs:[si+WORD PTR MasterSegDefRecStruc.mssHigherNamePtr+2],gs
+	mov	WORD PTR fs:[si+MasterSegDefRecStruc.mssHigherNamePtr+0],di
+	mov	WORD PTR fs:[si+MasterSegDefRecStruc.mssHigherNamePtr+2],gs
 	jmp	gmret
 
 gmfirstabs:
-	mov	WORD PTR AbsSegDefPtr,di	; save -> first pointer
+	mov	WORD PTR AbsSegDefPtr+0,di	; save -> first pointer
 	mov	WORD PTR AbsSegDefPtr+2,gs
 	jmp	gmret
 
@@ -657,8 +679,8 @@ mi2:
 	push	bx
 	mov	eax,fs:[bx+MasterSegDefRecStruc.mssLastIndSegPtr]
 	mov	PrevLastIndSegPtr,eax	; keep pointer to previously last individual segdef, if any, for chain update
-	mov	fs:[bx+WORD PTR MasterSegDefRecStruc.mssLastIndSegPtr],di	; update master last individual segdef pointer
-	mov	fs:[bx+WORD PTR MasterSegDefRecStruc.mssLastIndSegPtr+2],gs
+	mov	WORD PTR fs:[bx+MasterSegDefRecStruc.mssLastIndSegPtr+0],di	; update master last individual segdef pointer
+	mov	WORD PTR fs:[bx+MasterSegDefRecStruc.mssLastIndSegPtr+2],gs
 	mov	ah,ACBPByte
 	and	ah,AFIELDOFACBP	; get alignment field of individual segdef
 	mov	al,fs:[bx+MasterSegDefRecStruc.mssACBPByte]	; get master ACBP byte
@@ -688,10 +710,10 @@ michkgdesc:
 	cmp	bx,SIZEIOBUFFBLK	; see if bx is at wrap point
 	jb	mi4				; no
 	mov	bx,IOBUFFSYSVARSIZE
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; fs -> next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; fs -> next block in chain
 
 mi4:
-	mov	al,ds:[GDESCText+ecx]
+	mov	al,[GDESCText+ecx]
 	cmp	al,fs:[bx]		; see if name matches
 	jne	migdatasetup	; no
 	inc	bx
@@ -721,10 +743,10 @@ michkgdata:
 	cmp	bx,SIZEIOBUFFBLK	; see if bx is at wrap point
 	jb	mi5				; no
 	mov	bx,IOBUFFSYSVARSIZE
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; fs -> next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; fs -> next block in chain
 
 mi5:
-	mov	al,ds:[GDATAText+ecx]
+	mov	al,[GDATAText+ecx]
 	cmp	al,fs:[bx]		; see if name matches
 	jne	michkdone		; no
 	inc	bx
@@ -794,8 +816,8 @@ minewalign:
 	
 ; do various initializations
 miinit2:
-	mov	gs:[di+WORD PTR IndSegDefRecStruc.isdrMasterPtr],bx	; update master back pointer
-	mov	gs:[di+WORD PTR IndSegDefRecStruc.isdrMasterPtr+2],fs
+	mov	WORD PTR gs:[di+IndSegDefRecStruc.isdrMasterPtr+0],bx	; update master back pointer
+	mov	WORD PTR gs:[di+IndSegDefRecStruc.isdrMasterPtr+2],fs
 	mov	ax,CurrentBaseOBJBuff
 	mov	WORD PTR gs:[di+IndSegDefRecStruc.isdrModulePtr],ax
 	mov	al,ACBPByte
@@ -934,15 +956,15 @@ milenup:
 	mov	fs:[bx+MasterSegDefRecStruc.mssSegLength],eax	; update total segment length
 
 mi3:
-	cmp	fs:[bx+WORD PTR MasterSegDefRecStruc.mssFirstIndSegPtr+2],0	; see if first individual segdef
+	cmp	WORD PTR fs:[bx+MasterSegDefRecStruc.mssFirstIndSegPtr+2],0	; see if first individual segdef
 	je	mifirst			; yes
 
 ; update previously last individual segdef to point to this new one
 	push	fs			; save -> master segdef entry
 	mov	dx,bx
 	lfs	bx,PrevLastIndSegPtr	; fs:bx -> previously last
-	mov	fs:[bx+WORD PTR IndSegDefRecStruc.isdrNextIndSegPtr],di	; update next segdef pointer
-	mov	fs:[bx+WORD PTR IndSegDefRecStruc.isdrNextIndSegPtr+2],gs
+	mov	WORD PTR fs:[bx+IndSegDefRecStruc.isdrNextIndSegPtr+0],di	; update next segdef pointer
+	mov	WORD PTR fs:[bx+IndSegDefRecStruc.isdrNextIndSegPtr+2],gs
 	pop	fs
 	mov	bx,dx			; fs:bx -> master segdef entry
 
@@ -962,8 +984,8 @@ miabs:
 
 ; first individual segment of segdef
 mifirst:
-	mov	fs:[bx+WORD PTR MasterSegDefRecStruc.mssFirstIndSegPtr],di	; update master first individual segdef pointer
-	mov	fs:[bx+WORD PTR MasterSegDefRecStruc.mssFirstIndSegPtr+2],gs
+	mov	WORD PTR fs:[bx+MasterSegDefRecStruc.mssFirstIndSegPtr+0],di	; update master first individual segdef pointer
+	mov	WORD PTR fs:[bx+MasterSegDefRecStruc.mssFirstIndSegPtr+2],gs
 	jmp	miret
 
 MakeIndSegDefEntry	ENDP
@@ -1070,7 +1092,7 @@ NormalGSBXSource	PROC
 	jb	ngschklen
 
 	mov	bx,IOBUFFSYSVARSIZE	; wrap bx past sysvars
-	mov	gs,gs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; gs-> next block in chain
+	mov	gs,gs:[IOBuffHeaderStruc.ibhsChildPtr]	; gs-> next block in chain
 	mov	cl,gs:[bx]		; get length byte
 	jmp	ngssplit
 
@@ -1094,10 +1116,10 @@ ngssplit:
 	mov	si,bx
 	push	gs
 	pop	ds				; ds:si -> split name source
-	mov	ax,DGROUP
+	mov	ax,ss
 	mov	es,ax
 	mov	gs,ax
-	mov	di,OFFSET DGROUP:CompBuffSource	; es:di -> name storage
+	mov	di,OFFSET CompBuffSource	; es:di -> name storage
 	mov	bx,di			; gs:bx -> name source buffer
 
 ngsloop:
@@ -1105,7 +1127,7 @@ ngsloop:
 	jb	ngs2			; nope
 
 	mov	si,IOBUFFSYSVARSIZE	; wrap si past sysvars
-	mov	ds,ds:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; ds-> next block in chain
+	mov	ds,ds:[IOBuffHeaderStruc.ibhsChildPtr]	; ds-> next block in chain
 
 ngs2:
 	movsb				; transfer a name char
@@ -1140,12 +1162,12 @@ NormalDSSISource	PROC
 	jb	ndschklen
 
 	mov	si,IOBUFFSYSVARSIZE	; wrap si past sysvars
-	mov	ds,ds:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; ds-> next block in chain
-	mov	cl,ds:[si]		; get length byte
+	mov	ds,ds:[IOBuffHeaderStruc.ibhsChildPtr]	; ds-> next block in chain
+	mov	cl,[si]		; get length byte
 	jmp	ndssplit
 
 ndschklen:
-	mov	cl,ds:[si]		; get length byte
+	mov	cl,[si]		; get length byte
 	jcxz	ndsbret		; null length
 	mov	ax,si
 	add	ax,cx			; get position of last byte of name
@@ -1159,24 +1181,24 @@ ndssplit:
 
 	inc	cx				; adjust for length byte in transfer
 
-	push	DGROUP
+	push	ss
 	pop	es
-	mov	di,OFFSET DGROUP:CompBuffSource	; es:di -> name storage
+	mov	di,OFFSET CompBuffSource	; es:di -> name storage
 
 ndsloop:
 	cmp	si,SIZEIOBUFFBLK	; see if si is at wrap point
 	jb	nds2			; nope
 
 	mov	si,IOBUFFSYSVARSIZE	; wrap si past sysvars
-	mov	ds,ds:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; ds-> next block in chain
+	mov	ds,ds:[IOBuffHeaderStruc.ibhsChildPtr]	; ds-> next block in chain
 
 nds2:
 	movsb				; transfer a name char
 	loop	ndsloop		; do all chars in name
 
-	push	DGROUP
+	push	ss
 	pop	ds
-	mov	si,OFFSET DGROUP:CompBuffSource	; ds:si -> name storage
+	mov	si,OFFSET CompBuffSource	; ds:si -> name storage
 
 	pop	di				; restore critical registers
 	pop	es
@@ -1205,7 +1227,7 @@ NormalESDIDest	PROC
 	jb	neschklen
 
 	mov	di,IOBUFFSYSVARSIZE	; wrap di past sysvars
-	mov	es,es:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; ds-> next block in chain
+	mov	es,es:[IOBuffHeaderStruc.ibhsChildPtr]	; ds-> next block in chain
 	mov	cl,es:[di]		; get length byte
 	jmp	nessplit
 
@@ -1227,26 +1249,26 @@ nessplit:
 	push	es
 	pop	ds
 	mov	si,di			; ds:si -> source of name
-	push	DGROUP
+	push	ss
 	pop	es
-;@@@	mov	di,OFFSET DGROUP:CompBuffSource	; es:di -> name storage
-	mov	di,OFFSET DGROUP:CompBuffDest	; es:di -> name storage
+;@@@	mov	di,OFFSET CompBuffSource	; es:di -> name storage
+	mov	di,OFFSET CompBuffDest	; es:di -> name storage
 
 nesloop:
 	cmp	si,SIZEIOBUFFBLK	; see if si is at wrap point
 	jb	nes2			; nope
 
 	mov	si,IOBUFFSYSVARSIZE	; wrap si past sysvars
-	mov	ds,ds:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; ds-> next block in chain
+	mov	ds,ds:[IOBuffHeaderStruc.ibhsChildPtr]	; ds-> next block in chain
 
 nes2:
 	movsb				; transfer a name char
 	loop	nesloop		; do all chars in name
 
-	push	DGROUP
+	push	ss
 	pop	es
-;@@@	mov	di,OFFSET DGROUP:CompBuffSource	; es:di -> name storage
-	mov	di,OFFSET DGROUP:CompBuffDest	; es:di -> name storage
+;@@@	mov	di,OFFSET CompBuffSource	; es:di -> name storage
+	mov	di,OFFSET CompBuffDest	; es:di -> name storage
 
 	pop	si				; restore critical registers
 	pop	ds
@@ -1275,7 +1297,7 @@ NormalFSBPDest	PROC
 	jb	nfschklen
 
 	mov	bp,IOBUFFSYSVARSIZE	; wrap bp past sysvars
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; ds-> next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; ds-> next block in chain
 	mov	cl,fs:[bp]		; get length byte
 	jmp	nfssplit
 
@@ -1299,11 +1321,11 @@ nfssplit:
 	mov	si,bp
 	push	fs
 	pop	ds				; ds:si -> split name source
-	mov	ax,DGROUP
+	mov	ax,ss
 	mov	es,ax
 	mov	fs,ax
-;@@@	mov	di,OFFSET DGROUP:CompBuffSource	; es:di -> name storage
-	mov	di,OFFSET DGROUP:CompBuffDest	; es:di -> name storage
+;@@@	mov	di,OFFSET CompBuffSource	; es:di -> name storage
+	mov	di,OFFSET CompBuffDest	; es:di -> name storage
 	mov	bp,di			; fs:bp -> name source buffer
 
 nfsloop:
@@ -1311,7 +1333,7 @@ nfsloop:
 	jb	nfs2			; nope
 
 	mov	si,IOBUFFSYSVARSIZE	; wrap si past sysvars
-	mov	ds,ds:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; ds-> next block in chain
+	mov	ds,ds:[IOBuffHeaderStruc.ibhsChildPtr]	; ds-> next block in chain
 
 nfs2:
 	movsb				; transfer a name char
@@ -1377,7 +1399,7 @@ gglencmp:
 	cmpsb				; see if length byte matches
 	jne	ggnextent		; no
 
-	mov	cl,ds:[si-1]
+	mov	cl,[si-1]
 	xor	ch,ch			; get # of bytes to check
 	mov	al,cl			; save count of bytes
 	and	cl,3			; get odd byte+word
@@ -1667,14 +1689,14 @@ ENDIF
 gpshash:
 	call	GetHashCode	; hash code returned in bx
 	shl	bx,2			; convert to dword offset
-	mov	ax,ds:[bx+WORD PTR SymbolHashTable+2]	; get hash code selector
+	mov	ax,word ptr [bx+SymbolHashTable+2]	; get hash code selector
 	or	ax,ax			; see if used
 	je	gpsnouse			; no
 
 ; hash code used, check for collision or duplicate public symbol entry
 	push	fs
 	pop	gs				; gs:si -> current symbol name
-	lfs	bp,ds:[bx+SymbolHashTable]	; fs:bp -> entry of first symbol with same hash code
+	lfs	bp, [bx+SymbolHashTable]	; fs:bp -> entry of first symbol with same hash code
 	mov	bx,si			; gs:bx -> current symbol name
 	cmp	bx,SIZEIOBUFFBLK-MAXOBJRECNAME	; check for possible overflow, normalize name if so
 	jae	gpsgsbx			; possible normalization needed
@@ -1723,7 +1745,7 @@ gpsoldgr:
 	jmp	gpsmainloop	; try next
 
 gpslenok:
-	mov	cl,ds:[si-1]	; get # of bytes to check
+	mov	cl,[si-1]	; get # of bytes to check
 	xor	ch,ch			; high byte always zero
 	mov	al,cl			; save count of bytes
 	and	cl,1			; get odd byte
@@ -1751,7 +1773,7 @@ gps3:
 ; symbol names match
 ; fs:bp -> symbol entry on record
 gpsmatch:
-	push	DGROUP
+	push	ss
 	pop	ds				; ds -> wl32 data
 	mov	di,bp			; fs:di -> matching entry
 
@@ -1783,7 +1805,7 @@ gpsdupe:
 
 ; new symbol, fs:bp -> parent; dl==0 if new name > parent, ==1 if parent > new
 gpsnewsym:
-	push	DGROUP
+	push	ss
 	pop	ds				; ds -> wl32 data
 	mov	bx,fs
 	mov	si,bp			; save old fs:bp pointer in bx:si
@@ -1820,16 +1842,16 @@ gpsinit:
 	mov	gs:[di+PubSymRecStruc.pssNamePtr],eax	; init ssymbol name
 
 	xor	eax,eax
-	mov	gs:[di+WORD PTR PubSymRecStruc.pssHigherNamePtr+2],ax	; init name pointer
-	mov	gs:[di+WORD PTR PubSymRecStruc.pssLowerNamePtr+2],ax
+	mov	WORD PTR gs:[di+PubSymRecStruc.pssHigherNamePtr+2],ax	; init name pointer
+	mov	WORD PTR gs:[di+PubSymRecStruc.pssLowerNamePtr+2],ax
 	mov	gs:[di+PubSymRecStruc.pssModuleCount],eax
 	mov	gs:[di+PubSymRecStruc.pssFlags],ax
 
 	cmp	PubSymChainFlag,OFF	; see if chaining symbol entries from previous
 	jne	gpschain		; yes
 
-	mov	ds:[bx+WORD PTR SymbolHashTable],di	; save hash code address
-	mov	ds:[bx+WORD PTR SymbolHashTable+2],gs
+	mov	word ptr [bx+SymbolHashTable+0],di	; save hash code address
+	mov	word ptr [bx+SymbolHashTable+2],gs
 	jmp	gpsnewflag
 
 ; must chain symbol entry from previous/parent/old entry
@@ -1839,14 +1861,14 @@ gpschain:
 	mov	fs,bx			; fs:si -> old entry
 	cmp	PubSymChainFlag,1	; see if new name is greater than parent
 	jne	gpslower			; no
-	mov	fs:[si+WORD PTR PubSymRecStruc.pssHigherNamePtr+2],gs
-	mov	fs:[si+WORD PTR PubSymRecStruc.pssHigherNamePtr],di
+	mov	WORD PTR fs:[si+PubSymRecStruc.pssHigherNamePtr+2],gs
+	mov	WORD PTR fs:[si+PubSymRecStruc.pssHigherNamePtr+0],di
 	jmp	gpsnewflag
 
 ; parent (old) name is greater than new name
 gpslower:
-	mov	fs:[si+WORD PTR PubSymRecStruc.pssLowerNamePtr+2],gs
-	mov	fs:[si+WORD PTR PubSymRecStruc.pssLowerNamePtr],di
+	mov	WORD PTR fs:[si+PubSymRecStruc.pssLowerNamePtr+2],gs
+	mov	WORD PTR fs:[si+PubSymRecStruc.pssLowerNamePtr+0],di
 
 gpsnewflag:
 	stc					; flag a new public
@@ -1909,12 +1931,12 @@ cturet:
 
 ctunorm:
 	mov	si,IOBUFFSYSVARSIZE	; wrap si past sysvars
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; fs -> next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; fs -> next block in chain
 	jmp	ctuadj	; return to check loop with si adjustment
 
 ctunorm2:
 	mov	si,IOBUFFSYSVARSIZE	; wrap si past sysvars
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; fs -> next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; fs -> next block in chain
 	jmp	ctugetlen	; return to get length with si adjustment
 
 ConvertToUpperCase	ENDP

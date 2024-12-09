@@ -12,73 +12,73 @@
 ;*                                                                   *
 ;*********************************************************************
 
-GLOBAL textequ <EXTERNDEF>
-
 ; link options
-GLOBAL	IsCreateEXEOption:BYTE	; /ex
-GLOBAL	IsExitBeepOption:BYTE	; /b
-GLOBAL	IsFastLoadOption:BYTE	; /fl
-GLOBAL	IsLIBSearchOption:BYTE	; /ls
-GLOBAL	IsLinkConfigOption:BYTE	; /lc
-GLOBAL	IsLinkInfoLimitOption:BYTE	; /il
-GLOBAL	IsLinkInfoOption:BYTE	; /i
-GLOBAL	IsMAPOption:BYTE		; /m
-GLOBAL	IsNoCopyrightOption:BYTE	; /nc
-GLOBAL	IsNoDefaultLIBOption:BYTE	; /nd
-GLOBAL	IsNoWarnDupeOption:BYTE	; /nwd
-GLOBAL	IsNoWarnLIBDupeOption:BYTE	; /nwld
-GLOBAL	IsParseDisplayOption:BYTE	; /pd
-GLOBAL	IsStackOption:BYTE		; /st
-GLOBAL	IsSYMOption:BYTE		; /sy
-GLOBAL	IsThreePOption:BYTE		; /3p
-GLOBAL	IsWarnRetCode1Option:BYTE	; /w1
-GLOBAL	IsWarnUnknownOption:BYTE	; /wu
+EXTERNDEF	IsCreateEXEOption:BYTE	; /ex
+EXTERNDEF	IsExitBeepOption:BYTE	; /b
+EXTERNDEF	IsFastLoadOption:BYTE	; /fl
+EXTERNDEF	IsLIBSearchOption:BYTE	; /ls
+EXTERNDEF	IsLinkConfigOption:BYTE	; /lc
+EXTERNDEF	IsLinkInfoLimitOption:BYTE	; /il
+EXTERNDEF	IsLinkInfoOption:BYTE	; /i
+EXTERNDEF	IsMAPOption:BYTE		; /m
+EXTERNDEF	IsNoCopyrightOption:BYTE	; /nc
+EXTERNDEF	IsNoDefaultLIBOption:BYTE	; /nd
+EXTERNDEF	IsNoWarnDupeOption:BYTE	; /nwd
+EXTERNDEF	IsNoWarnLIBDupeOption:BYTE	; /nwld
+EXTERNDEF	IsParseDisplayOption:BYTE	; /pd
+EXTERNDEF	IsNoLogoOption:BYTE		; /q
+EXTERNDEF	IsSeg32Option:BYTE		; /32
+EXTERNDEF	IsStackOption:BYTE		; /st
+EXTERNDEF	IsSYMOption:BYTE		; /sy
+EXTERNDEF	IsThreePOption:BYTE		; /3p
+EXTERNDEF	IsWarnRetCode1Option:BYTE	; /w1
+EXTERNDEF	IsWarnUnknownOption:BYTE	; /wu
 
 IFDEF WATCOM_ASM
-GLOBAL	IsCaseSensitiveOption:BYTE	; /cs
-GLOBAL	IsDStoSSOption:BYTE	; /ds
-GLOBAL	IsFlatOption:BYTE	; /f
-GLOBAL	IsZeroUninitOption:BYTE	; /zu
+EXTERNDEF	IsCaseSensitiveOption:BYTE	; /cs
+EXTERNDEF	IsDStoSSOption:BYTE	; /ds
+EXTERNDEF	IsFlatOption:BYTE	; /f
+EXTERNDEF	IsZeroUninitOption:BYTE	; /zu
 ENDIF
 
 if 0
-GLOBAL	EXEFileName [85]:BYTE
-GLOBAL	MAPFileName [85]:BYTE
-GLOBAL	SYMFileName [85]:BYTE
+EXTERNDEF	EXEFileName [85]:BYTE
+EXTERNDEF	MAPFileName [85]:BYTE
+EXTERNDEF	SYMFileName [85]:BYTE
 endif
-GLOBAL	EXEFileName :BYTE
-GLOBAL	MAPFileName :BYTE
-GLOBAL	SYMFileName :BYTE
+EXTERNDEF	EXEFileName :BYTE
+EXTERNDEF	MAPFileName :BYTE
+EXTERNDEF	SYMFileName :BYTE
 
 IFDEF DLLSUPPORT
 if 0
-GLOBAL	DLLFileName	[13]:BYTE
+EXTERNDEF	DLLFileName	[13]:BYTE
 endif
-GLOBAL	DLLFileName	:BYTE
+EXTERNDEF	DLLFileName	:BYTE
 ENDIF
 
-GLOBAL	DosVersion:BYTE	; dos version
-GLOBAL	IsArgsFlag:BYTE	; nonzero if command line arguments
-GLOBAL	IsDOSSEG:BYTE	; nonzero if DOSSEG segment ordering specified
-GLOBAL	Pass2Flag:BYTE	; nonzero if on pass 2+ of link
-GLOBAL	ProcessingLIBFlag:BYTE	; nonzero if processing library
+EXTERNDEF	DosVersion:BYTE	; dos version
+EXTERNDEF	IsArgsFlag:BYTE	; nonzero if command line arguments
+EXTERNDEF	IsDOSSEG:BYTE	; nonzero if DOSSEG segment ordering specified
+EXTERNDEF	Pass2Flag:BYTE	; nonzero if on pass 2+ of link
+EXTERNDEF	ProcessingLIBFlag:BYTE	; nonzero if processing library
 
-GLOBAL	IOBlockSeg:WORD	; segment of 64K sized i/o block
-GLOBAL	PSP:WORD		; WL32 PSP value
-GLOBAL	TotalLIBCount:WORD	; total library file count
-GLOBAL	TotalOBJCount:WORD	; total object module count
-GLOBAL	WarningsCount:WORD	; count of linker warning messages
-GLOBAL	ZeroBlockSeg:WORD	; segment of 16K block of zero values
+EXTERNDEF	IOBlockSeg:WORD	; segment of 64K sized i/o block
+EXTERNDEF	PSP:WORD		; WL32 PSP value
+EXTERNDEF	TotalLIBCount:WORD	; total library file count
+EXTERNDEF	TotalOBJCount:WORD	; total object module count
+EXTERNDEF	WarningsCount:WORD	; count of linker warning messages
+EXTERNDEF	ZeroBlockSeg:WORD	; segment of 16K block of zero values
 
-GLOBAL	PublicSymbolCount:DWORD	; count of public symbols in program
-GLOBAL	ResolvedSymbolCount:DWORD	; count of resolved symbols in program
-GLOBAL	StackValue:DWORD	; user set stack value
-GLOBAL	TotalCommunalCount:DWORD	; count of communals in program
-GLOBAL	ZeroValue:DWORD	; known zero value, for pointers to null strings
+EXTERNDEF	PublicSymbolCount:DWORD	; count of public symbols in program
+EXTERNDEF	ResolvedSymbolCount:DWORD	; count of resolved symbols in program
+EXTERNDEF	StackValue:DWORD	; user set stack value
+EXTERNDEF	TotalCommunalCount:DWORD	; count of communals in program
+EXTERNDEF	ZeroValue:DWORD	; known zero value, for pointers to null strings
 
 IFDEF DLLSUPPORT
-GLOBAL	TotalEXPDEFCount:DWORD	; total count of EXPDEFs
-GLOBAL	TotalIMPDEFCount:DWORD	; total count of IMPDEFs
+EXTERNDEF	TotalEXPDEFCount:DWORD	; total count of EXPDEFs
+EXTERNDEF	TotalIMPDEFCount:DWORD	; total count of IMPDEFs
 ENDIF
 
 ;--- wlmemory.asm

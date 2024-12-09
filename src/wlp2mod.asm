@@ -94,6 +94,8 @@ IsNotRelocatable	DB	?	; flags not relocatable segment
 IsUnresSymbol	DB	?	; flags unresolved symbol
 OS2ModuleFlag	DB	?	; flags os/2 special flagged module
 
+	align 2
+
 BlockCount	DW	?		; LIDATA block count
 ClipperFixupCount	DW	?	; current clipper code fixup count
 CurrentRelocOffset	DW	?	; current LIDATA relocation offset for relocation entry
@@ -235,6 +237,7 @@ EntrySegmentValue	DD	0	; program entry segment value
 FirstRelocEntryBlkPtr	DW	0	; first allocated relocation entry block pointer
 HighestOffsetWritten	DD	0	; highest address offset written
 IsEntryPoint	DB	0	; nonzero if program has entry point
+	align 2
 LastLEDATASegIndex	DW	0	; last parsed segment index for LEDATA/LIDATA object record
 LastRelocEntryBlkPtr	DW	0	; last allocated relocation entry block pointer
 Pass2ModuleCount	DW	0	; pass 2 module counter
@@ -338,7 +341,7 @@ objloop:
 
 ; set CurrentFileName buffer
 	lgs	bx,fs:[IOBuffHeaderStruc.ibhsFileNamePtr]	; gs:bx -> current file name
-	mov	di,OFFSET DGROUP:CurrentFileName
+	mov	di,OFFSET CurrentFileName
 
 objnameloop:
 	mov	al,gs:[bx]		; get file name char
@@ -406,18 +409,18 @@ Process2OBJRecord	PROC
 	push	fs			; save -> current read position
 	push	si
 	push	cx			; save record length
-	mov	di,OFFSET DGROUP:OBJRecTable	; es:di -> lookup table for object record types
-	mov	cx,ds:[di-2]	; get number of entries in table
+	mov	di,OFFSET OBJRecTable	; es:di -> lookup table for object record types
+	mov	cx,[di-2]	; get number of entries in table
 	repne	scasb
 	jne	internal3		; record not found in table, internal error
 
 	dec	di				; di -> matching entry
-	sub	di,OFFSET DGROUP:OBJRecTable	; di == object record type offset
+	sub	di,OFFSET OBJRecTable	; di == object record type offset
 	add	di,di			; word offset
-	add	di,OFFSET DGROUP:Pass2OBJRecVector	; di -> entry in OBJRecVector table
+	add	di,OFFSET Pass2OBJRecVector	; di -> entry in OBJRecVector table
 	pop	cx				; restore object record length to cx
 	push	cx			; save back for later use
-	call	word ptr ds:[di]		; transfer to appropriate routine
+	call	word ptr [di]		; transfer to appropriate routine
 	pop	cx				; restore object record length to cx
 	pop	si				; restore old current read position
 	pop	fs
@@ -594,10 +597,10 @@ p2ffixloop:
 	jne	p2fframe		; frame thread
 	and	al,TARGMETHOFTHREADDATA	; get target method (2 bits only)
 	shr	al,2			; convert to relative zero
-	mov	[bx+DGROUP:ThreadTARGETMethod],al
+	mov	[bx+ThreadTARGETMethod],al
 	call	ReadIndexDecCX	; get thread index
 	add	bx,bx			; convert to word offset
-	mov	[bx+OFFSET DGROUP:ThreadTARGETDatum],ax
+	mov	[bx+OFFSET ThreadTARGETDatum],ax
 	push	fs			; save fs -> record to stack
 	jmp	p2ffixloop
 
@@ -611,10 +614,10 @@ p2fcomdat:
 p2fframe:
 	and	al,METHODOFTHREADDATA	; get method
 	shr	al,2			; convert to relative zero
-	mov	[bx+DGROUP:ThreadFRAMEMethod],al
+	mov	[bx+ThreadFRAMEMethod],al
 	call	ReadIndexDecCX	; get thread datum index
 	add	bx,bx			; convert to word offset
-	mov	[bx+OFFSET DGROUP:ThreadFRAMEDatum],ax
+	mov	[bx+OFFSET ThreadFRAMEDatum],ax
 	push	fs			; save fs -> record to stack
 	jmp	p2ffixloop
 
@@ -667,10 +670,10 @@ p2f2:
 	shr	al,4			; convert to relative 0
 	mov	bl,al
 	xor	bh,bh
-	mov	al,[bx+DGROUP:ThreadFRAMEMethod]
+	mov	al,[bx+ThreadFRAMEMethod]
 	mov	FrameMethod,al	; save frame method as current
 	add	bx,bx			; convert to word offset
-	mov	ax,[bx+OFFSET DGROUP:ThreadFRAMEDatum]
+	mov	ax,[bx+OFFSET ThreadFRAMEDatum]
 	mov	FrameDatum,ax	; save frame datum index as current
 	jmp	p2f3
 
@@ -687,10 +690,10 @@ p2f3:
 	and	al,TARGTFIELDOFFIXDATA	; get targt field value in al
 	mov	bl,al
 	xor	bh,bh
-	mov	al,[bx+DGROUP:ThreadTARGETMethod]
+	mov	al,[bx+ThreadTARGETMethod]
 	mov	TargetMethod,al	; save target method as current
 	add	bx,bx			; convert to word offset
-	mov	ax,[bx+OFFSET DGROUP:ThreadTARGETDatum]
+	mov	ax,[bx+OFFSET ThreadTARGETDatum]
 	mov	TargetDatum,ax	; save target datum index as current
 	jmp	p2f4
 
@@ -790,7 +793,7 @@ p2floc2:
 	jmp	p2ffixloop
 
 p2fnormbx2:
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 	jmp	p2floc2
 
@@ -832,7 +835,7 @@ p2frelproc:
 	add	dx,DataRecordOffset	; dx -> relocation fixup location relative L?DATA record
 	mov	bx,DataFixupCount
 	add	bx,bx			; word per entry
-	mov	ds:[bx+WORD PTR RelocationTable],dx	; save relocation entry offset relative L?DATA record
+	mov	[bx+RelocationTable],dx	; save relocation entry offset relative L?DATA record
 	inc	DataFixupCount	; bump count of data fixups
 	jmp	p2ffixloop
 
@@ -843,7 +846,7 @@ p2fseg32:
 	inc	bx				; move to next location to fix up
 	cmp	bx,SIZEIOBUFFBLK	; see if bx is past wrap point
 	jb	p2fseg32b		; no
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 
 p2fseg32b:
@@ -851,7 +854,7 @@ p2fseg32b:
 	jmp	p2frelproc
 
 p2fnormbx3:
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 	jmp	p2fseg2
 
@@ -872,12 +875,12 @@ p2fptr2:
 	inc	bx				; move to segment portion of fixup
 	cmp	bx,SIZEIOBUFFBLK	; see if bx is past wrap point
 	jb	p2fsegshared	; no
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 	jmp	p2fsegshared
 
 p2fnormbx4:
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 	jmp	p2fptr2
 
@@ -890,7 +893,7 @@ p2fchklow:
 	jmp	p2ffixloop
 
 p2fnormbx1:
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 	jmp	p2fres2
 
@@ -978,7 +981,7 @@ p2fnotfirst:
 	cmp	si,SIZEIOBUFFBLK	; see if past buffer
 	jb	p2fnot2			; no
 	sub	si,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 
 p2fnot2:
 	mov	fs:[si],al		; store initial segment base value low byte
@@ -986,7 +989,7 @@ p2fnot2:
 	cmp	si,SIZEIOBUFFBLK	; see if past buffer
 	jb	p2fnot3			; no
 	sub	si,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 
 p2fnot3:
 	mov	fs:[si],ah		; store initial segment base value low byte
@@ -1018,7 +1021,7 @@ ENDIF
 	add	edx,eax			; add to offset adjustment
 
 	shr	ebx,4			; convert seg offset to paras
-	mov	si,OFFSET DGROUP:RelocationTable
+	mov	si,OFFSET RelocationTable
 	mov	cx,DataFixupCount	; count of relocation entries
 
 	cmp	LastDataFlag,LIDATA
@@ -1300,7 +1303,7 @@ GetTargetAddress	PROC
 	mov	bl,TargetMethod
 	xor	bh,bh
 	add	bx,bx			; convert to word offset
-	jmp	[bx+OFFSET DGROUP:TargetJumpTable]	; transfer to proper handling code for method
+	jmp	[bx+OFFSET TargetJumpTable]	; transfer to proper handling code for method
 
 ; invalid target method (3,7)
 poor10::
@@ -1479,7 +1482,7 @@ gfa2:
 	dec	ax
 	xor	bh,bh
 	add	bx,bx			; convert to frame method word offset
-	jmp	[bx+OFFSET DGROUP:FrameJumpTable]	; transfer to proper handling code for method
+	jmp	[bx+OFFSET FrameJumpTable]	; transfer to proper handling code for method
 
 ; invalid frame method (3,6,7)
 poor11::
@@ -1677,10 +1680,10 @@ p2f3fixloop:
 	jne	p2f3frame		; frame thread
 	and	al,TARGMETHOFTHREADDATA	; get target method (2 bits only)
 	shr	al,2			; convert to relative zero
-	mov	[bx+DGROUP:ThreadTARGETMethod],al
+	mov	[bx+ThreadTARGETMethod],al
 	call	ReadIndexDecCX	; get thread index
 	add	bx,bx			; convert to word offset
-	mov	[bx+OFFSET DGROUP:ThreadTARGETDatum],ax
+	mov	[bx+OFFSET ThreadTARGETDatum],ax
 	push	fs			; save fs -> record to stack
 	jmp	p2f3fixloop
 
@@ -1694,10 +1697,10 @@ p2f3comdat:
 p2f3frame:
 	and	al,METHODOFTHREADDATA	; get method
 	shr	al,2			; convert to relative zero
-	mov	[bx+DGROUP:ThreadFRAMEMethod],al
+	mov	[bx+ThreadFRAMEMethod],al
 	call	ReadIndexDecCX	; get thread datum index
 	add	bx,bx			; convert to word offset
-	mov	[bx+OFFSET DGROUP:ThreadFRAMEDatum],ax
+	mov	[bx+OFFSET ThreadFRAMEDatum],ax
 	push	fs			; save fs -> record to stack
 	jmp	p2f3fixloop
 
@@ -1744,10 +1747,10 @@ p2f32:
 	shr	al,4			; convert to relative 0
 	mov	bl,al
 	xor	bh,bh
-	mov	al,[bx+DGROUP:ThreadFRAMEMethod]
+	mov	al,[bx+ThreadFRAMEMethod]
 	mov	FrameMethod,al	; save frame method as current
 	add	bx,bx			; convert to word offset
-	mov	ax,[bx+OFFSET DGROUP:ThreadFRAMEDatum]
+	mov	ax,[bx+OFFSET ThreadFRAMEDatum]
 	mov	FrameDatum,ax	; save frame datum index as current
 	jmp	p2f33
 
@@ -1764,10 +1767,10 @@ p2f33:
 	and	al,TARGTFIELDOFFIXDATA	; get targt field value in al
 	mov	bl,al
 	xor	bh,bh
-	mov	al,[bx+DGROUP:ThreadTARGETMethod]
+	mov	al,[bx+ThreadTARGETMethod]
 	mov	TargetMethod,al	; save target method as current
 	add	bx,bx			; convert to word offset
-	mov	ax,[bx+OFFSET DGROUP:ThreadTARGETDatum]
+	mov	ax,[bx+OFFSET ThreadTARGETDatum]
 	mov	TargetDatum,ax	; save target datum index as current
 	jmp	p2f34
 
@@ -1887,7 +1890,7 @@ ENDIF
 	jmp	p2f3fixloop
 
 p2f3normbx2:
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 	jmp	p2f3loc2
 
@@ -1936,7 +1939,7 @@ p2f3relproc:
 	add	dx,DataRecordOffset	; dx -> relocation fixup location relative L?DATA record
 	mov	bx,DataFixupCount
 	add	bx,bx			; word per entry
-	mov	ds:[bx+WORD PTR RelocationTable],dx	; save relocation entry offset relative L?DATA record
+	mov	[bx+RelocationTable],dx	; save relocation entry offset relative L?DATA record
 	inc	DataFixupCount	; bump count of data fixups
 	jmp	p2f3fixloop
 
@@ -1947,7 +1950,7 @@ p2f3seg32:
 	inc	bx				; move to next location to fix up
 	cmp	bx,SIZEIOBUFFBLK	; see if bx is past wrap point
 	jb	p2f3seg32b		; no
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 
 p2f3seg32b:
@@ -1960,7 +1963,7 @@ p2f3chkphar:
 	jmp	p2f3loc32fix	; phar lap module, process loc 5 as 32-bit offset
 
 p2f3normbx3:
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 	jmp	p2f3seg2
 
@@ -1983,12 +1986,12 @@ p2f3ptr2:
 	inc	bx				; move to segment portion of fixup
 	cmp	bx,SIZEIOBUFFBLK	; see if bx is past wrap point
 	jb	p2f3segshared	; no
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 	jmp	p2f3segshared
 
 p2f3normbx4:
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 	jmp	p2f3ptr2
 
@@ -2008,7 +2011,7 @@ p2f3loc32fix:
 	inc	bx				; move to next location to fix up
 	cmp	bx,SIZEIOBUFFBLK	; see if bx is past wrap point
 	jb	p2f3loc32a
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 
 p2f3loc32a:
@@ -2017,7 +2020,7 @@ p2f3loc32a:
 	inc	bx				; move to next location to fix up
 	cmp	bx,SIZEIOBUFFBLK	; see if bx is past wrap point
 	jb	p2f3loc32b
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 
 ; dx holds high word
@@ -2027,7 +2030,7 @@ p2f3loc32b:
 	inc	bx				; move to next location to fix up
 	cmp	bx,SIZEIOBUFFBLK	; see if bx is past wrap point
 	jb	p2f3loc32c
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 
 p2f3loc32c:
@@ -2065,7 +2068,7 @@ p2f348bit:
 	inc	bx				; move to next location to fix up
 	cmp	bx,SIZEIOBUFFBLK	; see if bx is past wrap point
 	jb	p2f3ptr48a
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 
 p2f3ptr48a:
@@ -2074,7 +2077,7 @@ p2f3ptr48a:
 	inc	bx				; move to next location to fix up
 	cmp	bx,SIZEIOBUFFBLK	; see if bx is past wrap point
 	jb	p2f3ptr48b
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 
 ; dx holds high word
@@ -2084,7 +2087,7 @@ p2f3ptr48b:
 	inc	bx				; move to next location to fix up
 	cmp	bx,SIZEIOBUFFBLK	; see if bx is past wrap point
 	jb	p2f3ptr48c
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 
 p2f3ptr48c:
@@ -2099,7 +2102,7 @@ ELSE
 	jb	p2f3chk48rel
 ENDIF
 
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 
 IFNDEF WATCOM_ASM
@@ -2115,7 +2118,7 @@ p2f3chk48rel:
 	push	bx			; save critical register
 	mov	bx,DataFixupCount
 	add	bx,bx			; word per entry
-	mov	ds:[bx+WORD PTR RelocationTable],dx	; save relocation entry offset relative L?DATA record
+	mov	[bx+RelocationTable],dx	; save relocation entry offset relative L?DATA record
 	inc	DataFixupCount	; bump count of data fixups
 	pop	bx				; restore critical register
 	mov	dx,4			; adjustment for fixup location to segment portion
@@ -2142,7 +2145,7 @@ ENDIF
 	jmp	p2f3fixloop
 
 p2f3normbx1:
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	bx,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; adjust past system variables
 	jmp	p2f3res2
 
@@ -2263,7 +2266,7 @@ END COMMENT !
 	add	edx,eax			; add to offset adjustment
 
 	shr	ebx,4			; convert seg offset to paras
-	mov	si,OFFSET DGROUP:RelocationTable
+	mov	si,OFFSET RelocationTable
 	mov	cx,DataFixupCount	; count of relocation entries
 
 	cmp	LastDataFlag,LIDATA32
@@ -3031,10 +3034,10 @@ p2m2:
 	shr	al,4			; convert to relative 0
 	mov	bl,al
 	xor	bh,bh
-	mov	al,[bx+DGROUP:ThreadFRAMEMethod]
+	mov	al,[bx+ThreadFRAMEMethod]
 	mov	FrameMethod,al	; save frame method as current
 	add	bx,bx			; convert to word offset
-	mov	ax,[bx+OFFSET DGROUP:ThreadFRAMEDatum]
+	mov	ax,[bx+OFFSET ThreadFRAMEDatum]
 	mov	FrameDatum,ax	; save frame datum index as current
 	jmp	p2m3
 
@@ -3051,10 +3054,10 @@ p2m3:
 	and	al,TARGTFIELDOFFIXDATA	; get targt field value in al
 	mov	bl,al
 	xor	bh,bh
-	mov	al,[bx+DGROUP:ThreadTARGETMethod]
+	mov	al,[bx+ThreadTARGETMethod]
 	mov	TargetMethod,al	; save target method as current
 	add	bx,bx			; convert to word offset
-	mov	ax,[bx+OFFSET DGROUP:ThreadTARGETDatum]
+	mov	ax,[bx+OFFSET ThreadTARGETDatum]
 	mov	TargetDatum,ax	; save target datum index as current
 	jmp	p2m4
 
@@ -3146,10 +3149,10 @@ p2m32:
 	shr	al,4			; convert to relative 0
 	mov	bl,al
 	xor	bh,bh
-	mov	al,[bx+DGROUP:ThreadFRAMEMethod]
+	mov	al,[bx+ThreadFRAMEMethod]
 	mov	FrameMethod,al	; save frame method as current
 	add	bx,bx			; convert to word offset
-	mov	ax,[bx+OFFSET DGROUP:ThreadFRAMEDatum]
+	mov	ax,[bx+OFFSET ThreadFRAMEDatum]
 	mov	FrameDatum,ax	; save frame datum index as current
 	jmp	p2m33
 
@@ -3166,10 +3169,10 @@ p2m33:
 	and	al,TARGTFIELDOFFIXDATA	; get targt field value in al
 	mov	bl,al
 	xor	bh,bh
-	mov	al,[bx+DGROUP:ThreadTARGETMethod]
+	mov	al,[bx+ThreadTARGETMethod]
 	mov	TargetMethod,al	; save target method as current
 	add	bx,bx			; convert to word offset
-	mov	ax,[bx+OFFSET DGROUP:ThreadTARGETDatum]
+	mov	ax,[bx+OFFSET ThreadTARGETDatum]
 	mov	TargetDatum,ax	; save target datum index as current
 	jmp	p2m34
 

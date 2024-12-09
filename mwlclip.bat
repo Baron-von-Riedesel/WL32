@@ -23,5 +23,6 @@ jwasm -nologo                                     -FoBldClip\ src\wlterm.asm
 jwasm -nologo                                     -FoBldClip\ src\wlerror.asm
 jwasm -nologo                                     -FoBldClip\ src\patchrel.asm
 cd BldClip                                        
-jwlink format dos f {@..\wl32clip.rsp} n wl32.exe op q,m
+wl32.exe /ex /m /cs @..\wl32clip.rsp
+rem jwlink format dos f {@..\wl32clij.rsp} n wl32.exe op q,m
 cd ..

@@ -121,6 +121,8 @@ RSPFileString	DB	MAXRSPFILENESTLEVEL DUP (256 DUP (?))	; response files line buf
 WorkingBuffer	DB	256 DUP (?)	; buffer for file names or commands being parsed
 WordBuffer	DB	11	DUP (?)	; temporary buffer for parsing word value
 
+	align 2
+
 CommandLinePos	DW	?	; command line buffer position
 CurrentRSPFileNamePtr	DW	?	; pointer to current response file name
 DestinationStart	DW	?	; destination string start offset
@@ -152,103 +154,113 @@ CONST	SEGMENT WORD PUBLIC USE16 'DATA'
 ; sixth dword is [d]word parameter high boundary
 ; seventh dword if extra processing flag
 OptionList	=	$		; start of built-in options to check
+; /32 option
+	DW	OFFSET Seg32Text,OFFSET IsSeg32Option,0
+	DW	NOPARAMETER
+	DD	0,0,0
 ; /3p option
-	DW	OFFSET DGROUP:ThreePText,OFFSET DGROUP:IsThreePOption,0
+	DW	OFFSET ThreePText,OFFSET IsThreePOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 ; /b option
-	DW	OFFSET DGROUP:ExitBeepText,OFFSET DGROUP:IsExitBeepOption,0
+	DW	OFFSET ExitBeepText,OFFSET IsExitBeepOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 IFDEF WATCOM_ASM
 ; /cs option
-	DW	OFFSET DGROUP:CaseSensitiveText,OFFSET DGROUP:IsCaseSensitiveOption,0
+	DW	OFFSET CaseSensitiveText,OFFSET IsCaseSensitiveOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 ; /ds option
-	DW	OFFSET DGROUP:DStoSSText,OFFSET DGROUP:IsDStoSSOption,0
+	DW	OFFSET DStoSSText,OFFSET IsDStoSSOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 ENDIF
 ; /ex option
-	DW	OFFSET DGROUP:CreateEXEText,OFFSET DGROUP:IsCreateEXEOption,0
+	DW	OFFSET CreateEXEText,OFFSET IsCreateEXEOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 IFDEF WATCOM_ASM
 ; /f option
-	DW	OFFSET DGROUP:FlatText,OFFSET DGROUP:IsFlatOption,0
+	DW	OFFSET FlatText,OFFSET IsFlatOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 ENDIF
 ; /fl option
-	DW	OFFSET DGROUP:FastLoadText,OFFSET DGROUP:IsFastLoadOption,0
+	DW	OFFSET FastLoadText,OFFSET IsFastLoadOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 IFDEF CLIPPER
 ; /fx option
-	DW	OFFSET DGROUP:SpecialFixupText,OFFSET DGROUP:IsSpecialFixupOption,0
+	DW	OFFSET SpecialFixupText,OFFSET IsSpecialFixupOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 ENDIF
 ; /i option
-	DW	OFFSET DGROUP:LinkInfoText,OFFSET DGROUP:IsLinkInfoOption,0
+	DW	OFFSET LinkInfoText,OFFSET IsLinkInfoOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 ; /il option
-	DW	OFFSET DGROUP:LinkInfoLimitText,OFFSET DGROUP:IsLinkInfoLimitOption,0
+	DW	OFFSET LinkInfoLimitText,OFFSET IsLinkInfoLimitOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 ; /lc:<name> option
-	DW	OFFSET DGROUP:LinkConfigText,OFFSET DGROUP:IsLinkConfigOption,OFFSET DGROUP:LinkConfigFileName
+	DW	OFFSET LinkConfigText,OFFSET IsLinkConfigOption,OFFSET LinkConfigFileName
 	DW	STRINGPARAMETER
 	DD	0,0,LINKCONFIGOPTIONSET
 ; /ls option
-	DW	OFFSET DGROUP:LIBSearchText,OFFSET DGROUP:IsLibSearchOption,0
+	DW	OFFSET LIBSearchText,OFFSET IsLibSearchOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 ; /m option
-	DW	OFFSET DGROUP:MAPFileText,OFFSET DGROUP:IsMAPOption,0
+	DW	OFFSET MAPFileText,OFFSET IsMAPOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 ; /nc option
-	DW	OFFSET DGROUP:NoCopyrightText,OFFSET DGROUP:IsNoCopyrightOption,0
+	DW	OFFSET NoCopyrightText,OFFSET IsNoCopyrightOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 ; /nd option
-	DW	OFFSET DGROUP:NoDefaultLIBText,OFFSET DGROUP:IsNoDefaultLIBOption,0
+	DW	OFFSET NoDefaultLIBText,OFFSET IsNoDefaultLIBOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 ; /nwd option
-	DW	OFFSET DGROUP:NoWarnDupeText,OFFSET DGROUP:IsNoWarnDupeOption,0
+	DW	OFFSET NoWarnDupeText,OFFSET IsNoWarnDupeOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 ; /nwdl option
-	DW	OFFSET DGROUP:NoWarnLIBDupeText,OFFSET DGROUP:IsNoWarnLIBDupeOption,0
+	DW	OFFSET NoWarnLIBDupeText,OFFSET IsNoWarnLIBDupeOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 ; /pd option
-	DW	OFFSET DGROUP:ParseDisplayText,OFFSET DGROUP:IsParseDisplayOption,0
+	DW	OFFSET ParseDisplayText,OFFSET IsParseDisplayOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
+if 1
+; /q option
+	DW	OFFSET NoLogoText,OFFSET IsNoLogoOption,0
+	DW	NOPARAMETER
+	DD	0,0,0
+endif
 ; /st:<size> option
-	DW	OFFSET DGROUP:StackText,OFFSET DGROUP:IsStackOption,OFFSET DGROUP:StackValue
+	DW	OFFSET StackText,OFFSET IsStackOption,OFFSET StackValue
 	DW	DWORDPARAMETER OR GOBBLESPACEFLAG
 	DD	1,4*(16*65536)-1,0
 ; /sy option
-	DW	OFFSET DGROUP:SYMFileText,OFFSET DGROUP:IsSYMOption,0
+	DW	OFFSET SYMFileText,OFFSET IsSYMOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 ; /w1 option
-	DW	OFFSET DGROUP:WarnRetCode1Text,OFFSET DGROUP:IsWarnRetCode1Option,0
+	DW	OFFSET WarnRetCode1Text,OFFSET IsWarnRetCode1Option,0
 	DW	NOPARAMETER
 	DD	0,0,0
 ; /wu option
-	DW	OFFSET DGROUP:WarnUnknownText,OFFSET DGROUP:IsWarnUnknownOption,0
+	DW	OFFSET WarnUnknownText,OFFSET IsWarnUnknownOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 IFDEF WATCOM_ASM
 ; /zu option
-	DW	OFFSET DGROUP:ZeroUninitText,OFFSET DGROUP:IsZeroUninitOption,0
+	DW	OFFSET ZeroUninitText,OFFSET IsZeroUninitOption,0
 	DW	NOPARAMETER
 	DD	0,0,0
 ENDIF
@@ -256,6 +268,7 @@ ENDIF
 	DW	-1
 
 ; built-in link option text strings
+Seg32Text		DB	2,'32'
 ThreePText		DB	2,'3P'
 ExitBeepText	DB	1,'B'
 CreateEXEText	DB	2,'EX'
@@ -270,6 +283,7 @@ NoDefaultLIBText	DB	2,'ND'
 NoWarnDupeText	DB	3,'NWD'
 NoWarnLIBDupeText	DB	4,'NWLD'
 ParseDisplayText	DB	2,'PD'
+NoLogoText	DB	1,'Q'
 StackText	DB	3,'ST:'
 SYMFileText	DB	2,'SY'
 WarnRetCode1Text	DB	2,'W1'
@@ -295,6 +309,7 @@ CONST ENDS
 _DATA	SEGMENT WORD PUBLIC USE16 'DATA'
 
 ; globals
+IsSeg32Option	DB	0	; /32 option setting
 IsThreePOption	DB	0	; /3p option setting
 IsExitBeepOption	DB	0	; /b option setting
 IsCreateEXEOption	DB	0	; /ex option setting
@@ -313,12 +328,14 @@ IsNoDefaultLIBOption	DB	0	; /nd option setting
 IsNoWarnDupeOption	DB	0	; /nwd option setting
 IsNoWarnLIBDupeOption	DB	0	; /nwld option setting
 IsParseDisplayOption	DB	0	; /pd option setting
+IsNoLogoOption	DB	0	; /q option setting
 IsStackOption	DB	0	; /st option setting
 IsSYMOption	DB	0		; /sy option setting
 IsWarnRetCode1Option	DB	0	; /w1 option setting
 IsWarnUnknownOption	DB	0	; /wu option setting
 LIBAtFrontFlag	DB	0	; nonzero if placing library at front of library list
 OBJBecomesLIBFlag	DB	0	; nonzero if OBJ becomes library file due to ISLIB
+	align 2
 TotalLIBCount	DW	0	; total library file count
 TotalOBJCount	DW	0	; total object module count
 EXEFileName	DB	85 DUP (0)	; EXE file name
@@ -348,7 +365,7 @@ IsUserDefinedOptions	DB	0	; nonzero if user defined link options
 ParseMode	DB	0		; parse mode, 0==obj, 1==exe, 2==map, 3==lib
 RSPFileCommentChar	DB	'#'	; comment character in reponse file
 ParseTermChar	DB	0	; parse termination character
-
+	align 2
 RSPFileIgnoreChar	DB	16 DUP (0)	; characters to ignore in response file
 
 ParseLIBNameOff	DW	0	; offset to library file name storage within segment
@@ -418,7 +435,7 @@ ParseCommandLine	PROC
 pcltop:
 	push	ds
 	pop	es				; es -> wl32 data for duration of parse
-	mov	si,OFFSET DGROUP:CommandLineString
+	mov	si,OFFSET CommandLineString
 	mov	CommandLinePos,si
 
 ; parse loop, shut off continue parse mode flag
@@ -469,7 +486,7 @@ chkwhite:
 ; if char is '/' then parse as option
 	cmp	al,'/'			; see if start of option
 	jne	chkrsp			; no
-	cmp	BYTE PTR ds:[si],'/'	; peek at next char
+	cmp	BYTE PTR [si],'/'	; peek at next char
 	je	iscomment		; // is a comment line
 	call	ParseLinkOption
 	jmp	SHORT ParseLoopNoCont
@@ -513,7 +530,7 @@ iscomment:
 
 ; if char is <any ignore character> then ignore
 chkignore:
-	mov	di,OFFSET DGROUP:RSPFileIgnoreChar
+	mov	di,OFFSET RSPFileIgnoreChar
 	mov	cx,16			; number of possible ignore characters
 	repne	scasb
 	jne	chkterm			; not a ignore char
@@ -568,9 +585,9 @@ chkcom:
 	mov	dx,si
 	dec	dx				; dx -> start of unknown option/command
 	call	ScanToEOL	; scan to end of line
-	cmp	BYTE PTR ds:[si-2],CR	; see if need to null terminate line string
+	cmp	BYTE PTR [si-2],CR	; see if need to null terminate line string
 	jne	pclwarnchk		; no
-	mov	BYTE PTR ds:[si-2],0
+	mov	BYTE PTR [si-2],0
 
 pclwarnchk:
 	cmp	IsWarnUnknownOption,OFF	; see if warn on unknown option
@@ -663,7 +680,7 @@ ReadLoop:
 	mov	bx,RSPFileNestLevel
 	dec	bx				; make relative 0
 	add	bx,bx			; convert to word offset
-	mov	ds:[RSPFilePos+bx],si	; save updated buffer position
+	mov	[RSPFilePos+bx],si	; save updated buffer position
 	jmp	SHORT rcret
 
 readrsp:
@@ -698,14 +715,14 @@ ReadRSPFile	PROC
 	mov	cl,7
 	shl	dx,cl			; x128 (x256 offset since already word offset)
 	mov	CurrentRSPFileNamePtr,dx	; keep pointer to RSPFileName in case of error
-	add	CurrentRSPFileNamePtr,OFFSET DGROUP:RSPFileName
-	mov	si,OFFSET DGROUP:RSPFileString
+	add	CurrentRSPFileNamePtr,OFFSET RSPFileName
+	mov	si,OFFSET RSPFileString
 	add	si,dx			; si -> start of response file line buffer
-	mov	ds:[RSPFilePos+di],si
+	mov	[RSPFilePos+di],si
 
 	mov	dx,si			; ds:dx -> read buffer
 	mov	cx,255			; read 255 bytes of response file
-	mov	bx,ds:[RSPFileHandle+di]	; file handle
+	mov	bx,[RSPFileHandle+di]	; file handle
 	call	ReadFile	; read the file
 
 ; if short read (ax<255) then end of file reached, place zero terminator
@@ -727,7 +744,7 @@ ScanLoop:
 
 ScanDone:
 	mov	di,dx			; get LF offset
-	mov	BYTE PTR ds:[di+1],27	; write ESC past LF character
+	mov	BYTE PTR [di+1],27	; write ESC past LF character
 
 ;  file seek to character position after final CR/LF
 	sub	dx,si			; dx == relative offset in buffer
@@ -754,7 +771,7 @@ lineerr:
 ; read to end of response file
 ShortRead:
 	mov	bx,ax			; offset into buffer
-	mov	BYTE PTR ds:[si+bx],0	; null terminate after final character read
+	mov	BYTE PTR [si+bx],0	; null terminate after final character read
 	jmp	SHORT rrfret
 
 ReadRSPFile	ENDP
@@ -773,7 +790,7 @@ UpRSPNestLevel	PROC
 	mov	bx,RSPFileNestLevel
 	dec	bx				; make relative 0
 	add	bx,bx			; convert to word offset
-	mov	bx,ds:[RSPFileHandle+bx]	; file handle
+	mov	bx,[RSPFileHandle+bx]	; file handle
 	mov	ah,3eh			; close file
 	int	21h
 
@@ -788,13 +805,13 @@ UpRSPNestLevel	PROC
 	shl	ax,cl			; x256
 	pop	cx				; restore critical register
 	mov	CurrentRSPFileNamePtr,ax	; keep pointer to RSPFileName in case of error
-	add	CurrentRSPFileNamePtr,OFFSET DGROUP:RSPFileName
+	add	CurrentRSPFileNamePtr,OFFSET RSPFileName
 
 ; update si read pointer
 	mov	bx,RSPFileNestLevel
 	dec	bx				; make relative 0
 	add	bx,bx			; convert to word offset
-	mov	si,ds:[RSPFilePos+bx]
+	mov	si,[RSPFilePos+bx]
 	ret
 
 up2:
@@ -824,7 +841,7 @@ ParseRSPFile	PROC
 parse2:
 	mov	cl,8			; x256
 	shl	di,cl			; es:di -> response file name destination offset
-	add	di,OFFSET DGROUP:RSPFileName
+	add	di,OFFSET RSPFileName
 	call	GetFileNameString	; get file name string
 	jcxz	badname		; null file name
 
@@ -832,31 +849,17 @@ here99:
 	mov	dx,DestinationStart	; ds:dx -> file name
 	push	si			; save critical register
 	mov	bx,dx			; bx -> file name
-	mov	si,OFFSET DGROUP:LinkFileExtensionText
+	mov	si,OFFSET LinkFileExtensionText
 	call	CheckDefaultExtension	; check for extension, add default if required
 
 	call	CheckCurrentDirectory	; check if file exists
 	jnc	parseopen		; file found in current directory
 	mov	di,dx			; di -> filename
 
-IFDEF DEBUG
-	mov	bx,1
-	mov	cx,10
-	mov	ah,40h
-	int	21h
-ENDIF
-
-	mov	bx,OFFSET DGROUP:LIBEVarText	; bx -> environment variable to search for paths
+	mov	bx,OFFSET LIBEVarText	; bx -> environment variable to search for paths
 	push	dx			; save -> file name
 	call	SearchEVarDirectory	; search environment variable directories for file
 	pop	dx				; dx -> filename with path
-
-IFDEF DEBUG
-	mov	bx,1
-	mov	cx,19
-	mov	ah,40h
-	int	21h
-ENDIF
 
 parseopen:
 	pop	si				; restore critical register
@@ -865,16 +868,16 @@ parseopen:
 
 	mov	bx,RSPFileNestLevel	; next nest level relative 0
 	add	bx,bx			; convert to word offset
-	mov	ds:[RSPFileHandle+bx],ax	; save file handle
+	mov	[RSPFileHandle+bx],ax	; save file handle
 	inc	RSPFileNestLevel	; update response file nest level
 	call	ReadRSPFile	; read in the first response file line
 	ret
 
 ; null file name, error condition, list as bad option
 badname:
-	mov	dx,OFFSET DGROUP:DestinationStart	; dx -> destination start
+	mov	dx,OFFSET DestinationStart	; dx -> destination start
 	mov	bx,dx
-	mov	WORD PTR ds:[bx],'@'	; store '@' and null terminator at destination start
+	mov	WORD PTR [bx],'@'	; store '@' and null terminator at destination start
 	mov	al,BADOPTIONERRORCODE
 	call	LinkerErrorExit
 
@@ -895,7 +898,7 @@ GetFileNameString	PROC
 	mov	DestinationStart,di	; keep pointer to start of destination string in case of error
 
 GetNameLoop:
-	mov	al,ds:[si]		; peek at next file name char
+	mov	al,[si]		; peek at next file name char
 ;@@@	cmp	al,27			; see if need to read next char from response file
 ;@@@	je	getread			; ESC flags yes
 	cmp	al,' '			; check for whitespace, end of file condition
@@ -923,11 +926,11 @@ getread:
 
 ; check if ignore char, if so, don't store it or increment file name count
 getignchk:
-	mov	bx,OFFSET DGROUP:RSPFileIgnoreChar
+	mov	bx,OFFSET RSPFileIgnoreChar
 	mov	dl,16			; up to sixteen ignore chars
 
 IgnoreLoop:
-	cmp	al,ds:[bx]		; see if matches ignore char
+	cmp	al,[bx]		; see if matches ignore char
 	je	GetNameLoop		; yes
 	inc	bx				; bump to next ignore char
 	dec	dl
@@ -941,7 +944,7 @@ IgnoreLoop:
 ; too many characters in file name
 	mov	BYTE PTR es:[di],0	; null terminate file name
 	mov	al,2			; list error as DOS file not found
-	mov	bx,OFFSET DGROUP:DestinationStart	; bx -> file name
+	mov	bx,OFFSET DestinationStart	; bx -> file name
 	call	DOSErrorExit
 
 getexit:
@@ -961,7 +964,7 @@ GetFileNameString	ENDP
 ScanToEOL	PROC
 
 eolloop:
-	mov	al,ds:[si]		; get next char to be read
+	mov	al,[si]		; get next char to be read
 	or	al,al			; see if end of file
 	je	scanret			; yes
 	call	ReadChar	; get response file character
@@ -983,10 +986,10 @@ ScanToEOL	ENDP
 CloseAllRSPFiles	PROC
 	mov	cx,RSPFileNestLevel	; cx == number of files to close
 	jcxz	closeret	; no files to close
-	mov	di,OFFSET DGROUP:RSPFileHandle
+	mov	di,OFFSET RSPFileHandle
 
 CloseLoop:
-	mov	bx,ds:[di]
+	mov	bx,[di]
 	mov	ah,3eh			; close file
 	int	21h
 	add	di,2			; move to next handle to close
@@ -1009,7 +1012,7 @@ ParseLinkOption	PROC
 	push	si			; save si -> first char of option
 
 ; read option string to working buffer
-	mov	di,OFFSET DGROUP:WorkingBuffer
+	mov	di,OFFSET WorkingBuffer
 	stosb				; place leading '/' in buffer in case of error
 	xor	cx,cx			; init count of chars in option string
 
@@ -1045,7 +1048,7 @@ optread:
 
 ; bad option, listed in working buffer
 BadOptionWB::
-	mov	dx,OFFSET DGROUP:WorkingBuffer	; dx -> bad option string
+	mov	dx,OFFSET WorkingBuffer	; dx -> bad option string
 	mov	al,BADOPTIONERRORCODE
 	call	LinkerErrorExit
 
@@ -1054,7 +1057,7 @@ optend:
 	mov	BYTE PTR [di],0	; null terminate the option string
 
 ; check for built-in (standard '/') link options first
-	mov	bx,OFFSET DGROUP:OptionList	; es:di -> link options
+	mov	bx,OFFSET OptionList	; es:di -> link options
 
 optmainloop:
 	mov	si,[bx]			; ds:si -> option text string prefixed by length byte
@@ -1062,7 +1065,7 @@ optmainloop:
 	je	chkudf			; not a standard option, check user-defined options
 
 	lodsb				; al holds length of text string
-	mov	di,OFFSET DGROUP:WorkingBuffer+1	; es:di -> read-in option string (past '/')
+	mov	di,OFFSET WorkingBuffer+1	; es:di -> read-in option string (past '/')
 	mov	cl,al
 	xor	ch,ch			; zero high byte of length word
 
@@ -1125,11 +1128,11 @@ ParseLinkOption	ENDP
 ; destroys ax,cx,dx,di
 
 SetLinkOption	PROC
-	mov	di,ds:[bx+OPTLISTOFFOPTPTR]	; ds:di -> option
-	test	WORD PTR ds:[bx+OPTLISTOFFARGFLAGS],IGNOREIFONFLAG	; see if ignore parameters since already processed
+	mov	di,[bx+OPTLISTOFFOPTPTR]	; ds:di -> option
+	test	WORD PTR [bx+OPTLISTOFFARGFLAGS],IGNOREIFONFLAG	; see if ignore parameters since already processed
 	jne	setret			; yes, ignore this option
-	mov	BYTE PTR ds:[di],ON	; turn on option
-	test	WORD PTR ds:[bx+OPTLISTOFFARGFLAGS],ANYPARAMETER	; see if any parameters to option
+	mov	BYTE PTR [di],ON	; turn on option
+	test	WORD PTR [bx+OPTLISTOFFARGFLAGS],ANYPARAMETER	; see if any parameters to option
 	je	setret			; no parameters
 
 	call	GetOptionParameter	; get option parameter
@@ -1157,14 +1160,14 @@ SetLinkOption	ENDP
 
 GetOptionParameter	PROC
 	xor	cx,cx			; init count of chars in option string
-	test	WORD PTR ds:[bx+OPTLISTOFFARGFLAGS],STRINGPARAMETER	; see if string parameter
+	test	WORD PTR [bx+OPTLISTOFFARGFLAGS],STRINGPARAMETER	; see if string parameter
 	jne	gostring		; yes
-	mov	di,OFFSET DGROUP:WordBuffer	; use temporary buffer to hold word value before processing
-	test	WORD PTR ds:[bx+OPTLISTOFFARGFLAGS],GOBBLESPACEFLAG	; see if gobble space/tab char
+	mov	di,OFFSET WordBuffer	; use temporary buffer to hold word value before processing
+	test	WORD PTR [bx+OPTLISTOFFARGFLAGS],GOBBLESPACEFLAG	; see if gobble space/tab char
 	je	GetParamLoop	; no
 
 gobloop:
-	mov	al,ds:[si]		; peek at next option char
+	mov	al,[si]		; peek at next option char
 	cmp	al,' '			; see if nonwhitespace
 	ja	GetParamLoop	; yes
 	je	gogobble		; space char, gobble it
@@ -1177,10 +1180,10 @@ gogobble:
 
 ; read option string to appropriate buffer
 gostring:
-	mov	di,ds:[bx+OPTLISTOFFARGPTR]	; di -> parameter storage
+	mov	di,[bx+OPTLISTOFFARGPTR]	; di -> parameter storage
 
 GetParamLoop:
-	mov	al,ds:[si]		; peek at next option char
+	mov	al,[si]		; peek at next option char
 ;@@@	cmp	al,27			; see if need to read next char from response file
 ;@@@	je	paramread		; ESC flags yes
 	cmp	al,' '			; check for whitespace, end of file condition
@@ -1200,29 +1203,29 @@ paramread:
 	call	ReadChar	; get response file char
 	stosb				; save the char
 	inc	cx				; bump count of chars in option string
-	test	WORD PTR ds:[bx+OPTLISTOFFARGFLAGS],STRINGPARAMETER	; see if string parameter
+	test	WORD PTR [bx+OPTLISTOFFARGFLAGS],STRINGPARAMETER	; see if string parameter
 	jne	strchk			; yes
 
 ; word value parameter
 	cmp	cl,MAXDWORDPARAMLEN	; see if maximum parameter length exceeded
 	jbe	GetParamLoop	; no
 
-	mov	BYTE PTR ds:[di],0	; null terminate parameter
+	mov	BYTE PTR [di],0	; null terminate parameter
 
 badval:
-	mov	si,OFFSET DGROUP:WordBuffer	; si -> parameter for error
+	mov	si,OFFSET WordBuffer	; si -> parameter for error
 	jmp	SHORT tobowb	; bad option
 
 strchk:
 	cmp	cl,MAXSTRINGPARAMLEN	; see if maximum parameter length exceeded
 	jbe	GetParamLoop	; no
-	mov	BYTE PTR ds:[di],0	; null terminate parameter
-	mov	si,ds:[bx+OPTLISTOFFARGPTR]	; si -> parameter
+	mov	BYTE PTR [di],0	; null terminate parameter
+	mov	si,[bx+OPTLISTOFFARGPTR]	; si -> parameter
 
 ; transfer bad option parameters into working buffer
 ; si -> parameter
 tobowb:
-	mov	di,OFFSET DGROUP:WorkingBuffer
+	mov	di,OFFSET WorkingBuffer
 	xor	al,al
 	mov	cx,255			; null terminator known to be within 255 chars
 	repne	scasb		; di -> char after null terminator
@@ -1230,29 +1233,29 @@ tobowb:
 
 errloop:
 	movsb				; transfer parameter char
-	cmp	di,OFFSET DGROUP:WorkingBuffer+126	; see if enough room for another parameter char
+	cmp	di,OFFSET WorkingBuffer+126	; see if enough room for another parameter char
 	jb	errloop			; yes
 	jmp	NEAR PTR BadOptionWB	; no, show bad option feedback
 
 paramend:
-	mov	BYTE PTR ds:[di],0	; null terminate string
+	mov	BYTE PTR [di],0	; null terminate string
 	jcxz	badval		; invalid null length option
-	test	WORD PTR ds:[bx+OPTLISTOFFARGFLAGS],STRINGPARAMETER	; see if string parameter
+	test	WORD PTR [bx+OPTLISTOFFARGFLAGS],STRINGPARAMETER	; see if string parameter
 	jne	goextra			; yes
 
 ; process dword value, check for out of boundary limits
 	xor	eax,eax			; init value held in eax
-	mov	di,OFFSET DGROUP:WordBuffer	; di -> word value string buffer
+	mov	di,OFFSET WordBuffer	; di -> word value string buffer
 
 eatloop:
-	cmp	BYTE PTR ds:[di],' '	; eat prepended space
+	cmp	BYTE PTR [di],' '	; eat prepended space
 	jne	dwordloop		; not a space value
 	inc	di				; move to next parameter slot
 	jmp	SHORT eatloop
 
 dwordloop:
 	xor	edx,edx			; zero high bytes
-	mov	dl,ds:[di]		; get char value
+	mov	dl,[di]		; get char value
 	cmp	dl,'0'			; must be numeric
 	jb	badval
 	cmp	dl,'9'			; must be numeric
@@ -1260,7 +1263,7 @@ dwordloop:
 	and	dl,0fh			; strip ASCII value
 	add	eax,edx			; add to previous word value
 	jc	badval			; overflow, value too large
-	cmp	BYTE PTR ds:[di+1],0	; see if at one's digit
+	cmp	BYTE PTR [di+1],0	; see if at one's digit
 	je	chkbound		; yes, check boundary of value
 	mov	edx,10
 	mul	edx				; shift value by 1 digit (*10)
@@ -1271,17 +1274,17 @@ dwordloop:
 
 ; check boundary of dword value in eax
 chkbound:
-	cmp	eax,ds:[bx+OPTLISTOFFPARAMLOW]	; compare value to low boundary
+	cmp	eax,[bx+OPTLISTOFFPARAMLOW]	; compare value to low boundary
 	jb	badval			; out of bounds
-	cmp	eax,ds:[bx+OPTLISTOFFPARAMHIGH]	; compare value to high boundary
+	cmp	eax,[bx+OPTLISTOFFPARAMHIGH]	; compare value to high boundary
 	ja	badval			; out of bounds
 
 ; save dword value to proper variable
-	mov	di,ds:[bx+OPTLISTOFFARGPTR]	; di -> parameter value variable
-	mov	ds:[di],eax
+	mov	di,[bx+OPTLISTOFFARGPTR]	; di -> parameter value variable
+	mov	[di],eax
 
 goextra:
-	mov	ax,ds:[bx+OPTLISTOFFEXTRAFLAG]	; get extra processing flags in ax for return
+	mov	ax,[bx+OPTLISTOFFEXTRAFLAG]	; get extra processing flags in ax for return
 	ret
 GetOptionParameter	ENDP
 
@@ -1296,7 +1299,7 @@ GetOptionParameter	ENDP
 ; destroys ax,bx,cx,dx,di
 
 SaveOBJLIBFileName	PROC
-	mov	di,OFFSET DGROUP:WorkingBuffer	; di -> destination
+	mov	di,OFFSET WorkingBuffer	; di -> destination
 
 ; force name to all caps
 	cmp	al,'a'			; check lower bounds
@@ -1319,7 +1322,7 @@ solsave:
 	jne	solff			; yes
 
 ; cx holds file name char count from GetFileNameString
-	mov	di,OFFSET DGROUP:WorkingBuffer	; di -> destination
+	mov	di,OFFSET WorkingBuffer	; di -> destination
 	mov	al,':'
 
 solloop:
@@ -1327,7 +1330,7 @@ solloop:
 	repne	scasb		; look for ':'
 	jne	sol2			; not found
 	mov	bx,di
-	sub	bx,OFFSET DGROUP:WorkingBuffer
+	sub	bx,OFFSET WorkingBuffer
 	cmp	bl,2
 	je	solloop			; ':' in drive position, keep checking name
 	cmp	bl,3
@@ -1392,8 +1395,8 @@ sollib:
 	je	solfindlib		; no
 
 ; adding default library, don't do it if already existent
-	mov	si,OFFSET DGROUP:LIBExtensionText
-	mov	bx,OFFSET DGROUP:WorkingBuffer
+	mov	si,OFFSET LIBExtensionText
+	mov	bx,OFFSET WorkingBuffer
 	call	CheckDefaultExtension	; check for extension, add default if required
 
 	cmp	TotalLIBCount,0	; see if any previous libraries
@@ -1405,7 +1408,7 @@ sollib:
 	mov	di,dx			; es:di -> library file name storage
 
 soldefreset:
-	mov	si,OFFSET DGROUP:WorkingBuffer	; si -> default library file name
+	mov	si,OFFSET WorkingBuffer	; si -> default library file name
 
 soldefloop:
 	lodsb
@@ -1432,7 +1435,7 @@ internal1:
 soldefmatch:
 	cmp	BYTE PTR es:[di],0	; see if stored library at null terminator as well
 	jne	soldefreset		; no, not a match
-	sub	si,OFFSET DGROUP:WorkingBuffer	; si holds chars to back up
+	sub	si,OFFSET WorkingBuffer	; si holds chars to back up
 	sub	si,1			; adjust back for final lodsb si increment
 	sub	di,si
 	jne	solnotfirst		; not the first name
@@ -1572,7 +1575,7 @@ solflagoff:
 	mov	LIBAtFrontFlag,0	; reset library placed at front flag
 
 solnametran:
-	mov	si,OFFSET DGROUP:WorkingBuffer
+	mov	si,OFFSET WorkingBuffer
 
 ; es:di -> string destination
 ; ds:si -> string source
@@ -1597,7 +1600,7 @@ SaveOBJLIBFileName	ENDP
 ; destroys ax,bx,cx,dx,di
 
 SaveEXEFileName	PROC
-	mov	di,OFFSET DGROUP:EXEFileName	; di -> destination
+	mov	di,OFFSET EXEFileName	; di -> destination
 
 ; force name to all caps
 	cmp	al,'a'			; check lower bounds
@@ -1609,13 +1612,13 @@ SaveEXEFileName	PROC
 sefsave:
 	stosb				; save first char of file name
 	call	GetFileNameString	; non-null name by definition, no null check needed
-	mov	bx,OFFSET DGROUP:EXEFileName	; di -> file name
+	mov	bx,OFFSET EXEFileName	; di -> file name
 	call	CheckExtension	; see if extension was given for file
 	jnc	sexret			; extension exists
 
 ; add '.EXE' extension, bx -> '.' position
-	mov	WORD PTR ds:[bx],'.'+('E'*256)
-	mov	WORD PTR ds:[bx+2],'X'+('E'*256)
+	mov	WORD PTR [bx+0],'.'+('E'*256)
+	mov	WORD PTR [bx+2],'X'+('E'*256)
 
 sexret:
 	ret
@@ -1632,7 +1635,7 @@ SaveEXEFileName	ENDP
 
 SaveMAPFileName	PROC
 	mov	IsMAPOption,ON	; flag that map option turned on (by specifying map file name)
-	mov	di,OFFSET DGROUP:MAPFileName	; di -> destination
+	mov	di,OFFSET MAPFileName	; di -> destination
 
 ; force name to all caps
 	cmp	al,'a'			; check lower bounds
@@ -1644,13 +1647,13 @@ SaveMAPFileName	PROC
 smfsave:
 	stosb				; save first char of file name
 	call	GetFileNameString	; non-null name by definition, no null check needed
-	mov	bx,OFFSET DGROUP:MAPFileName	; di -> file name
+	mov	bx,OFFSET MAPFileName	; di -> file name
 	call	CheckExtension	; see if extension was given for file
 	jnc	sobret			; extension exists
 
 ; add 'MAP' extension, bx -> '.' position
-	mov	WORD PTR ds:[bx],'.'+('M'*256)
-	mov	WORD PTR ds:[bx+2],'A'+('P'*256)
+	mov	WORD PTR [bx+0],'.'+('M'*256)
+	mov	WORD PTR [bx+2],'A'+('P'*256)
 
 sobret:
 	ret
@@ -1710,7 +1713,7 @@ SetEXEFileName	PROC
 	push	ds
 	mov	ds,OBJNameSelector
 	xor	si,si
-	mov	di,OFFSET DGROUP:EXEFileName
+	mov	di,OFFSET EXEFileName
 
 ; ds:si -> name of first object module, es:di -> file name storage
 	xor	bx,bx			; index into strings
@@ -1718,7 +1721,7 @@ SetEXEFileName	PROC
 
 ; find end of file name string, not counting extension
 seloop:
-	mov	al,ds:[bx+si]	; get char from file name
+	mov	al,[bx+si]	; get char from file name
 	or	al,al			; see if null terminator
 	je	atend			; zero, end of file name string
 	cmp	al,'\'			; backslash resets last found period position (for relative directories)
@@ -1746,8 +1749,8 @@ se2:
 	pop	ds				; restore ds -> wl32 data
 
 ; add '.EXE' extension
-	mov	WORD PTR ds:[di],'.'+('E'*256)
-	mov	WORD PTR ds:[di+2],'X'+('E'*256)
+	mov	WORD PTR [di+0],'.'+('E'*256)
+	mov	WORD PTR [di+2],'X'+('E'*256)
 	ret
 SetEXEFileName	ENDP
 
@@ -1759,7 +1762,7 @@ SetEXEFileName	ENDP
 ; destroys ax,cx,si,di
 
 SetMAPFileName	PROC
-	mov	di,OFFSET DGROUP:EXEFileName
+	mov	di,OFFSET EXEFileName
 	mov	si,di
 
 ; 04/29/94
@@ -1768,7 +1771,7 @@ SetMAPFileName	PROC
 	repne	scasb
 	dec	di
 	mov	cx,di
-	sub	cx,OFFSET DGROUP:EXEFileName
+	sub	cx,OFFSET EXEFileName
 	std
 	dec	di
 
@@ -1781,13 +1784,13 @@ SetMAPFileName	PROC
 	add	di,2
 
 	mov	cx,di
-	sub	cx,OFFSET DGROUP:EXEFileName	; compute nonextension chars in name count
-	mov	di,OFFSET DGROUP:MAPFileName
+	sub	cx,OFFSET EXEFileName	; compute nonextension chars in name count
+	mov	di,OFFSET MAPFileName
 	rep	movsb			; save map file name without EXE extension
 
 ; add .MAP extension
-	mov	WORD PTR ds:[di],'M'+('A'*256)
-	mov	BYTE PTR ds:[di+2],'P'
+	mov	WORD PTR [di+0],'M'+('A'*256)
+	mov	BYTE PTR [di+2],'P'
 	ret
 SetMAPFileName	ENDP
 
@@ -1799,7 +1802,7 @@ SetMAPFileName	ENDP
 ; destroys ax,cx,si,di
 
 SetSYMFileName	PROC
-	mov	di,OFFSET DGROUP:EXEFileName
+	mov	di,OFFSET EXEFileName
 	mov	si,di
 
 ; 04/29/94
@@ -1808,7 +1811,7 @@ SetSYMFileName	PROC
 	repne	scasb
 	dec	di
 	mov	cx,di
-	sub	cx,OFFSET DGROUP:EXEFileName
+	sub	cx,OFFSET EXEFileName
 	std
 	dec	di
 
@@ -1821,13 +1824,13 @@ SetSYMFileName	PROC
 	add	di,2
 
 	mov	cx,di
-	sub	cx,OFFSET DGROUP:EXEFileName	; compute nonextension chars in name count
-	mov	di,OFFSET DGROUP:SYMFileName
+	sub	cx,OFFSET EXEFileName	; compute nonextension chars in name count
+	mov	di,OFFSET SYMFileName
 	rep	movsb			; save sym file name without EXE extension
 
 ; add .SYM extension
-	mov	WORD PTR ds:[di],'S'+('Y'*256)
-	mov	BYTE PTR ds:[di+2],'M'
+	mov	WORD PTR [di+0],'S'+('Y'*256)
+	mov	BYTE PTR [di+2],'M'
 	ret
 SetSYMFileName	ENDP
 
@@ -1841,7 +1844,7 @@ IFDEF DLLSUPPORT
 ; destroys ax,cx,si,di
 
 SetDLLFileName	PROC
-	mov	di,OFFSET DGROUP:EXEFileName
+	mov	di,OFFSET EXEFileName
 	xor	al,al
 	mov	cx,86
 	repne	scasb
@@ -1849,33 +1852,33 @@ SetDLLFileName	PROC
 
 ; scan out base name without path
 sdfscanloop:
-	cmp	BYTE PTR ds:[di],'\'
+	cmp	BYTE PTR [di],'\'
 	je	sdfdone			; at end of base name
-	cmp	BYTE PTR ds:[di],':'
+	cmp	BYTE PTR [di],':'
 	je	sdfdone
 	dec	di
-	cmp	di,OFFSET DGROUP:EXEFileName
+	cmp	di,OFFSET EXEFileName
 	jae	sdfscanloop
 
 ; di -> character preceding start of base name
 sdfdone:
 	inc	di				; di -> first char of base name
-	mov	si,OFFSET DGROUP:DLLFileName
+	mov	si,OFFSET DLLFileName
 
 ; transfer base name chars until null terminator or period
 sdftransloop:
-	mov	al,ds:[di]
+	mov	al,[di]
 	test	al,al
 	je	sdfnull
 	cmp	al,'.'			; don't add extension on DLL file name
 	je	sdfnull
-	mov	ds:[si],al
+	mov	[si],al
 	inc	di
 	inc	si
 	jmp	sdftransloop
 
 sdfnull:
-	mov	BYTE PTR ds:[si],0	; null terminate
+	mov	BYTE PTR [si],0	; null terminate
 
 	ret
 SetDLLFileName	ENDP
@@ -1893,8 +1896,8 @@ ENDIF
 ; destroys ax,bx,cx,dx,di,si
 
 FindOBJFile	PROC
-	mov	si,OFFSET DGROUP:OBJExtensionText
-	mov	bx,OFFSET DGROUP:WorkingBuffer
+	mov	si,OFFSET OBJExtensionText
+	mov	bx,OFFSET WorkingBuffer
 	call	CheckDefaultExtension	; check for extension, add default if required
 
 	call	CheckFileMorphing	; see if morphing operations associated with file
@@ -1911,18 +1914,18 @@ FindOBJFile	PROC
 fo2:
 	cmp	IsParseDisplayOption,OFF	; see if parsing display (file needn't exist)
 	jne	fodone			; yes, don't check for file existence
-	mov	dx,OFFSET DGROUP:WorkingBuffer
+	mov	dx,OFFSET WorkingBuffer
 	call	CheckCurrentDirectory	; check current directory for file
 	jnc	focount			; file found in current directory
-	mov	bx,OFFSET DGROUP:OBJEVarText	; bx -> environment variable to search for paths
+	mov	bx,OFFSET OBJEVarText	; bx -> environment variable to search for paths
 
 foshared::
-	mov	di,OFFSET DGROUP:WorkingBuffer	; di -> filename
+	mov	di,OFFSET WorkingBuffer	; di -> filename
 	call	SearchEVarDirectory	; search environment variable directories for file
 
 focount::
 	xor	dx,dx
-	mov	si,OFFSET DGROUP:WorkingBuffer
+	mov	si,OFFSET WorkingBuffer
 	dec	dx				; pre-adjust for null terminator count
 
 ; count chars in file name
@@ -1950,8 +1953,8 @@ FindOBJFile	ENDP
 ; destroys ax,bx,cx,dx,di,si
 
 FindLIBFile	PROC
-	mov	si,OFFSET DGROUP:LIBExtensionText
-	mov	bx,OFFSET DGROUP:WorkingBuffer
+	mov	si,OFFSET LIBExtensionText
+	mov	bx,OFFSET WorkingBuffer
 	call	CheckDefaultExtension	; check for extension, add default if required
 
 	call	CheckFileMorphing	; see if morphing operations associated with file
@@ -1965,10 +1968,10 @@ FindLIBFile	PROC
 fl2:
 	cmp	IsParseDisplayOption,OFF	; see if parsing display (file needn't exist)
 	jne	fodone			; yes, don't check for file existence
-	mov	dx,OFFSET DGROUP:WorkingBuffer
+	mov	dx,OFFSET WorkingBuffer
 	call	CheckCurrentDirectory	; check current directory for file
 	jnc	focount			; file found in current directory, count chars and return
-	mov	bx,OFFSET DGROUP:LIBEVarText	; bx -> environment variable to search for paths
+	mov	bx,OFFSET LIBEVarText	; bx -> environment variable to search for paths
 	jmp	SHORT foshared	; jump to code shared with find OBJ file
 
 FindLIBFile	ENDP
@@ -1992,17 +1995,17 @@ CheckFileMorphing	PROC
 	je	cmnone			; no
 
 	mov	cx,255			; null terminator known to be within 255 chars
-	mov	di,OFFSET DGROUP:WorkingBuffer
+	mov	di,OFFSET WorkingBuffer
 	xor	al,al
 	repne	scasb		; di -> char after null terminator
 	dec	di				; di -> null terminator
 
 cmloop:
-	cmp	di,OFFSET DGROUP:WorkingBuffer	; see if backed up to start of filename
+	cmp	di,OFFSET WorkingBuffer	; see if backed up to start of filename
 	jbe	cm2			; yes
-	cmp	BYTE PTR ds:[di-1],':'	; see if start of drivespec
+	cmp	BYTE PTR [di-1],':'	; see if start of drivespec
 	je	cm2			; yes
-	cmp	BYTE PTR ds:[di-1],'\'	; see if start of pathspec
+	cmp	BYTE PTR [di-1],'\'	; see if start of pathspec
 	je	cm2			; yes
 	dec	di				; back up to previous char
 	jmp	SHORT cmloop
@@ -2084,7 +2087,7 @@ CheckAddOption	PROC
 
 ; option was found in morphing data, set it
 	mov	bx,FoundInMorphOptionPtr	; ds:bx -> option
-	mov	si,OFFSET DGROUP:ZeroValue	; si -> known null (option parameters fail)
+	mov	si,OFFSET ZeroValue	; si -> known null (option parameters fail)
 	call	SetLinkOption	; set the option specified
 
 caoret:
@@ -2111,17 +2114,17 @@ CheckFileAddOBJ	PROC
 	push	ds
 	mov	si,FoundInMorphOptionPtr	; ds:si -> OBJ name to add
 	mov	ds,MorphDataBlock
-	mov	di,OFFSET DGROUP:TempBuffer
+	mov	di,OFFSET TempBuffer
 
 ; copy filename at ds:si to TempBuffer at es:di
 cfaloop:
 	movsb
-	cmp	BYTE PTR ds:[si-1],0	; see if null terminator transferred
+	cmp	BYTE PTR [si-1],0	; see if null terminator transferred
 	jne	cfaloop			; not yet
 
 	pop	ds				; restore critical registers
 	pop	es
-	mov	si,OFFSET DGROUP:TempBuffer	; ds:si -> filename
+	mov	si,OFFSET TempBuffer	; ds:si -> filename
 	mov	eax,OBJAPPENDFLAG ; set flags
 	xor	dx,dx			; no option pointer
 	call	SaveMorphData	; save the morphing data/string (OBJAPPEND)
@@ -2173,7 +2176,7 @@ find_loop:
 	lodsb				; get byte from environment string, point to next
     cmp al,es:[bx+di]	; does environment char match morph string char
     je  byte_match		; yes, try next location
-    or  al,ds:[si]		; two zero values in a row mean the end of the environment
+    or  al,[si]		; two zero values in a row mean the end of the environment
     jne find_evar		; not the end of the environment
     jmp SHORT ael3		; at end of environment, no morph environment char
 
@@ -2183,7 +2186,7 @@ byte_match:
     jne ael2			; not first char, test already done
     cmp si,1			; si equals one if e-var is first string in environment block
     je  ael2			; no previous environment string
-    cmp BYTE PTR ds:[si-2],0	; check if char before e-var was nonzero
+    cmp BYTE PTR [si-2],0	; check if char before e-var was nonzero
     jne find_evar		; yes, e-var is a subset of another string, keep looking
 
 ael2:
@@ -2212,9 +2215,9 @@ aelfound:
 	pop	bx				; restore critical registers
 	pop	ds				; ds -> morphing data block (reversed es,ds)
 	pop	es				; es -> DGROUP
-	and	DWORD PTR ds:[bx+2],NOT EVARLINKFILEFLAG	; shut off further processing
-	mov	si,ds:[bx+6]	; ds:si -> link file name
-	mov	di,OFFSET DGROUP:CommandLineString
+	and	DWORD PTR [bx+2],NOT EVARLINKFILEFLAG	; shut off further processing
+	mov	si,[bx+6]	; ds:si -> link file name
+	mov	di,OFFSET CommandLineString
 
 aelnameloop:
 	lodsb				; get morphing data block character
@@ -2249,13 +2252,13 @@ CheckDefaultExtension	PROC
 	repne	scasb		; make di -> char past null terminator
 	dec	di				; di -> null terminator
 	movsd				; add default extension
-	mov	BYTE PTR ds:[di],0
+	mov	BYTE PTR [di],0
 	mov	ax,di
 	sub	ax,bx			; see if name is too long
 	cmp	ax,80
 	jbe	cdret			; name length is ok
 
-	mov	dx,OFFSET DGROUP:WorkingBuffer	; dx -> file name
+	mov	dx,OFFSET WorkingBuffer	; dx -> file name
 
 FileNotFoundError::
 	mov	al,2			; list error as DOS file not found
@@ -2311,7 +2314,7 @@ CheckCurrentDirectory	ENDP
 SearchEVarDirectory	PROC
 	push	es			; save critical register
 	push	di			; save -> file name
-	cmp	BYTE PTR ds:[di],'.'	; see if file already has path, if so force error
+	cmp	BYTE PTR [di],'.'	; see if file already has path, if so force error
 	jne	sev2
 
 tofnfe:
@@ -2319,9 +2322,9 @@ tofnfe:
 	jmp	NEAR PTR FileNotFoundError
 
 sev2:
-	cmp	BYTE PTR ds:[di],'\'	; check for unallowed filespec
+	cmp	BYTE PTR [di],'\'	; check for unallowed filespec
 	je	tofnfe
-	cmp	BYTE PTR ds:[di+1],':'	; check for drivespec
+	cmp	BYTE PTR [di+1],':'	; check for drivespec
 	je	tofnfe
 
 ; see if environment variable is present
@@ -2334,7 +2337,7 @@ sevscan:
 
 matchloop:
 	lods	BYTE PTR es:[0]	; get byte from environment string
-	cmp	al,ds:[bx+di]	; see if matches target
+	cmp	al,[bx+di]	; see if matches target
 	je	bytematch		; yes
 	or	al,es:[si]		; two zero values in a row mean end of environment
 	jne	sevscan			; no target match, more chars left
@@ -2356,7 +2359,7 @@ sevnext:
 	jb	matchloop		; not yet
 
 pathloop:
-	mov	di,OFFSET DGROUP:TempBuffer	; di will -> file name with path
+	mov	di,OFFSET TempBuffer	; di will -> file name with path
 
 transloop:
 	lods	BYTE PTR es:[0]	; get path character
@@ -2373,14 +2376,14 @@ sevtermchk:
 	je	prefcomp		; yes, prefix complete
 	cmp	al,' '			; whitespace also terminates
 	jbe	prefcomp
-	mov	ds:[di],al		; save path character
+	mov	[di],al		; save path character
 	inc	di				; bump name storage slot
 	jmp	SHORT transloop
 
 prefcomp:
-	cmp	BYTE PTR ds:[di-1],'\'	; check if backslash in place
+	cmp	BYTE PTR [di-1],'\'	; check if backslash in place
 	je	sev4			; yes
-	mov	BYTE PTR ds:[di],'\'	; place backslash
+	mov	BYTE PTR [di],'\'	; place backslash
 	inc	di				; di -> char past backslash
 
 sev4:
@@ -2406,12 +2409,12 @@ nameloop:
 
 sevstore:
 	stosb
-	cmp	BYTE PTR ds:[si-1],0	; see if null terminator transferred
+	cmp	BYTE PTR [si-1],0	; see if null terminator transferred
 	jne	nameloop		; no, keep transferring
 	pop	es				; es -> environment block
 
 sevsearch:
-	mov	dx,OFFSET DGROUP:TempBuffer	; get filename with path
+	mov	dx,OFFSET TempBuffer	; get filename with path
 	call	CheckCurrentDirectory	; check for file in this directory path
 	jnc	sevfound		; found, transfer name to appropriate storage
 
@@ -2427,28 +2430,12 @@ sevfound:
 	pop	ax				; trash e-var position stored on stack
 	pop	di				; di -> file name storage
 	pop	es				; restore es -> wl32 data
-	mov	si,OFFSET DGROUP:TempBuffer
-
-IFDEF DEBUG
-	mov	dx,si			; dx -> filename with path
-	mov	bx,1
-	mov	cx,20
-	mov	ah,40h
-	int	21h
-ENDIF
+	mov	si,OFFSET TempBuffer
 
 newloop:
 	movsb
-	cmp	BYTE PTR ds:[si-1],0	; see if null terminator transferred
+	cmp	BYTE PTR [si-1],0	; see if null terminator transferred
 	jne	newloop			; not yet
-
-IFDEF DEBUG
-	mov	dx,di			; dx -> filename with path
-	mov	bx,1
-	mov	cx,20
-	mov	ah,40h
-	int	21h
-ENDIF
 
 	ret
 SearchEVarDirectory	ENDP
@@ -2659,7 +2646,7 @@ ccschkflop:
 	je	ccskill			; no, check if flushing option
 
 ccsoptloop:
-	mov	al,ds:[si]		; get character
+	mov	al,[si]		; get character
 	cmp	al,' '			; see if end of command string, stop at whitespace
 	jbe	ccskill			; yes
 	cmp	al,'/'			; stop at option char
@@ -2718,7 +2705,7 @@ aoastart:
 	push	es
 	pop	ds				; ds -> morphing data block
 	pop	es				; es -> DGROUP
-	mov	di,OFFSET DGROUP:CompBuffDest
+	mov	di,OFFSET CompBuffDest
 
 aoanameloop:
 	lodsb				; get morphing data block character
@@ -2728,7 +2715,7 @@ aoanameloop:
 
 	push	es
 	pop	ds				; ds -> DGROUP
-	mov	si,OFFSET DGROUP:CompBuffDest
+	mov	si,OFFSET CompBuffDest
 	lodsb				; setup al,si for SaveOBJLIBFileName call
 	call	SaveOBJLIBFileName
 	pop	es

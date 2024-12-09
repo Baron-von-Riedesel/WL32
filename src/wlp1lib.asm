@@ -219,7 +219,7 @@ lplibloop:
 	jne	lpchkmod		; already open
 
 ; setup current file name even if won't be opened and modules used
-	mov	di,OFFSET DGROUP:CurrentFileName	; es:di -> file name storage
+	mov	di,OFFSET CurrentFileName	; es:di -> file name storage
 	mov	si,LIBNameOffset
 	push	ds			; save ds -> wl32 data
 	pop	es				; ensure es -> wl32 data
@@ -228,7 +228,7 @@ lplibloop:
 
 lpnameloop:
 	movsb
-	cmp	BYTE PTR ds:[si-1],0
+	cmp	BYTE PTR [si-1],0
 	jne	lpnameloop		; transfer to null terminator
 
 	pop	ds				; restore ds -> wl32 data
@@ -251,7 +251,7 @@ lpismod:
 	jne	lpproc			; open
 
 	call	DisplayReadFileFeedback
-	mov	dx,OFFSET DGROUP:CurrentFileName
+	mov	dx,OFFSET CurrentFileName
 	mov	al,40h			; read-only, deny none access
 	call	OpenFile	; open library file, ax == handle
 	mov	CurrentFileHandle,ax	; save handle of file being read

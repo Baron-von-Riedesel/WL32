@@ -1,0 +1,15 @@
+
+   Changelog
+
+   initial:
+   - changed source from Tasm (v2.5?) to Masm 6.
+   - changed DOS extender to HDPMI32, WL32.EXE format changed from 3P
+     to "standard" MZ.
+   - for HDPMI32 to work similiar to CW, hiwords of EBX, ECX, EDX had to be
+     cleared before calling DOS functions 3Ch, 3Dh, 3Fh, 40h, 48h, 4Ah.
+   - for option /f to work, file CWSTUB.EXE has to be read, since it's no
+     longer part of WL32.EXE itself.
+   - fixed: ResizeMemory32, did ignore hiword of new size.
+   - changed: 32-bit segments in DOS exe will now trigger a warning only.
+   - /q option added.
+   - /32 option added.

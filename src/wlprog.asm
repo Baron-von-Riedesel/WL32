@@ -261,7 +261,7 @@ MZHDRUNIT equ 512
 
 CreateProgramFile	PROC
 	call	OpenExecutableFile	; open executable file
-	mov	bx,OFFSET DGROUP:CreatingEXEText
+	mov	bx,OFFSET CreatingEXEText
 	call	DisplayLinkInfo
 	cmp	IsCreateEXEOption,OFF	; see if building EXE file
 	je	cpfprot			; no, creating protected mode file
@@ -295,7 +295,7 @@ cpfprot:
 	cmp	IsAny32BitSegFlag,OFF	; see if any 32-bit segments (one by definition)
 	je	cpfprot2		; no
 	lgs	bx,FirstSegment	; gs:bx -> segment master entry
-	mov	si,OFFSET DGROUP:NEARText
+	mov	si,OFFSET NEARText
 	les	di,gs:[bx+MasterSegDefRecStruc.mssClassPtr]	; es:di -> class name
 	call	NormalESDIDest	; normalize the class name
 	cmp	BYTE PTR es:[di],4	; see if length matches
@@ -374,7 +374,7 @@ ENDIF
 	mov	FlatSegmentInfo.fsisDataLenType,eax
 
 	mov	bx,ExecutableFileHandle
-	mov	dx,OFFSET DGROUP:FlatSegmentInfo
+	mov	dx,OFFSET FlatSegmentInfo
 	mov	cx,16			; two entries
 	call	WriteFile	; write the segment entries for flat model
 	jmp	cpfprotrel	; bypass nonflat code routines
@@ -578,10 +578,7 @@ w3psdone:
 	shl	cx,3			; 8 bytes (2 dwords) per segment
 	mov	bx,ExecutableFileHandle
 
-;--- fixed: clear hiword(edx) for WriteFile() - in original WL32, this was done by CW DOS extender
-;	xor	dx,dx
-	xor	edx,edx
-
+	xor	dx,dx
 	push	ds			; save ds -> wl32 data
 	mov	ds,IOBlockSeg	; ds:dx -> i/o buffer block
 	call	WriteFile	; write the segment entries
@@ -827,7 +824,7 @@ Write3PHeader	PROC
 	mov	ax,4200h		; move file pointer relative start of file
 	int	21h
 
-	mov	dx,OFFSET DGROUP:NewHeader
+	mov	dx,OFFSET NewHeader
 	mov	cx,SIZE NewHeaderStruc
 	call	WriteFile
 	ret
@@ -1195,10 +1192,10 @@ weewrite1:
 ;	mov	DWORD PTR WorkingBuffer,0	; module name dummy offset value
 ;	mov	WORD PTR WorkingBuffer+4,0	; dummy segment value
 	xor	cx,cx
-	mov	edx,OFFSET DGROUP:DLLFileName
+	mov	edx,OFFSET DLLFileName
 
 weecountloop:
-	mov	al,ds:[edx]		; get file name char
+	mov	al,[edx]		; get file name char
 	test	al,al
 	je	weeendfn		; at end of file name
 	inc	cx				; bump count of chars in file name
@@ -1211,9 +1208,9 @@ weeendfn:
 ;	mov	cx,7			; seven bytes to write for module name entry
 	mov	cx,1			; write module name length byte
 
-	mov	dx,OFFSET DGROUP:WorkingBuffer
+	mov	dx,OFFSET WorkingBuffer
 	call	WriteFile
-	mov	dx,OFFSET DGROUP:DLLFileName
+	mov	dx,OFFSET DLLFileName
 ;	mov	cl,BYTE PTR WorkingBuffer+6	; ch known zero
 	mov	cl,BYTE PTR WorkingBuffer	; ch known zero
 	call	WriteFile	; write module name
@@ -1263,9 +1260,9 @@ weefind:
 	pop	fs			; restore fs:bx -> expdef entry
 	pop	bx
 	lfs	si,fs:[bx+EXPDEFRecStruc.edsExportedNamePtr]	; fs:si -> exported name
-	mov	di,OFFSET DGROUP:WorkingBuffer+6
+	mov	di,OFFSET WorkingBuffer+6
 	call	ReadByte	; get symbol name length
-	mov	ds:[di],al
+	mov	[di],al
 	inc	di
 	xor	cx,cx		; symbol length in cx
 	or	cl,al
@@ -1286,7 +1283,7 @@ ENDIF
 	sub	al,20h
 
 weetrans:
-	mov	ds:[di],al		; transfer to buffer to write
+	mov	[di],al		; transfer to buffer to write
 	inc	di
 	dec	cx
 	jne	weenameloop
@@ -1306,7 +1303,7 @@ weetrans:
 
 	movzx	cx,BYTE PTR WorkingBuffer+6	; get name length
 	add	cx,7		; add in offset, segment, length overhead
-	mov	dx,OFFSET DGROUP:WorkingBuffer
+	mov	dx,OFFSET WorkingBuffer
 	call	WriteFile	; write the expdef entry
 
 weenextent:
@@ -1421,7 +1418,7 @@ WriteImportEntries	PROC
 	mov	WORD PTR PreviousFilePosition+2,dx
 
 ; do a dummy placeholder write for impdef header info
-	mov	dx,OFFSET DGROUP:WorkingBuffer
+	mov	dx,OFFSET WorkingBuffer
 	mov	cx,12
 	call	WriteFile
 
@@ -1487,8 +1484,8 @@ wieentloop1:
 	push	si
 	lfs	si,gs:[bx+IMPDEFRecStruc.idsModuleNamePtr]	; fs:si -> module name
 	call	ReadByte	; get name length
-	mov	di,OFFSET DGROUP:WorkingBuffer+12	; di -> module name storage
-	mov	ds:[di],al
+	mov	di,OFFSET WorkingBuffer+12	; di -> module name storage
+	mov	[di],al
 	inc	di
 	xor	cx,cx		; symbol length in cx
 	or	cl,al
@@ -1509,7 +1506,7 @@ ENDIF
 	sub	al,20h
 
 wietrans1:
-	mov	ds:[di],al		; transfer to buffer to write
+	mov	[di],al		; transfer to buffer to write
 	inc	di
 	dec	cx
 	jne	wienameloop1
@@ -1533,7 +1530,7 @@ wiesaveptr1:
 	mov	cx,4		; force four bytes
 
 wiewrimp1:
-	mov	dx,OFFSET DGROUP:WorkingBuffer+12
+	mov	dx,OFFSET WorkingBuffer+12
 	call	WriteFile	; write the impdef entry
 
 wienextent1:
@@ -1647,8 +1644,8 @@ wieentloop2:
 	push	si
 	lfs	si,gs:[bx+IMPDEFRecStruc.idsInternalNamePtr]	; fs:si -> function name
 	call	ReadByte	; get name length
-	mov	di,OFFSET DGROUP:WorkingBuffer+12	; di -> module name storage
-	mov	ds:[di],al
+	mov	di,OFFSET WorkingBuffer+12	; di -> module name storage
+	mov	[di],al
 	inc	di
 	xor	cx,cx		; symbol length in cx
 	or	cl,al
@@ -1669,7 +1666,7 @@ ENDIF
 	sub	al,20h
 
 wietrans2:
-	mov	ds:[di],al		; transfer to buffer to write
+	mov	[di],al		; transfer to buffer to write
 	inc	di
 	dec	cx
 	jne	wienameloop2
@@ -1693,7 +1690,7 @@ wiesaveptr2:
 	mov	cx,4		; force four bytes
 
 wiewrimp2:
-	mov	dx,OFFSET DGROUP:WorkingBuffer+12
+	mov	dx,OFFSET WorkingBuffer+12
 	call	WriteFile	; write the impdef entry
 
 wienextent2:
@@ -1757,7 +1754,7 @@ tabwrite4:
 ;  write count of fixups
 	mov	eax,TotalIMPDEFFixupCount
 	mov	DWORD PTR WorkingBuffer+12,eax
-	mov	dx,OFFSET DGROUP:WorkingBuffer+12
+	mov	dx,OFFSET WorkingBuffer+12
 	mov	cx,4
 	mov	bx,ExecutableFileHandle
 	call	WriteFile
@@ -1795,7 +1792,7 @@ wiewrite:
 	int	21h				; position to start of impdef header
 
 ; write the updated impdef header info
-	mov	dx,OFFSET DGROUP:WorkingBuffer
+	mov	dx,OFFSET WorkingBuffer
 	mov	cx,12
 	call	WriteFile
 	call	SeekToEndOfFile
@@ -1835,7 +1832,7 @@ CONST ends
 
 WriteDOSExtender PROC
 
-	mov di, OFFSET DGROUP:CurrentFileName
+	mov di, OFFSET CurrentFileName
 	mov dx, di
 	call CopyCWStub
 	mov ax,3D40h		; read only, deny none access
@@ -1856,21 +1853,21 @@ wdeenvloop:
 	jne wdeenvloop		; no
 	add di, 2		; adjust di past word value, es:di -> WL32.EXE's name
 	mov si, di		; ds:si -> WL32 name
-	mov di, OFFSET DGROUP:CurrentFileName
+	mov di, OFFSET CurrentFileName
 	mov dx, di
 wdenameloop2:
 	lodsb es:[si]
 	mov [di], al
 	inc di
 	cmp al, '\'
-	jnz @F
+	jnz isnotbs
 	mov dx, di
-@@:
+isnotbs:
 	cmp al, 0
 	jne wdenameloop2
 	mov di, dx
 	call CopyCWStub
-	mov dx, OFFSET DGROUP:CurrentFileName
+	mov dx, OFFSET CurrentFileName
 	mov al, 40h		; read only, deny none access
 	call OpenFile
 extenderfound:
@@ -1883,7 +1880,7 @@ extenderfound:
 
 ; read the EXE header of WL32
 	mov	cx,SIZE MZHeaderStruc
-	mov	dx,OFFSET DGROUP:MZHeader
+	mov	dx,OFFSET MZHeader
 	call	ReadFile
 
 ; rewind back to start of file
@@ -1947,7 +1944,7 @@ WriteDOSExtender	ENDP
 ; open the executable file, either EXE or protected P3
 
 OpenExecutableFile	PROC
-	mov	dx,OFFSET DGROUP:EXEFileName	; dx -> file name
+	mov	dx,OFFSET EXEFileName	; dx -> file name
 	call	CreateFile
 	mov	ExecutableFileHandle,ax	; keep file handle
 	ret
@@ -1975,7 +1972,7 @@ SetupMZHeader	PROC
 	shr	eax,4			; convert to paragraphs
 	mov	MZHeader.ehSS,ax	; save EXE SS value
 
-	mov	ax,fs:[bx+WORD PTR MasterSegDefRecStruc.mssSegLength]
+	mov	ax,WORD PTR fs:[bx+MasterSegDefRecStruc.mssSegLength]
 
 ; covered in segment resolution phase by adjusting stack segment length
 COMMENT !
@@ -1986,7 +1983,7 @@ COMMENT !
 	movzx	eax,ax
 	sub	ProgramImageSize,eax	; update program's stack value, image size
 	mov	ax,StackValue	; update stack length with option stack size
-	mov	fs:[bx+WORD PTR MasterSegDefRecStruc.mssSegLength],ax
+	mov	WORD PTR fs:[bx+MasterSegDefRecStruc.mssSegLength],ax
 	add	ProgramImageSize,eax	; update program image size
 END COMMENT !
 
@@ -2042,7 +2039,7 @@ WriteMZHeader	PROC
 	mov	ax,4200h		; move file pointer relative start of file
 	int	21h
 
-	mov	dx,OFFSET DGROUP:MZHeader
+	mov	dx,OFFSET MZHeader
 	mov	cx,SIZE MZHeaderStruc
 	call	WriteFile
 	ret
@@ -2174,8 +2171,8 @@ webmainloop:
 	jne	webnextseg		; debug segment, ignore
 	call	DisplaySegmentName	; display segment name being processed
 
-	mov	ax,gs:[bx+WORD PTR MasterSegDefRecStruc.mssFirstIndSegPtr+2]
-	mov	di,gs:[bx+WORD PTR MasterSegDefRecStruc.mssFirstIndSegPtr]
+	mov	ax,WORD PTR gs:[bx+MasterSegDefRecStruc.mssFirstIndSegPtr+2]
+	mov	di,WORD PTR gs:[bx+MasterSegDefRecStruc.mssFirstIndSegPtr+0]
 
 ; ax:di -> individual segdef entry
 webindloop:
@@ -2317,13 +2314,13 @@ webscan:
 	jmp	webrecloop
 
 webnextind:
-	mov	ax,es:[di+WORD PTR IndSegDefRecStruc.isdrNextIndSegPtr+2]
-	mov	di,es:[di+WORD PTR IndSegDefRecStruc.isdrNextIndSegPtr]	; ax:di -> next individaul segdef entry
+	mov	ax,WORD PTR es:[di+IndSegDefRecStruc.isdrNextIndSegPtr+2]
+	mov	di,WORD PTR es:[di+IndSegDefRecStruc.isdrNextIndSegPtr+0]	; ax:di -> next individaul segdef entry
 	jmp	NEAR PTR webindloop
 
 webnextseg:
-	mov	ax,gs:[bx+WORD PTR MasterSegDefRecStruc.mssNextSegPtr+2]
-	mov	bx,gs:[bx+WORD PTR MasterSegDefRecStruc.mssNextSegPtr]	; ax:bx -> next master segdef entry, if any
+	mov	ax,WORD PTR gs:[bx+MasterSegDefRecStruc.mssNextSegPtr+2]
+	mov	bx,WORD PTR gs:[bx+MasterSegDefRecStruc.mssNextSegPtr+0]	; ax:bx -> next master segdef entry, if any
 	jmp	NEAR PTR webmainloop
 
 ; comdat32 record
@@ -2393,7 +2390,7 @@ IFDEF WATCOM_ASM
 	dec	eax				; init segment write offset to length-1
 	push	ds
 	pop	fs
-	mov	si,OFFSET DGROUP:ZeroValue	; fs:si -> known zero value (dummy source buffer)
+	mov	si,OFFSET ZeroValue	; fs:si -> known zero value (dummy source buffer)
 	mov	cx,1			; one byte to write
 	call	WriteToIOBuffer	; write the bytes out to the i/o Buffer
 ENDIF

@@ -46,6 +46,7 @@ _BSS	SEGMENT WORD PUBLIC USE16 'BSS'
 
 ; globals
 DosVersion	DB	?
+	align 2
 PSP		DW	?
 
 ; locals
@@ -133,15 +134,15 @@ s2:
 	pop	ds				; ds -> PSP
 	pop	es				; es -> DGROUP
 	mov	si,81h			; ds:si -> command line preceded by length
-	mov	cl,ds:[si-1]	; get count of bytes in command line
+	mov	cl,[si-1]	; get count of bytes in command line
 	xor	ch,ch			; zero high byte of count
 	jcxz	s3			; no arguments on command line
 
 ; check for one char as space, in case of i/o redirection of summary
-	mov	di,OFFSET DGROUP:CommandLineString	; es:di -> command line storage
+	mov	di,OFFSET CommandLineString	; es:di -> command line storage
 	cmp	cl,1
 	jne	getarg			; more than one character, not i/o redirection
-	cmp	BYTE PTR ds:[si],' '	; see if character is whitespace
+	cmp	BYTE PTR [si],' '	; see if character is whitespace
 	jbe	s3				; yes, no arguments on command line
 
 getarg:
@@ -207,7 +208,7 @@ ControlBreakHandler	PROC
 	pop	ds				; ds -> wl32 data
 
 ; write terminated feedback
-	mov	bx,OFFSET DGROUP:TermText
+	mov	bx,OFFSET TermText
 	call	DisplayTextStringCRLF
 	jmp DWORD PTR OldCtrlCHandlerAddr
 

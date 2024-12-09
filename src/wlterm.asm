@@ -98,7 +98,7 @@ TerminateToDOS	PROC
 	cmp	IsExitBeepOption,OFF	; see if should beep before termination
 	je	Terminate		; no
 	mov	bx,STDOUT
-	mov	dx,OFFSET DGROUP:beep3
+	mov	dx,OFFSET beep3
 	mov	cl,3			; beep the speaker three times
 	call	DisplayShortString
 

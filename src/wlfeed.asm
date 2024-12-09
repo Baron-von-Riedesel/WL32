@@ -89,7 +89,7 @@ ENDIF
 IFDEF WATCOM_ASM
 				DB	' Version 1.33'
 ENDIF
-				DB	CR,LF, 'Public Domain - written by Michael Devore; adjusted to HX by japheth.'
+				DB	CR,LF, 'Public Domain - originally written by Michael Devore; adjusted by japheth.'
 CreditTextStop	=	$
 
 SuccessTextLen	DB	SuccessTextStop-SuccessText
@@ -100,6 +100,8 @@ Summary1TextLen	DW	Summary1TextStop-Summary1Text
 Summary1Text	DB	'WL32'
 				DB	' STANDARD LINK OPTIONS:'
 CRLFText		DB	CR,LF	; double duty as printable CR/LF
+				DB	CR,LF
+				DB	' /32         no warning for 32-bit segments with /ex option'
 				DB	CR,LF
 				DB	' /3p         Create protected mode 3P-format executable without DOS extender'
 				DB	CR,LF
@@ -143,7 +145,9 @@ END COMMENT !
 				DB	CR,LF
 				DB	' /nwd        do Not Warn on Duplicate symbols'
 				DB	CR,LF
-				DB	' /nwld        do Not Warn on Library only Duplicate symbols'
+				DB	' /nwld       do Not Warn on Library only Duplicate symbols'
+				DB	CR,LF
+				DB	' /q          suppress display of logo'
 				DB	CR,LF
 ;@@@				DB	' /s          Symbol names are case sensitive when linking'
 ;@@@				DB	CR,LF
@@ -256,11 +260,8 @@ EXTRN	DwordToDecimalString:PROC
 ; display linker credit/copyright line
 
 DisplayCredits	PROC
-;	cmp	IsNoCopyrightOption,0	; see if copyright display shut off
-;	jne	dcret
-	mov	bx,OFFSET DGROUP:CreditText
+	mov	bx,OFFSET CreditText
 	call	DisplayTextStringCRLF
-
 dcret:
 	ret
 DisplayCredits	ENDP
@@ -273,8 +274,9 @@ DisplayCredits	ENDP
 
 DisplaySummary	PROC
 
+	call DisplayCredits
 ; display built in link options
-	mov	bx,OFFSET DGROUP:Summary1Text
+	mov	bx,OFFSET Summary1Text
 	call	DisplayLongStringCRLF
 	ret
 DisplaySummary	ENDP
@@ -288,10 +290,16 @@ DisplaySummary	ENDP
 ; destroys ax
 
 DisplayShortString	PROC
+	push edx
+	movzx edx, dx		; adjustment: clear hiword(edx)
 	xor	ch,ch			; zap high byte of length word
+	push ecx
+	movzx ecx, cx
 	mov	bx,STDOUT
 	mov	ah,40h
 	int	21h
+	pop ecx
+	pop edx
 	ret
 DisplayShortString	ENDP
 
@@ -324,7 +332,7 @@ DisplayTextStringCRLF	PROC
 	call	DisplayTextStringNoCRLF
 
 ; write string terminating CR/LF
-	mov	dx,OFFSET DGROUP:CRLFText
+	mov	dx,OFFSET CRLFText
 	mov	cl,2
 	call	DisplayShortString
 
@@ -351,11 +359,17 @@ dvsloop:
 	jmp	SHORT dvsloop
 
 foundnull:
+	push edx
+	movzx edx, dx		; adjustment: clear hiword(edx)
 	mov	cx,bx			; get offset in string to null terminator
 	sub	cx,dx			; cx holds number of bytes to print
+	push ecx
+	movzx ecx, cx
 	mov	bx,STDOUT		; write to standard output device
 	mov	ah,40h			; write to device
 	int	21h
+	pop ecx
+	pop edx
 	ret
 DisplayVarStringNoCRLF	ENDP
 
@@ -372,7 +386,7 @@ DisplayVarStringCRLF	PROC
 	call	DisplayVarStringNoCRLF
 
 ; write string terminating CR/LF
-	mov	dx,OFFSET DGROUP:CRLFText
+	mov	dx,OFFSET CRLFText
 	mov	cl,2
 	call	DisplayShortString
 
@@ -391,19 +405,23 @@ DisplayVarStringCRLF	ENDP
 ; destroys ax,bx,cx,dx
 
 DisplayLongStringCRLF	PROC
+	push edx
+	xor edx, edx		; adjustment: clear hiword(edx)
 	mov	cx,[bx-2]		; get length of string to print
+	movzx ecx, cx
 	mov	dx,bx			; ds:dx -> string to print
 	mov	bx,STDOUT		; write to standard output device
 	mov	ah,40h			; write to device
 	int	21h
 
 ; write string terminating CR/LF
-	mov	dx,OFFSET DGROUP:CRLFText
+	mov	dx,OFFSET CRLFText
 	mov	cl,2
 	call	DisplayShortString
 
 ; write blank line CR/LF
 	call	DisplayShortString
+	pop edx
 	ret
 DisplayLongStringCRLF	ENDP
 
@@ -416,10 +434,10 @@ DisplayLongStringCRLF	ENDP
 DisplayFinalFeedback	PROC
 	cmp	WarningsCount,0	; see if any warnings
 	je	dff2			; no
-	mov	bx,OFFSET DGROUP:WarnCountText
+	mov	bx,OFFSET WarnCountText
 	call	DisplayTextStringNoCRLF
 
-	mov di,OFFSET DGROUP:NumberBuff2	; point to temporary number buffer
+	mov di,OFFSET NumberBuff2	; point to temporary number buffer
 	mov ax,ds
 	mov es,ax			; es -> warplink data
 	xor cx,cx			; init count of digits
@@ -438,7 +456,7 @@ dffdivloop:
 	jne  dffdivloop		; no, continue dividing
 
 	mov si,di
-	mov di,OFFSET DGROUP:NumberBuff ; place to put unreversed number
+	mov di,OFFSET NumberBuff ; place to put unreversed number
 
 dffrevloop:
 	dec si				; si -> char in reversed number buffer
@@ -446,13 +464,13 @@ dffrevloop:
 	stosb 				; put in unreversed buffer
 	loop    dffrevloop ; unreverse as many chars as in number
 
-	mov bx,OFFSET DGROUP:NumberBuff ;  ds:bx -> string to write
+	mov bx,OFFSET NumberBuff ;  ds:bx -> string to write
 	call	DisplayVarStringCRLF
 
 dff2:
 	cmp	IsNoCopyrightOption,0	; see if copyright display shut off
 	jne	dffret
-	mov	bx,OFFSET DGROUP:SuccessText
+	mov	bx,OFFSET SuccessText
 	call	DisplayTextStringCRLF
 
 dffret:
@@ -469,49 +487,49 @@ DisplayFinalFeedback	ENDP
 DisplayParseResults	PROC
 
 ; display link option settings
-	mov	bx,OFFSET DGROUP:OptionText
+	mov	bx,OFFSET OptionText
 	call	DisplayTextStringNoCRLF
 
-	mov	si,OFFSET DGROUP:OptionList
+	mov	si,OFFSET OptionList
 	mov	bx,STDOUT
 
 optloop:
-	cmp	WORD PTR ds:[si],-1	; see if at end of options
+	cmp	WORD PTR [si],-1	; see if at end of options
 	je	endopt			; yes
-	mov	di,ds:[si+OPTLISTOFFOPTPTR]	; get pointer to option flag byte
-	cmp	BYTE PTR ds:[di],0	; see if option is set
+	mov	di,[si+OPTLISTOFFOPTPTR]	; get pointer to option flag byte
+	cmp	BYTE PTR [di],0	; see if option is set
 	je	nextopt			; no
 
-	mov	dx,OFFSET DGROUP:SpaceSlash	; precede option with space and slash
+	mov	dx,OFFSET SpaceSlash	; precede option with space and slash
 	mov	cl,2
 	call	DisplayShortString
 
-	mov	di,ds:[si]		; di -> option text string with length byte prefix
-	mov	cl,ds:[di]		; cl holds length byte
+	mov	di,[si]		; di -> option text string with length byte prefix
+	mov	cl,[di]		; cl holds length byte
 	mov	dx,di
 	inc	dx				; dx -> option text
 	call	DisplayShortString
 
-	test	WORD PTR ds:[si+OPTLISTOFFARGFLAGS],STRINGPARAMETER	; see if string parameter
+	test	WORD PTR [si+OPTLISTOFFARGFLAGS],STRINGPARAMETER	; see if string parameter
 	je	chkword			; no, check if word parameter
-	mov	bx,ds:[si+4]	; bx -> string
+	mov	bx,[si+4]	; bx -> string
 	call	DisplayVarStringNoCRLF
 
 chkword:
-	test	WORD PTR ds:[si+OPTLISTOFFARGFLAGS],DWORDPARAMETER	; see if dword parameter
+	test	WORD PTR [si+OPTLISTOFFARGFLAGS],DWORDPARAMETER	; see if dword parameter
 	je	doterm			; no
 
 ; show the dword parameter value
-	mov	di,ds:[si+OPTLISTOFFARGPTR]	; di -> dword value
-	mov	eax,ds:[di]
-	mov	di,OFFSET DGROUP:NumberBuffer
+	mov	di,[si+OPTLISTOFFARGPTR]	; di -> dword value
+	mov	eax,[di]
+	mov	di,OFFSET NumberBuffer
 	call	DwordToDecimalString	; convert dword value to string
-	mov	bx,OFFSET DGROUP:NumberBuffer
+	mov	bx,OFFSET NumberBuffer
 	call	DisplayVarStringNoCRLF	; show string-ized word value
 
 ; write string terminating CR/LF
 doterm:
-	mov	dx,OFFSET DGROUP:CRLFText
+	mov	dx,OFFSET CRLFText
 	mov	cl,2
 	call	DisplayShortString
 
@@ -520,30 +538,30 @@ nextopt:
 	jmp	SHORT optloop
 
 endopt:
-	mov	dx,OFFSET DGROUP:CRLFText
+	mov	dx,OFFSET CRLFText
 	mov	cl,2
 	call	DisplayShortString
 
 ; display EXE name
 exedisp:
-	mov	bx,OFFSET DGROUP:EXEText
+	mov	bx,OFFSET EXEText
 	call	DisplayTextStringNoCRLF
-	mov	bx,OFFSET DGROUP:EXEFileName
+	mov	bx,OFFSET EXEFileName
 	call	DisplayVarStringCRLF
 
 ; display MAP name
 	cmp	IsMAPOption,OFF	; see if MAP file
 	je	dispobj			; no
-	mov	bx,OFFSET DGROUP:MAPText
+	mov	bx,OFFSET MAPText
 	call	DisplayTextStringNoCRLF
-	mov	bx,OFFSET DGROUP:MAPFileName
+	mov	bx,OFFSET MAPFileName
 	call	DisplayVarStringCRLF
 
 ; display object module names
 dispobj:
-	mov	bx,OFFSET DGROUP:OBJText
+	mov	bx,OFFSET OBJText
 	call	DisplayTextStringNoCRLF
-	mov	dx,OFFSET DGROUP:CRLFText
+	mov	dx,OFFSET CRLFText
 	mov	cl,2
 	call	DisplayShortString
 	mov	cx,TotalOBJCount
@@ -553,34 +571,34 @@ dispobj:
 
 omodloop:
 	push	cx			; save object module count left to print
-	mov	di,OFFSET DGROUP:WorkingBuffer
+	mov	di,OFFSET WorkingBuffer
 	mov	ds,OBJNameSelector
 
 ; ds:si -> object name in storage
 ; es:di -> destination for name for printing
 ocharloop:
 	movsb
-	cmp	BYTE PTR ds:[si-1],0	; see if null terminator transferred
+	cmp	BYTE PTR [si-1],0	; see if null terminator transferred
 	jne	ocharloop		; no
-	push	DGROUP
+	push	ss
 	pop	ds				; restore ds -> wl32 data
-	mov	bx,OFFSET DGROUP:WorkingBuffer	; bx -> string to print
+	mov	bx,OFFSET WorkingBuffer	; bx -> string to print
 	call	DisplayVarStringNoCRLF
-	mov	dx,OFFSET DGROUP:CRLFText
+	mov	dx,OFFSET CRLFText
 	mov	cl,2
 	call	DisplayShortString
 	pop	cx				; get object modules left to print
 	loop	omodloop
 
-	mov	dx,OFFSET DGROUP:CRLFText
+	mov	dx,OFFSET CRLFText
 	mov	cl,2
 	call	DisplayShortString
 
 ; display library file names
 displib:
-	mov	bx,OFFSET DGROUP:LIBText
+	mov	bx,OFFSET LIBText
 	call	DisplayTextStringNoCRLF
-	mov	dx,OFFSET DGROUP:CRLFText
+	mov	dx,OFFSET CRLFText
 	mov	cl,2
 	call	DisplayShortString
 	mov	cx,TotalLIBCount
@@ -590,26 +608,26 @@ displib:
 
 lmodloop:
 	push	cx			; save object module count left to print
-	mov	di,OFFSET DGROUP:WorkingBuffer
+	mov	di,OFFSET WorkingBuffer
 	mov	ds,LIBNameSelector
 
 ; ds:si -> object name in storage
 ; es:di -> destination for name for printing
 lcharloop:
 	movsb
-	cmp	BYTE PTR ds:[si-1],0	; see if null terminator transferred
+	cmp	BYTE PTR [si-1],0	; see if null terminator transferred
 	jne	lcharloop		; no
-	push	DGROUP
+	push	ss
 	pop	ds				; restore ds -> wl32 data
-	mov	bx,OFFSET DGROUP:WorkingBuffer	; bx -> string to print
+	mov	bx,OFFSET WorkingBuffer	; bx -> string to print
 	call	DisplayVarStringNoCRLF
-	mov	dx,OFFSET DGROUP:CRLFText
+	mov	dx,OFFSET CRLFText
 	mov	cl,2
 	call	DisplayShortString
 	pop	cx				; get object modules left to print
 	loop	lmodloop
 
-	mov	dx,OFFSET DGROUP:CRLFText
+	mov	dx,OFFSET CRLFText
 	mov	cl,2
 	call	DisplayShortString
 
@@ -632,9 +650,9 @@ DisplayReadFileFeedback	PROC
 
 drf2:
 	push	cx			; save critical register
-	mov	bx,OFFSET DGROUP:ReadFileText
+	mov	bx,OFFSET ReadFileText
 	call	DisplayTextStringNoCRLF
-	mov	bx,OFFSET DGROUP:CurrentFileName
+	mov	bx,OFFSET CurrentFileName
 	call	DisplayVarStringNoCRLF
 	pop	cx				; restore critical register
 
@@ -654,9 +672,9 @@ DisplayProcFileFeedback	PROC
 	jne	dpfret			; yes, don't show this
 	cmp	IsLinkInfoOption,OFF	; see if displaying link information
 	je	dpfret			; no
-	mov	bx,OFFSET DGROUP:ProcessFileText
+	mov	bx,OFFSET ProcessFileText
 	call	DisplayTextStringNoCRLF
-	mov	bx,OFFSET DGROUP:CurrentFileName
+	mov	bx,OFFSET CurrentFileName
 	call	DisplayVarStringNoCRLF
 
 dpfret:
@@ -704,10 +722,10 @@ DisplayModuleName	PROC
 	cmp	IsLinkInfoOption,OFF	; see if displaying link information
 	je	dmnret			; no
 
-	mov	bx,OFFSET DGROUP:ReadModText
+	mov	bx,OFFSET ReadModText
 	cmp	Pass2Flag,OFF	; see if on pass 2+
 	je	dmn2			; no
-	mov	bx,OFFSET DGROUP:ProcessModText
+	mov	bx,OFFSET ProcessModText
 
 dmn2:
 	call	DisplayTextStringNoCRLF
@@ -719,9 +737,9 @@ dmn2:
 	inc	bx				; point bx past length byte
 	call	DisplayTextStringNoCRLF
 	pop	ds				; restore ds -> wl32 data
-	mov	bx,OFFSET DGROUP:InText
+	mov	bx,OFFSET InText
 	call	DisplayTextStringNoCRLF
-	mov	bx,OFFSET DGROUP:CurrentFileName
+	mov	bx,OFFSET CurrentFileName
 	call	DisplayVarStringNoCRLF
 
 dmnret:
@@ -743,7 +761,7 @@ DisplaySegmentName	PROC
 	je	dsnret			; no
 	push	gs			; save critical registers
 	push	bx
-	mov	bx,OFFSET DGROUP:WriteSegText
+	mov	bx,OFFSET WriteSegText
 	call	DisplayTextStringNoCRLF
 	pop	bx				; restore bx, save back to stack
 	push	bx

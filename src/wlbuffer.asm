@@ -125,7 +125,7 @@ rbread:
 	ret
 
 rb2:
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	mov	si,IOBUFFSYSVARSIZE	; adjust past system variables
 	jmp	SHORT rbread	; read byte from new block
 
@@ -151,7 +151,7 @@ rbdread:
 	ret
 
 rbd2:
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	mov	si,IOBUFFSYSVARSIZE	; adjust past system variables
 	jmp	SHORT rbdread	; read byte from new block
 
@@ -442,7 +442,7 @@ ScanAhead	PROC
 	ret
 sa2:
 	sub	si,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)	; wrap to next buffer position plus system variable setting
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	ret
 ScanAhead	ENDP
 

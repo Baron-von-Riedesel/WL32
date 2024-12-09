@@ -108,6 +108,8 @@ PharLapModuleFlag	DB	?	; nonzero if special Phar Lap flag set for module
 ProcessingLIBFlag	DB	?	; nonzero if processing library
 SearchExistSymFlag	DB	?	; nonzero if search only for existing symbol when doing symbol lookups
 
+	align 2
+
 ClassNameIndex	DW	?	; current class name index
 COMDATSegIndex	DW	?	; comdat segment index
 CurrentBAKPATCount	DW	?	; count of current bakpat
@@ -502,18 +504,18 @@ Process1OBJRecord	PROC
 	push	fs			; save -> current read position in fs:si
 	push	si
 	push	cx			; save record length
-	mov	di,OFFSET DGROUP:OBJRecTable	; es:di -> lookup table for object record types
-	mov	cx,ds:[di-2]	; get number of entries in table
+	mov	di,OFFSET OBJRecTable	; es:di -> lookup table for object record types
+	mov	cx,[di-2]	; get number of entries in table
 	repne	scasb
 	jne	badrec			; record not found in table
 
 	dec	di				; di -> matching entry
-	sub	di,OFFSET DGROUP:OBJRecTable	; di == object record type offset
+	sub	di,OFFSET OBJRecTable	; di == object record type offset
 	add	di,di			; word offset
-	add	di,OFFSET DGROUP:Pass1OBJRecVector	; di -> entry in OBJRecVector table
+	add	di,OFFSET Pass1OBJRecVector	; di -> entry in OBJRecVector table
 	pop	cx				; restore object record length to cx
 	push	cx			; save back for later use
-	call	word ptr ds:[di]		; transfer to appropriate routine
+	call	word ptr [di]		; transfer to appropriate routine
 	pop	cx				; restore object record length to cx
 	pop	si				; restore old current read position in fs:si
 	pop	fs
@@ -526,7 +528,7 @@ badlen:
 	mov	al,BADOBJRECLENERRORCODE
 
 lename::
-	mov	dx,OFFSET DGROUP:CurrentFileName
+	mov	dx,OFFSET CurrentFileName
 	call	LinkerErrorExit	; no return
 
 ; al holds bad record value
@@ -751,7 +753,7 @@ IFDEF SYMBOLPACK
 	mov	di,si			; es:di -> name
 	call	NormalESDIDest	; normalize es:di to destination name buffer
 	inc	di				; scan past length byte, only checking up to eight bytes
-	mov	si,OFFSET DGROUP:Clipper5Text
+	mov	si,OFFSET Clipper5Text
 	mov	cx,2			; 8 bytes, 2 dwords
 	repz	cmpsd		; compare name to Clipper 5 name
 	je	p1eisclip5		; match
@@ -761,7 +763,7 @@ IFDEF SYMBOLPACK
 	pop	di
 	push	di
 	call	NormalESDIDest	; normalize es:di to destination name buffer
-	mov	si,OFFSET DGROUP:Clipper5Text2
+	mov	si,OFFSET Clipper5Text2
 	mov	cx,2			; 8 bytes, 2 dwords
 	repz	cmpsd		; compare name to Clipper 5 name
 ;@@@	je	p1eisclip5		; match
@@ -771,7 +773,7 @@ IFDEF SYMBOLPACK
 ;@@@	pop	di
 ;@@@	push	di
 ;@@@	call	NormalESDIDest	; normalize es:di to destination name buffer
-;@@@	mov	si,OFFSET DGROUP:__PLANKTONText
+;@@@	mov	si,OFFSET __PLANKTONText
 ;@@@	mov	cx,2			; 11 bytes, 2 dwords+3
 ;@@@	repz	cmpsd		; compare name to Clipper 5 name
 ;@@@	jne	p1echkdone		; no match
@@ -919,8 +921,8 @@ p1pset:
 ; fs:si -> individual segdef entry
 ; gs:di -> public symbol entry
 p1pgetmast:
-	mov	gs:[di+WORD PTR PubSymRecStruc.pssIndSegDefPtr],si	; save -> segdef entry
-	mov	gs:[di+WORD PTR PubSymRecStruc.pssIndSegDefPtr+2],fs
+	mov	WORD PTR gs:[di+PubSymRecStruc.pssIndSegDefPtr+0],si	; save -> segdef entry
+	mov	WORD PTR gs:[di+PubSymRecStruc.pssIndSegDefPtr+2],fs
 	lfs	si,fs:[si+IndSegDefRecStruc.isdrMasterPtr]	; fs:si -> master segdef entry
 	test	fs:[si+MasterSegDefRecStruc.mssFlags],ABSOLUTESEGMENTFLAG
 	jne	p1pabs			; absolute public symbol (attached to absolute segment)
@@ -1062,8 +1064,8 @@ p1p3set:
 ; fs:si -> individual segdef entry
 ; gs:di -> public symbol entry
 p1p3getmast:
-	mov	gs:[di+WORD PTR PubSymRecStruc.pssIndSegDefPtr],si	; save -> segdef entry
-	mov	gs:[di+WORD PTR PubSymRecStruc.pssIndSegDefPtr+2],fs
+	mov	WORD PTR gs:[di+PubSymRecStruc.pssIndSegDefPtr+0],si	; save -> segdef entry
+	mov	WORD PTR gs:[di+PubSymRecStruc.pssIndSegDefPtr+2],fs
 	lfs	si,fs:[si+IndSegDefRecStruc.isdrMasterPtr]	; fs:si -> master segdef entry
 	test	fs:[si+MasterSegDefRecStruc.mssFlags],ABSOLUTESEGMENTFLAG
 	jne	p1p3abs			; absolute public symbol (attached to absolute segment)
@@ -1231,8 +1233,8 @@ p1lpset:
 ; fs:si -> individual segdef entry
 ; gs:di -> public symbol entry
 p1lpgetmast:
-	mov	gs:[di+WORD PTR PubSymRecStruc.pssIndSegDefPtr],si	; save -> segdef entry
-	mov	gs:[di+WORD PTR PubSymRecStruc.pssIndSegDefPtr+2],fs
+	mov	WORD PTR gs:[di+PubSymRecStruc.pssIndSegDefPtr+0],si	; save -> segdef entry
+	mov	WORD PTR gs:[di+PubSymRecStruc.pssIndSegDefPtr+2],fs
 	lfs	si,fs:[si+IndSegDefRecStruc.isdrMasterPtr]	; fs:si -> master segdef entry
 	test	fs:[si+MasterSegDefRecStruc.mssFlags],ABSOLUTESEGMENTFLAG
 	jne	p1lpabs			; absolute public symbol (attached to absolute segment)
@@ -1353,8 +1355,8 @@ p1lp32set:
 ; fs:si -> individual segdef entry
 ; gs:di -> public symbol entry
 p1lp32getmast:
-	mov	gs:[di+WORD PTR PubSymRecStruc.pssIndSegDefPtr],si	; save -> segdef entry
-	mov	gs:[di+WORD PTR PubSymRecStruc.pssIndSegDefPtr+2],fs
+	mov	WORD PTR gs:[di+PubSymRecStruc.pssIndSegDefPtr+0],si	; save -> segdef entry
+	mov	WORD PTR gs:[di+PubSymRecStruc.pssIndSegDefPtr+2],fs
 	lfs	si,fs:[si+IndSegDefRecStruc.isdrMasterPtr]	; fs:si -> master segdef entry
 	test	fs:[si+MasterSegDefRecStruc.mssFlags],ABSOLUTESEGMENTFLAG
 	jne	p1lp32abs			; absolute public symbol (attached to absolute segment)
@@ -1470,14 +1472,14 @@ IFDEF SYMBOLPACK
 
 	les	di,gs:[bx+MasterSegDefRecStruc.mssNamePtr]	; es:di -> name
 	call	NormalESDIDest	; normalize es:di to destination name buffer
-	mov	si,OFFSET DGROUP:SYMBOLSText
+	mov	si,OFFSET SYMBOLSText
 	mov	cx,2			; 8 bytes, 2 dwords
 	repe	cmpsd		; compare entry name to SYMBOLS
 	jne	psesymout		; not equal
 
 	les	di,gs:[bx+MasterSegDefRecStruc.mssClassPtr]	; es:di -> class
 	call	NormalESDIDest	; normalize es:di to destination name buffer
-	mov	si,OFFSET DGROUP:SYMBOLSText
+	mov	si,OFFSET SYMBOLSText
 	mov	cx,2			; 8 bytes, 2 dwords
 	repe	cmpsd		; compare entry name to SYMBOLS
 	jne	psesymout		; not equal
@@ -1951,19 +1953,19 @@ Pass1LNAMESProc	ENDP
 Pass1COMENTProc	PROC
 	call	ReadByteDecCX	; get comment type, discard
 	call	ReadByteDecCX	; get comment class
-	mov	di,OFFSET DGROUP:COMENTClassTable	; es:di -> lookup table for object record types
+	mov	di,OFFSET COMENTClassTable	; es:di -> lookup table for object record types
 	push	cx			; save record length
-	mov	cx,ds:[di-2]	; get number of entries in table
+	mov	cx,[di-2]	; get number of entries in table
 	repne	scasb
 	pop	cx				; restore object record length to cx, KEEP FLAG STATUS
 	jne	pcpret			; class not found in table
 
 ; class found in table, transfer to appropriate code
 	dec	di				; di -> matching entry
-	sub	di,OFFSET DGROUP:COMENTClassTable	; di == class offset
+	sub	di,OFFSET COMENTClassTable	; di == class offset
 	add	di,di			; word offset
-	add	di,OFFSET DGROUP:COMENTClassVector	; di -> entry in COMENTClassVector table
-	call	word ptr ds:[di]		; transfer to appropriate routine
+	add	di,OFFSET COMENTClassVector	; di -> entry in COMENTClassVector table
+	call	word ptr [di]		; transfer to appropriate routine
 
 pcpret:
 	ret
@@ -1983,26 +1985,26 @@ COMENTClassLibSearchProc	PROC
 	jne	cclsret			; yes, don't process them
 
 ; fs:si -> original string, move to CompBuffSource
-	mov	di,OFFSET DGROUP:CompBuffSource	; ds:di -> destination
+	mov	di,OFFSET CompBuffSource	; ds:di -> destination
 
 ; transfer all name chars, fs:si -> name
 cclsloop:
 	cmp	si,SIZEIOBUFFBLK	; see if si is at wrap point
 	jb	cclstrans		; no
 	mov	si,IOBUFFSYSVARSIZE	; wrap si past sysvars
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; fs -> next block
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; fs -> next block
 
 cclstrans:
 	mov	al,fs:[si]
 	inc	si
-	mov	ds:[di],al
+	mov	[di],al
 	inc	di
 	dec	cx
 	jne	cclsloop
-	mov	BYTE PTR ds:[di],0	; null terminate the string
+	mov	BYTE PTR [di],0	; null terminate the string
 
 ccls2:
-	mov	si,OFFSET DGROUP:CompBuffSource	; ds:si -> filename
+	mov	si,OFFSET CompBuffSource	; ds:si -> filename
 	lodsb				; al holds first char of filename, si -> remaining name chars
 	mov	FileListFlag,2	; do remaining SaveOBJLIBFileName setup
 	mov	FreeFormatFlag,ON
@@ -2045,20 +2047,20 @@ COMENTClassLibModProc	PROC
 	mov	gs,CurrentBaseOBJBuff
 	mov	WORD PTR gs:[IOBuffHeaderStruc.ibhsModNamePtr],si	; save pointer to module name
 	mov	WORD PTR gs:[IOBuffHeaderStruc.ibhsModNamePtr+2],fs
-	mov	di,OFFSET DGROUP:LIBModuleName
+	mov	di,OFFSET LIBModuleName
 	call	ReadNameString	; read object record name string
 	cmp	IsLinkInfoLimitOption,OFF	; see if displaying limited link information
 	jne	clmret			; yes, don't display this
 	cmp	IsLinkInfoOption,OFF	; see if displaying link information
 	je	clmret			; no
 
-	mov	bx,OFFSET DGROUP:ProcessModText
+	mov	bx,OFFSET ProcessModText
 	call	DisplayTextStringNoCRLF
-	mov	bx,OFFSET DGROUP:LIBModuleName
+	mov	bx,OFFSET LIBModuleName
 	call	DisplayVarStringNoCRLF
-	mov	bx,OFFSET DGROUP:InText
+	mov	bx,OFFSET InText
 	call	DisplayTextStringNoCRLF
-	mov	bx,OFFSET DGROUP:CurrentFileName
+	mov	bx,OFFSET CurrentFileName
 	call	DisplayVarStringNoCRLF
 
 clmret:
@@ -2748,8 +2750,8 @@ p1cd32savepub:
 ; fs:si -> individual segdef entry
 ; gs:di -> comdat record entry
 p1cd32getmast:
-	mov	gs:[di+WORD PTR ComDatRecStruc.cdsIndSegDefPtr],si	; save -> segdef entry
-	mov	gs:[di+WORD PTR ComDatRecStruc.cdsIndSegDefPtr+2],fs
+	mov	WORD PTR gs:[di+ComDatRecStruc.cdsIndSegDefPtr+0],si	; save -> segdef entry
+	mov	WORD PTR gs:[di+ComDatRecStruc.cdsIndSegDefPtr+2],fs
 	or	gs:[di+ComDatRecStruc.cdsFlags],SEGRELCOMDATFLAG	; flag segment relative
 	lfs	si,fs:[si+IndSegDefRecStruc.isdrMasterPtr]	; fs:si -> master segdef entry
 	test	fs:[si+MasterSegDefRecStruc.mssFlags],ABSOLUTESEGMENTFLAG
@@ -2958,7 +2960,7 @@ Pass1THEADRProc	PROC
 	mov	gs,CurrentBaseOBJBuff
 	mov	WORD PTR gs:[IOBuffHeaderStruc.ibhsModNamePtr],si	; save pointer to module name
 	mov	WORD PTR gs:[IOBuffHeaderStruc.ibhsModNamePtr+2],fs
-	mov	di,OFFSET DGROUP:ModuleName
+	mov	di,OFFSET ModuleName
 	call	ReadNameString	; read object record name string
 	ret
 Pass1THEADRProc	ENDP
@@ -2973,7 +2975,7 @@ Pass1LHEADRProc	PROC
 	mov	gs,CurrentBaseOBJBuff
 	mov	WORD PTR gs:[IOBuffHeaderStruc.ibhsModNamePtr],si	; save pointer to module name
 	mov	WORD PTR gs:[IOBuffHeaderStruc.ibhsModNamePtr+2],fs
-	mov	di,OFFSET DGROUP:ModuleName
+	mov	di,OFFSET ModuleName
 	call	ReadNameString	; read object record name string
 	ret
 Pass1LHEADRProc	ENDP
@@ -3128,7 +3130,7 @@ Pass1MSLIBRProc	PROC
 	mov	FileListFlag,2	; flag for SaveOBJLIBFileName setup
 	mov	FreeFormatFlag,ON
 	push	si			; save critical register
-	mov	si,OFFSET DGROUP:CurrentFileName
+	mov	si,OFFSET CurrentFileName
 	lodsb
 	mov	DefaultLIBAddFlag,OFF	; flag non-default library addition
 	call	SaveOBJLIBFileName	; move file to library list

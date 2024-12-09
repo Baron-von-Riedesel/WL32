@@ -75,6 +75,7 @@ _DATA	SEGMENT WORD PUBLIC USE16 'DATA'
 
 ; globals
 IsArgsFlag	DB	0
+	align 2
 WarningsCount	DW	0
 Pass2Flag	DB	0		; nonzero if on pass 2+ of link
 
@@ -156,7 +157,6 @@ endif
 main		PROC
 
 	call	Setup		; get system variables and values, trap control C
-	call	DisplayCredits	; display linker credit line
 	cmp	IsArgsFlag,FALSE	; check for arguments to linker
 	jne	m2				; at least one argument
 	call	DisplaySummary	; display summary of linker syntax/commands
@@ -164,6 +164,10 @@ main		PROC
 
 m2:
 	call	ParseCommandLine	; parse linker command line
+	cmp	IsNoLogoOption,OFF
+	jne m2a
+	call	DisplayCredits	; display linker credit line
+m2a:
 	cmp	IsParseDisplayOption,OFF	; see if parse display flag set
 	je	m3				; no
 	call	DisplayParseResults	; display results of parse
@@ -173,16 +177,16 @@ m3:
 	call	OBJPass1	; do first pass on object modules
 	call	LIBPass1	; do first pass on libraries
 
-	mov	bx,OFFSET DGROUP:ResolvingSegText
+	mov	bx,OFFSET ResolvingSegText
 	call	DisplayLinkInfo	
 	call	Pass1Resolution	; do first pass resolution processing
 
-	mov	bx,OFFSET DGROUP:ApplyingOBJText
+	mov	bx,OFFSET ApplyingOBJText
 	call	DisplayLinkInfo	
 	mov	Pass2Flag,ON	; flag doing second pass
 	call	OBJPass2	; do second pass on object modules
 
-	mov	bx,OFFSET DGROUP:ApplyingLIBText
+	mov	bx,OFFSET ApplyingLIBText
 	call	DisplayLinkInfo	
 	call	LIBPass2	; do second pass on libraries
 

@@ -67,6 +67,8 @@ BAKPATLocType	DB	?	; bakpat location type
 ClassSelectedFlag	DB	?	; nonzero if class selected for segment resolution
 ResOccurredFlag	DB	?	; nonzero if resolution occcured in segment ordering pass
 
+	align 2
+
 CheckMasterEntry	DW	?	; current master segdef entry within block being checked for resolution
 UnresolvedSegCount	DW	?	; count of unresolved segments
 
@@ -137,6 +139,8 @@ DOSSEGPhase	DB	1		; DOSSEG segment ordering phase
 						;  4==not begdata bss stack, 5==bss, 6==stack
 IsDOSSEG	DB	0		; nonzero if dosseg segment ordering
 StackSegFoundFlag	DB	0	; nonzero if stack segment found in program
+
+	align 2
 
 SegmentID	DW	0		; segment identifier
 
@@ -330,7 +334,7 @@ bplmatchind:
 	cmp	si,SIZEIOBUFFBLK	; see if at or past wrap point
 	jb	bpl2			; no
 	sub	si,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; fs -> next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; fs -> next block in chain
 
 ; fs:si -> location to adjust
 ; dword on stack == value to adjust with
@@ -352,7 +356,7 @@ bpl3:
 	inc	si				; move to next location to fix up
 	cmp	si,SIZEIOBUFFBLK	; see if past wrap pointer
 	jb	bpl3a			; no
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	si,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)
 
 bpl3a:
@@ -366,7 +370,7 @@ bpl4:
 	inc	si
 	cmp	si,SIZEIOBUFFBLK	; see if past wrap pointer
 	jb	bpl4a			; no
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	si,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)
 
 bpl4a:
@@ -375,7 +379,7 @@ bpl4a:
 	inc	si
 	cmp	si,SIZEIOBUFFBLK	; see if past wrap pointer
 	jb	bpl4b			; no
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	si,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)
 
 bpl4b:
@@ -384,7 +388,7 @@ bpl4b:
 	inc	si
 	cmp	si,SIZEIOBUFFBLK	; see if past wrap pointer
 	jb	bpl4c			; no
-	mov	fs,fs:[OFFSET IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
+	mov	fs,fs:[IOBuffHeaderStruc.ibhsChildPtr]	; get next block in chain
 	sub	si,(SIZEIOBUFFBLK-IOBUFFSYSVARSIZE)
 
 bpl4c:
@@ -592,7 +596,7 @@ sdsmainloop:
 
 sdsentloop:
 	les	di,gs:[bx+GrpDefRecStruc.gdrGrpNamePtr]
-	mov	si,OFFSET DGROUP:DGROUPText
+	mov	si,OFFSET DGROUPText
 
 ; ds:si -> current grpdef name
 ; es:di -> stored grpdef name
@@ -600,7 +604,7 @@ sdslencmp:
 	cmpsb				; see if length byte matches
 	jne	sdsnextent		; no
 
-	mov	cl,ds:[si-1]
+	mov	cl,[si-1]
 	xor	ch,ch			; get # of bytes to check
 	mov	ax,cx			; save count of bytes
 	and	cx,1			; get odd byte
@@ -646,12 +650,12 @@ sds4:
 
 ; check if _edata or _EDATA symbol already exists and is public or common
 	mov	SearchExistSymFlag,ON	; flag only search for existence
-	mov	si,OFFSET DGROUP:Lower_edataText
+	mov	si,OFFSET Lower_edataText
 	push	ds
 	pop	fs				; fs:si -> symbol
 	call	GetPubSymEntry
 	jnc	sds_edataex		; _edata symbol exists
-	mov	si,OFFSET DGROUP:Upper_EDATAText
+	mov	si,OFFSET Upper_EDATAText
 	call	GetPubSymEntry
 	jnc	sds_edataex		; _edata symbol exists
 
@@ -682,12 +686,12 @@ sdsmod1:
 ; check if __edata or __EDATA symbol already exists and is public or common
 sds__edata:
 	mov	SearchExistSymFlag,ON	; flag only search for existence
-	mov	si,OFFSET DGROUP:Lower__edataText
+	mov	si,OFFSET Lower__edataText
 	push	ds
 	pop	fs				; fs:si -> symbol
 	call	GetPubSymEntry
 	jnc	sds__edataex		; __edata symbol exists
-	mov	si,OFFSET DGROUP:Upper__EDATAText
+	mov	si,OFFSET Upper__EDATAText
 	call	GetPubSymEntry
 	jnc	sds__edataex		; __edata symbol exists
 
@@ -720,12 +724,12 @@ sds_end:
 
 ; check if _end or _END symbol already exists and is public or common
 	mov	SearchExistSymFlag,ON	; flag only search for existence
-	mov	si,OFFSET DGROUP:Lower_endText
+	mov	si,OFFSET Lower_endText
 	push	ds
 	pop	fs				; fs:si -> symbol
 	call	GetPubSymEntry
 	jnc	sds_endex		; _end symbol exists
-	mov	si,OFFSET DGROUP:Upper_ENDText
+	mov	si,OFFSET Upper_ENDText
 	call	GetPubSymEntry
 	jnc	sds_endex		; _end symbol exists
 
@@ -756,12 +760,12 @@ sdsmod2:
 ; check if __end or __END symbol already exists and is public or common
 sds__end:
 	mov	SearchExistSymFlag,ON	; flag only search for existence
-	mov	si,OFFSET DGROUP:Lower__endText
+	mov	si,OFFSET Lower__endText
 	push	ds
 	pop	fs				; fs:si -> symbol
 	call	GetPubSymEntry
 	jnc	sds__endex		; __end symbol exists
-	mov	si,OFFSET DGROUP:Upper__ENDText
+	mov	si,OFFSET Upper__ENDText
 	call	GetPubSymEntry
 	jnc	sds__endex		; __end symbol exists
 
@@ -811,7 +815,7 @@ dtsentloop:
 	or	dx,dx			; see if any more entries in block
 	je	dtsnextblk		; no match found, try next block, if any
 
-	mov	si,OFFSET DGROUP:_TEXTText	; ds:si -> source string
+	mov	si,OFFSET _TEXTText	; ds:si -> source string
 	les	di,fs:[bx+MasterSegDefRecStruc.mssNamePtr]	; es:di -> segment on record
 	cmp	di,SIZEIOBUFFBLK-MAXOBJRECNAME	; see if normalization might be needed
 	jb	dtslencmp		; no
@@ -822,7 +826,7 @@ dtslencmp:
 	cmpsb				; see if length byte matches
 	jne	dtsnextent		; no
 
-	mov	cl,ds:[si-1]
+	mov	cl,[si-1]
 	xor	ch,ch			; get # of bytes to check
 	mov	ax,cx			; save count of bytes
 	and	cx,1			; get odd byte
@@ -878,7 +882,7 @@ dtsnochk:
 ; add 16 to the offset of each individual segment
 dtsdosloop:
 	add	fs:[bx+IndSegDefRecStruc.isdrSegOffset],ecx
-	cmp	fs:[bx+WORD PTR IndSegDefRecStruc.isdrNextIndSegPtr+2],0	; see if another entry
+	cmp	WORD PTR fs:[bx+IndSegDefRecStruc.isdrNextIndSegPtr+2],0	; see if another entry
 	je	dtsret			; no, all updated
 	lfs	bx,fs:[bx+IndSegDefRecStruc.isdrNextIndSegPtr]	; fs:bx -> next entry
 	jmp	SHORT dtsdosloop
@@ -936,9 +940,9 @@ rcdentloop:
 	mov	SegmentNameIndex,2
 	mov	GroupNameIndex,0
 	mov	gs,LNAMESIndexSel
-	mov	WORD PTR gs:[0],OFFSET DGROUP:CODEText
-	mov	WORD PTR gs:[4],OFFSET DGROUP:COMDAT_SEGText
-	mov	ax,DGROUP
+	mov	WORD PTR gs:[0],OFFSET CODEText
+	mov	WORD PTR gs:[4],OFFSET COMDAT_SEGText
+	mov	ax,ss
 	mov	WORD PTR gs:[2],ax
 	mov	WORD PTR gs:[6],ax
 	mov	eax,fs:[bx+ComDatRecStruc.cdsLength]	; get comdat length
@@ -1119,10 +1123,10 @@ ResolveNearCommunal	PROC
 	mov	SegmentNameIndex,2
 	mov	GroupNameIndex,3
 	mov	gs,LNAMESIndexSel
-	mov	WORD PTR gs:[0],OFFSET DGROUP:BSSText
-	mov	WORD PTR gs:[4],OFFSET DGROUP:c_commonText
-	mov	WORD PTR gs:[8],OFFSET DGROUP:DGROUPText
-	mov	ax,DGROUP
+	mov	WORD PTR gs:[0],OFFSET BSSText
+	mov	WORD PTR gs:[4],OFFSET c_commonText
+	mov	WORD PTR gs:[8],OFFSET DGROUPText
+	mov	ax,ss
 	mov	WORD PTR gs:[2],ax
 	mov	WORD PTR gs:[6],ax
 	mov	WORD PTR gs:[10],ax
@@ -1193,9 +1197,9 @@ ResolveFarCommunal	PROC
 	mov	SegmentNameIndex,2
 	mov	GroupNameIndex,0
 	mov	gs,LNAMESIndexSel
-	mov	WORD PTR gs:[0],OFFSET DGROUP:FAR_BSSText
-	mov	WORD PTR gs:[4],OFFSET DGROUP:FAR_BSSText
-	mov	ax,DGROUP
+	mov	WORD PTR gs:[0],OFFSET FAR_BSSText
+	mov	WORD PTR gs:[4],OFFSET FAR_BSSText
+	mov	ax,ss
 	mov	WORD PTR gs:[2],ax
 	mov	WORD PTR gs:[6],ax
 	mov	eax,fs:[bx+PubSymRecStruc.pssOffset]	; get communal length
@@ -1264,9 +1268,9 @@ rfchuge:
 	mov	SegmentNameIndex,2
 	mov	GroupNameIndex,0
 	mov	gs,LNAMESIndexSel
-	mov	WORD PTR gs:[0],OFFSET DGROUP:HUGE_BSSText
-	mov	WORD PTR gs:[4],OFFSET DGROUP:HUGE_BSSText
-	mov	ax,DGROUP
+	mov	WORD PTR gs:[0],OFFSET HUGE_BSSText
+	mov	WORD PTR gs:[4],OFFSET HUGE_BSSText
+	mov	ax,ss
 	mov	WORD PTR gs:[2],ax
 	mov	WORD PTR gs:[6],ax
 	mov	SegmentLength,65536	; init segment length
@@ -1445,15 +1449,15 @@ csodores:
 	inc	SegmentID
 	cmp	WORD PTR LastSegDefPtr+2,0	; see if first segdef
 	jne	csouplast		; no
-	mov	WORD PTR FirstSegment,bx	; keep pointer to first segment in program
+	mov	WORD PTR FirstSegment+0,bx	; keep pointer to first segment in program
 	mov	WORD PTR FirstSegment+2,fs
 	jmp	SHORT csosetlast
 
 ; update previously last segdef pointer
 csouplast:
 	lgs	di,LastSegDefPtr	; gs:di -> previously last segdef
-	mov	gs:[di+WORD PTR MasterSegDefRecStruc.mssNextSegPtr],bx
-	mov	gs:[di+WORD PTR MasterSegDefRecStruc.mssNextSegPtr+2],fs
+	mov	WORD PTR gs:[di+MasterSegDefRecStruc.mssNextSegPtr+0],bx
+	mov	WORD PTR gs:[di+MasterSegDefRecStruc.mssNextSegPtr+2],fs
 
 csosetlast:
 	mov	WORD PTR LastSegDefPtr,bx	; keep pointer to last segdef in program
@@ -1677,7 +1681,7 @@ csoclcmp:
 
 ; current and previous class name match
 csoclmatch:
-	push	DGROUP		; restore ds -> wl32 data
+	push	ss		; restore ds -> wl32 data
 	pop	ds
 	cmp	IsDOSSEG,0		; see if DOSSEG segment ordering
 	je	csocl2			; no, bypass group pointer check
@@ -1697,7 +1701,7 @@ csocl2:
 
 ; current and previous class name did not match
 csoclfail:
-	push	DGROUP		; restore ds -> wl32 data
+	push	ss		; restore ds -> wl32 data
 	pop	ds
 	jmp	csonextent	; try next entry
 
@@ -1746,7 +1750,7 @@ GetDOSSEGType	PROC
 	cmp	dl,3			; see if string length <4 bytes
 	jbe	gdt2			; yes, automatic no match
 	sub	di,3			; back up to last four chars in name
-	mov	si,OFFSET DGROUP:CODEText
+	mov	si,OFFSET CODEText
 	call	CaselessStrCmp	; see if match
 	jc	gdt2			; no match
 	mov	al,1			; flag CODE
@@ -1767,7 +1771,7 @@ gdt2:
 ; gs:bx -> group name, normalized
 ; compare against DGROUP with length prefix
 	mov	cx,3			; 7 bytes, 3 words+1
-	mov	si,OFFSET DGROUP:DGROUPText
+	mov	si,OFFSET DGROUPText
 
 ; compare loop for DGROUP group name
 gdtloop:
@@ -1786,7 +1790,7 @@ gdtloop:
 	jbe	gdt4			; yes, automatic no match
 	mov	di,bp
 	sub	di,6			; back up to last seven chars in name
-	mov	si,OFFSET DGROUP:BEGDATAText
+	mov	si,OFFSET BEGDATAText
 	call	CaselessStrCmp	; see if match
 	jc	gdt4			; no match
 	mov	al,3			; flag BEGDATA
@@ -1803,7 +1807,7 @@ gdt4:
 	jbe	gdt5			; yes, automatic no match
 	mov	di,bp
 	sub	di,2			; back up to last three chars in name
-	mov	si,OFFSET DGROUP:BSSText
+	mov	si,OFFSET BSSText
 	call	CaselessStrCmp	; see if match
 	jc	gdt5			; no match
 	mov	al,5			; flag BSS
@@ -1814,7 +1818,7 @@ gdt5:
 	jbe	gdt6			; yes, automatic no match
 	mov	di,bp			; di -> char past null terminator
 	sub	di,4			; back up to last five chars in name
-	mov	si,OFFSET DGROUP:STACKText
+	mov	si,OFFSET STACKText
 	call	CaselessStrCmp	; see if match
 	jc	gdt6			; no match
 	mov	al,6			; flag STACK

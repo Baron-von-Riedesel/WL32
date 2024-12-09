@@ -187,7 +187,7 @@ WriteMAPFile	PROC
 	mov	dx,MAPSYMFILEBUFFERSIZE
 	call	AllocateMemory
 	mov	MAPSYMBufferSelector,ax
-	mov	bx,OFFSET DGROUP:CreatingMAPText
+	mov	bx,OFFSET CreatingMAPText
 	call	DisplayLinkInfo
 	call	InitMAPFile
 	call	MapSegments
@@ -216,15 +216,15 @@ WriteSYMFile	PROC
 
 wsfinit:
 	mov	PubNameSymbolCount,0
-	mov	bx,OFFSET DGROUP:CreatingSYMText
+	mov	bx,OFFSET CreatingSYMText
 	call	DisplayLinkInfo
-	mov	dx,OFFSET DGROUP:SYMFileName
+	mov	dx,OFFSET SYMFileName
 	call	CreateFile
 	mov	SYMFileHandle,ax	; save SYM file handle
 
 ; write SYM file signature
 	mov	bx,ax
-	mov	dx,OFFSET DGROUP:SYMSigText
+	mov	dx,OFFSET SYMSigText
 	mov	cx,SYMSIGSIZE
 	call	WriteFile
 
@@ -280,9 +280,9 @@ wsfchkline:
 
 wsfsegloop:
 	mov	gs,ax			; gs -> source line block
-	mov	di,OFFSET DGROUP:MAPFileBuffer	; init di -> write buffer
-	mov	ds:[di+SymbolStruc.ssSymbolType],0ffh	; flag source line
-	mov	ds:[di+SymbolStruc.ssSymbolDword],0	; zero symbol offset value
+	mov	di,OFFSET MAPFileBuffer	; init di -> write buffer
+	mov	[di+SymbolStruc.ssSymbolType],0ffh	; flag source line
+	mov	[di+SymbolStruc.ssSymbolDword],0	; zero symbol offset value
 
 	add	di,OFFSET SymbolStruc.ssSymbolTLen	; di -> start of name storage
 	lds	si,fs:[IOBuffHeaderStruc.ibhsModNamePtr]	; ds:si -> module name
@@ -292,7 +292,7 @@ wsfsegloop:
 	mov	dx,si
 	inc	dx			; dx -> name past length byte
 	xor	ax,ax
-	mov	al,ds:[si]
+	mov	al,[si]
 	test	al,al
 	je	wsfback		; zero length name
 	inc	ax			; adjust for length byte
@@ -305,9 +305,9 @@ wsfremloop:
 	dec	si
 	cmp	si,dx
 	jb	wsfremdone
-	cmp	BYTE PTR ds:[si],'\'
+	cmp	BYTE PTR [si],'\'
 	je	wsfremdone
-	cmp	BYTE PTR ds:[si],':'
+	cmp	BYTE PTR [si],':'
 	je	wsfremdone
 	inc	cx
 	jmp	wsfremloop
@@ -331,8 +331,8 @@ wsfremdone:
 	pop	ds				; restore ds -> wl32 data
 
 	mov	ax,gs:[SourceLineBlkStruc.ssbSegmentID]
-;	mov	WORD PTR ds:[OFFSET DGROUP:MAPFileBuffer+OFFSET SymbolStruc.ssSymbolSeg],ax
-	mov	WORD PTR ds:[DGROUP:MAPFileBuffer+SymbolStruc.ssSymbolSeg],ax
+;	mov	WORD PTR [MAPFileBuffer+OFFSET SymbolStruc.ssSymbolSeg],ax
+	mov	WORD PTR [MAPFileBuffer+SymbolStruc.ssSymbolSeg],ax
 
 ; add up total number of line numbers for segment
 	xor	esi,esi
@@ -351,13 +351,13 @@ wsfgottot:
 	mov	eax,esi
 	stosd				; save number of entries following file name
 	mov	cx,di
-	mov	dx,OFFSET DGROUP:MAPFileBuffer	; dx -> write buffer
+	mov	dx,OFFSET MAPFileBuffer	; dx -> write buffer
 	sub	cx,dx			; cx == number of chars in SYM entry header
 	movzx	ecx,cx
 	shl	esi,3			; x8, convert 2 dwords/entry to bytes
 	add	esi,ecx			; compute total SYM entry byte count
-;	mov	DWORD PTR ds:[OFFSET DGROUP:MAPFileBuffer+OFFSET SymbolStruc.ssSymbolNext],esi	; save offset to next symbol
-	mov	DWORD PTR ds:[DGROUP:MAPFileBuffer+SymbolStruc.ssSymbolNext],esi	; save offset to next symbol
+;	mov	DWORD PTR [MAPFileBuffer+OFFSET SymbolStruc.ssSymbolNext],esi	; save offset to next symbol
+	mov	DWORD PTR [MAPFileBuffer+SymbolStruc.ssSymbolNext],esi	; save offset to next symbol
 
 	mov	bx,SYMFileHandle
 	call	WriteFile	; write SYM entry header
@@ -476,27 +476,27 @@ wsfshowloop:
 	mov	fs,PubNameSymPtrSeg
 	lfs	bx,fs:[4*ebp]
 	inc	ebp				; ebp -> next pointer entry, if any
-	mov	di,OFFSET DGROUP:MAPFileBuffer	; init di -> write buffer
+	mov	di,OFFSET MAPFileBuffer	; init di -> write buffer
 	test	fs:[bx+PubSymRecStruc.pssFlags],ABSOLUTESYMBOLFLAG	; see if absolute symbol
 	je	wsfnotabs	; not absolute
 
 ; absolute symbol
-	mov	ds:[di+SymbolStruc.ssSymbolType],1	; flag absolute
-	mov	ax,fs:[bx+WORD PTR PubSymRecStruc.pssIndSegDefPtr]	; get frame number
-	mov	ds:[di+SymbolStruc.ssSymbolSeg],ax	; save frame
+	mov	[di+SymbolStruc.ssSymbolType],1	; flag absolute
+	mov	ax,WORD PTR fs:[bx+PubSymRecStruc.pssIndSegDefPtr]	; get frame number
+	mov	[di+SymbolStruc.ssSymbolSeg],ax	; save frame
 	mov	eax,fs:[bx+PubSymRecStruc.pssOffset]	; get public offset
-	mov	ds:[di+SymbolStruc.ssSymbolDword],eax	; save symbol offset value
+	mov	[di+SymbolStruc.ssSymbolDword],eax	; save symbol offset value
 	jmp	SHORT wsf2
 
 wsfnotabs:
-	mov	ds:[di+SymbolStruc.ssSymbolType],0	; flag not absolute
+	mov	[di+SymbolStruc.ssSymbolType],0	; flag not absolute
 	lgs	si,fs:[bx+PubSymRecStruc.pssIndSegDefPtr]	; gs:si -> individual segdef
 	mov	eax,gs:[si+IndSegDefRecStruc.isdrSegOffset]	; get individual segment offset
 	lgs	si,gs:[si+IndSegDefRecStruc.isdrMasterPtr]	; gs:si -> master segdef
 	add	eax,fs:[bx+PubSymRecStruc.pssOffset]	; add in public offset
-	mov	ds:[di+SymbolStruc.ssSymbolDword],eax	; save symbol offset value
+	mov	[di+SymbolStruc.ssSymbolDword],eax	; save symbol offset value
 	mov	ax,gs:[si+MasterSegDefRecStruc.mssSegmentID]	; get segment identifier
-	mov	ds:[di+SymbolStruc.ssSymbolSeg],ax	; save segment identifier for symbol
+	mov	[di+SymbolStruc.ssSymbolSeg],ax	; save segment identifier for symbol
 
 wsf2:
 	add	di,OFFSET SymbolStruc.ssSymbolTLen	; di -> start of name storage
@@ -515,12 +515,12 @@ wsf2:
 	rep	movsb
 
 wsf3:
-	push	DGROUP
+	push	ss
 	pop	ds				; restore ds -> wl32 data
 
 	mov	bx,SYMFileHandle
 	mov	cx,di
-	mov	dx,OFFSET DGROUP:MAPFileBuffer
+	mov	dx,OFFSET MAPFileBuffer
 	sub	cx,dx			; cx == number of printable chars
 	mov	di,dx			; di -> write buffer
 
@@ -528,7 +528,7 @@ wsf3:
 ;	mov	eax,TotalMAPSYMBufferOffset
 ;	add	eax,SYMSIGSIZE
 ;	add	eax,ecx
-	mov	ds:[di+SymbolStruc.ssSymbolNext],ecx	; save offset to next symbol
+	mov	[di+SymbolStruc.ssSymbolNext],ecx	; save offset to next symbol
 
 	call	MAPSYMBufferFile	; write to main buffer
 
@@ -551,9 +551,9 @@ wsfdone:
 	mov	ax,4200h		; move file pointer relative start of file
 	int	21h
 
-	mov	dx,OFFSET DGROUP:MAPFileBuffer
+	mov	dx,OFFSET MAPFileBuffer
 	mov	di,dx			; di -> write buffer
-	mov	DWORD PTR ds:[di],-1	; no next symbol, -1 offset (relative zero offset within symbol entry)
+	mov	DWORD PTR [di],-1	; no next symbol, -1 offset (relative zero offset within symbol entry)
 	mov	cx,4			; dword to write
 	call	WriteFile
 
@@ -576,11 +576,11 @@ WriteSYMFile	ENDP
 ; open map file and write header
 
 InitMapFile	PROC
-	mov	dx,OFFSET DGROUP:MAPFileName
+	mov	dx,OFFSET MAPFileName
 	call	CreateFile
 	mov	MAPFileHandle,ax	; save map file handle
 
-	mov	si,OFFSET DGROUP:ProgramText
+	mov	si,OFFSET ProgramText
 	mov	cl,[si-1]
 	xor	ch,ch
 	mov	dx,si
@@ -588,17 +588,17 @@ InitMapFile	PROC
 	call	WriteFile
 
 	mov	dx,bx			; dx holds file handle
-	mov	bx,OFFSET DGROUP:EXEFileName
+	mov	bx,OFFSET EXEFileName
 	call	WriteFileVarString
 
-	mov	si,OFFSET DGROUP:DateText
+	mov	si,OFFSET DateText
 	mov	cl,[si-1]
 	xor	ch,ch
 	mov	dx,si
 	mov	bx,MAPFileHandle
 	call	WriteFile
 
-	mov	di,OFFSET DGROUP:MAPFileBuffer
+	mov	di,OFFSET MAPFileBuffer
 	mov	ah,2ah			; get date
 	int	21h
 	mov	ax,cx			; ax==year
@@ -627,19 +627,19 @@ InitMapFile	PROC
 	add	ax,cx			; ax==year in decimal
 	xchg	al,ah
 	stosw				; write year to string
-	mov	dx,OFFSET DGROUP:MAPFileBuffer
+	mov	dx,OFFSET MAPFileBuffer
 	mov	cx,8
 	mov	bx,MAPFileHandle
 	call	WriteFile
 
-	mov	si,OFFSET DGROUP:TimeText
+	mov	si,OFFSET TimeText
 	mov	cl,[si-1]
 	xor	ch,ch
 	mov	dx,si
 	mov	bx,MAPFileHandle
 	call	WriteFile
 
-	mov	di,OFFSET DGROUP:MAPFileBuffer
+	mov	di,OFFSET MAPFileBuffer
 	mov	ah,2ch			; get time
 	int	21h
 	mov	al,ch			; al==hours
@@ -672,12 +672,12 @@ asctime4:
 	mov	ah,"m"
 	mov	al,dl			; ax== am/pm indicator
 	stosw
-	mov	dx,OFFSET DGROUP:MAPFileBuffer
+	mov	dx,OFFSET MAPFileBuffer
 	mov	cx,8
 	mov	bx,MAPFileHandle
 	call	WriteFile
 
-	mov	si,OFFSET DGROUP:MapSegText
+	mov	si,OFFSET MapSegText
 	mov	cl,[si-1]
 	xor	ch,ch
 	mov	dx,si
@@ -707,7 +707,7 @@ msprintloop:
 
 ; init the buffer for segment printing
 	mov	cx,76/4
-	mov	di,OFFSET DGROUP:MAPFileBuffer
+	mov	di,OFFSET MAPFileBuffer
 	mov	dx,di
 	mov	eax,20202020h
 	rep	stosd			; pad maximum written amount of buffer with spaces
@@ -745,9 +745,9 @@ msprintend:
 	rep	movsb			; transfer segment name
 
 ms2:
-	cmp	di,OFFSET DGROUP:MAPFileBuffer+55	; see if at or past class column
+	cmp	di,OFFSET MAPFileBuffer+55	; see if at or past class column
 	ja	msclass			; yes
-	mov	di,OFFSET DGROUP:MAPFileBuffer+55	; skip ahead to class column (pad segment name with spaces)
+	mov	di,OFFSET MAPFileBuffer+55	; skip ahead to class column (pad segment name with spaces)
 
 msclass:
 	lds	si,fs:[bx+MasterSegDefRecStruc.mssClassPtr]
@@ -758,12 +758,12 @@ msclass:
 	rep	movsb			; transfer class name
 
 ms3:
-	push	DGROUP
+	push	ss
 	pop	ds				; restore ds -> wl32 data
 
-	cmp	di,OFFSET DGROUP:MAPFileBuffer+71	; see if at or past number column
+	cmp	di,OFFSET MAPFileBuffer+71	; see if at or past number column
 	ja	msnumber		; yes
-	mov	di,OFFSET DGROUP:MAPFileBuffer+71	; skip ahead to number column (pad class name with spaces)
+	mov	di,OFFSET MAPFileBuffer+71	; skip ahead to number column (pad class name with spaces)
 
 msnumber:
 	mov	dx,SegmentNumber
@@ -773,7 +773,7 @@ msnumber:
 	mov	ax,LF*256+CR	; end with CR/LF
 	stosw
 	mov	cx,di
-	mov	dx,OFFSET DGROUP:MAPFileBuffer
+	mov	dx,OFFSET MAPFileBuffer
 	sub	cx,dx			; cx == number of printable chars
 	push	bx			; save bx -> segment entry
 	mov	bx,MAPFileHandle
@@ -920,7 +920,7 @@ WordToAsciiHex	ENDP
 MapGroups	PROC
 	cmp	FirstGrpDefBlkPtr,0	; see if first group block pointer null, no groups
 	je	mgret			; yes
-	mov	si,OFFSET DGROUP:OrgGroupText
+	mov	si,OFFSET OrgGroupText
 	mov	cl,[si-1]
 	xor	ch,ch
 	mov	dx,si
@@ -942,7 +942,7 @@ mgentloop:
 	cmp	ax,fs:[GrpDefBlkStruc.gdbCount]	; see if end entry in block
 	jae	mgnextblk		; yes, try next block, if any (shouldn't be)
 
-	mov	di,OFFSET DGROUP:MAPFileBuffer	; init di -> write buffer
+	mov	di,OFFSET MAPFileBuffer	; init di -> write buffer
 	mov	al,' '
 	stosb				; leading space
 	mov	edx,fs:[bx+GrpDefRecStruc.gdrGrpOffset]	; get group start
@@ -964,13 +964,13 @@ mgentloop:
 	rep	movsb			; transfer group name
 
 mg2:
-	push	DGROUP
+	push	ss
 	pop	ds				; restore ds -> wl32 data
 
 	mov	ax,LF*256+CR	; end with CR/LF
 	stosw
 	mov	cx,di
-	mov	dx,OFFSET DGROUP:MAPFileBuffer
+	mov	dx,OFFSET MAPFileBuffer
 	sub	cx,dx			; cx == number of printable chars
 	push	bx			; save bx -> group entry
 	mov	bx,MAPFileHandle
@@ -1014,7 +1014,7 @@ MapPublics	PROC
 	mov	PubNameSymPtrSeg,ax
 	mov	gs,ax			; gs -> symbol pointers
 
-	mov	si,OFFSET DGROUP:PubNameText
+	mov	si,OFFSET PubNameText
 	mov	cl,[si-1]
 	xor	ch,ch
 	mov	dx,si
@@ -1058,7 +1058,7 @@ mpsort:
 	call	SortMapSymbolName
 	call	WriteMapSymbol	; write the name sorted map symbols
 
-	mov	si,OFFSET DGROUP:AddressText
+	mov	si,OFFSET AddressText
 	mov	cl,[si-1]
 	xor	ch,ch
 	mov	dx,si
@@ -1166,7 +1166,7 @@ whileloop:
 	xor	ecx,ecx			; zero high bytes of register for following repe
 
 	lds	si,fs:[4*eax]	; ds:si -> a[j-h]
-	lds	si,ds:[si+PubSymRecStruc.pssNamePtr]	; ds:si -> public name
+	lds	si,[si+PubSymRecStruc.pssNamePtr]	; ds:si -> public name
 	les	di,gs:vValue	; es:di==v
 	les	di,es:[di+PubSymRecStruc.pssNamePtr]	; es:di -> public name
 
@@ -1176,11 +1176,11 @@ whileloop:
 
 ;need to normalize name
 	call	NormalDSSISource
-	mov	cl,ds:[si]		; get length of first name
+	mov	cl,[si]		; get length of first name
 	jmp	SHORT sort3
 
 firstlen:
-	mov	cl,ds:[si]		; get length of first name
+	mov	cl,[si]		; get length of first name
 	mov	ax,si
 	add	ax,cx
 	cmp	ax,SIZEIOBUFFBLK
@@ -1251,7 +1251,7 @@ nexth:
 	jmp	NEAR PTR hloop
 
 sortend:
-	mov	ax,DGROUP
+	mov	ax,ss
 	mov	ds,ax
 
 smsret:
@@ -1363,13 +1363,13 @@ smawhileloop:
 
 ; a[j-h] > v
 	xor	eax,eax			; zero out public offset of first element
-	test	ds:[si+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	[si+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	je	sma2			; unresolved, zero offset
-	mov	eax,ds:[si+PubSymRecStruc.pssOffset]	; get in public offset
-	lds	si,ds:[si+PubSymRecStruc.pssIndSegDefPtr]	; ds:si -> individual segdef
-	add	eax,ds:[si+IndSegDefRecStruc.isdrSegOffset]	; add in individual segment offset
-	lds	si,ds:[si+IndSegDefRecStruc.isdrMasterPtr]	; ds:si -> master segdef
-	add	eax,ds:[si+MasterSegDefRecStruc.mssSegOffset]	; add offset from start of program
+	mov	eax,[si+PubSymRecStruc.pssOffset]	; get in public offset
+	lds	si,[si+PubSymRecStruc.pssIndSegDefPtr]	; ds:si -> individual segdef
+	add	eax,[si+IndSegDefRecStruc.isdrSegOffset]	; add in individual segment offset
+	lds	si,[si+IndSegDefRecStruc.isdrMasterPtr]	; ds:si -> master segdef
+	add	eax,[si+MasterSegDefRecStruc.mssSegOffset]	; add offset from start of program
 
 sma2:
 	xor	ecx,ecx			; zero out public offset of second element
@@ -1412,7 +1412,7 @@ smanexth:
 	jmp	NEAR PTR smahloop
 
 smasortend:
-	mov	ax,DGROUP
+	mov	ax,ss
 	mov	ds,ax
 
 smaret:
@@ -1434,7 +1434,7 @@ wmsshowloop:
 	mov	fs,PubNameSymPtrSeg
 	lfs	bx,fs:[4*ebp]
 	inc	ebp				; ebp -> next pointer entry, if any
-	mov	di,OFFSET DGROUP:MAPFileBuffer	; init di -> write buffer
+	mov	di,OFFSET MAPFileBuffer	; init di -> write buffer
 	mov	al,' '
 	stosb				; leading space
 	xor	edx,edx			; zero out public offset
@@ -1471,11 +1471,11 @@ wmsoff:
 	jb	wmsgetlen		; need not normalize name
 
 	call	NormalDSSISource	; normalize string
-	mov	cl,ds:[si]		; get length byte
+	mov	cl,[si]		; get length byte
 	jmp	SHORT wmstrans
 
 wmsgetlen:
-	mov	cl,ds:[si]		; get length byte
+	mov	cl,[si]		; get length byte
 	jcxz	wms2			; no name to print
 	mov	ax,si
 	add	ax,cx
@@ -1488,13 +1488,13 @@ wmstrans:
 	rep	movsb			; transfer public symbol name
 
 wms2:
-	push	DGROUP
+	push	ss
 	pop	ds				; restore ds -> wl32 data
 
 	mov	ax,LF*256+CR	; end with CR/LF
 	stosw
 	mov	cx,di
-	mov	dx,OFFSET DGROUP:MAPFileBuffer
+	mov	dx,OFFSET MAPFileBuffer
 	sub	cx,dx			; cx == number of printable chars
 	mov	bx,MAPFileHandle
 	call	WriteFile
@@ -1512,13 +1512,13 @@ WriteMAPSymbol	ENDP
 ; print program entry point in map file
 
 MapEntry	PROC
-	mov	bx,OFFSET DGROUP:EntryText
+	mov	bx,OFFSET EntryText
 	mov	cl,[bx-1]
 	xor	ch,ch
 	mov	dx,bx
 	mov	bx,MAPFileHandle
 	call	WriteFile
-	mov	di,OFFSET DGROUP:MAPFileBuffer	; init di -> write buffer
+	mov	di,OFFSET MAPFileBuffer	; init di -> write buffer
 	mov	edx,EntrySegmentValue
 	call	DwordToAsciiHex
 	mov	al,':'			; following colon
@@ -1528,7 +1528,7 @@ MapEntry	PROC
 	mov	ax,LF*256+CR	; end with CR/LF
 	stosw
 	mov	cx,di
-	mov	dx,OFFSET DGROUP:MAPFileBuffer
+	mov	dx,OFFSET MAPFileBuffer
 	sub	cx,dx			; cx == number of printable chars
 	mov	bx,MAPFileHandle
 	call	WriteFile
