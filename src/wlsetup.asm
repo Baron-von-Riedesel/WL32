@@ -108,10 +108,6 @@ EXTRN	DisplayTextStringCRLF:PROC
 ; destroys ax,cx,dx
 
 Setup	PROC
-	push	es			; save es -> PSP
-;	mov cx,ds			; get PSP value from initial DS value
-;	push	DGROUP
-;	pop	ds				; ds -> wl32 data
 	mov PSP,es			; save PSP value to memory variable
 
 	cld					; make all string operations increment
@@ -128,6 +124,7 @@ Setup	PROC
 s2:
 	mov DosVersion,al	; save major DOS version
 
+	push	es			; save es -> PSP
 ; save linker command line, if any
 	push	ds
 	push	es
@@ -152,23 +149,21 @@ getarg:
 	stosb				; null terminate command
 
 s3:
-	push	ds
-	push	es
-	pop	ds				; ds -> DGROUP
-	pop	es				; es -> PSP
+	push ss
+	pop ds				; restore DS=DGROUP
 
 	mov ax,3523h		; get old CTRL-C handler address
 	int 21h
-	mov WORD PTR OldCtrlCHandlerAddr,bx	; save offset
-	mov WORD PTR OldCtrlCHandlerAddr+2,es	; save segment
+	mov WORD PTR OldCtrlCHandlerAddr+0,bx
+	mov WORD PTR OldCtrlCHandlerAddr+2,es
 
-	mov ax,cs
-	mov ds,ax
+	push cs
+	pop ds
 	mov dx,OFFSET ControlBreakHandler	; ds:dx -> control-c handler
 	mov ax,2523h		; set CTRL-C handler
 	int 21h
-	push	ss
-	pop	ds				; ds -> wl32 data
+	push ss
+	pop ds				; restore DS=DGROUP
 
 COMMENT !
 ; set CauseWay internal memory transfer buffer to 40K

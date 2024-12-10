@@ -198,6 +198,10 @@ Seg32BitEXELen	DB	Seg32BitEXEStop-Seg32BitEXEText
 Seg32BitEXEText	DB	'32-bit segment in DOS EXE file: '
 Seg32BitEXEStop	=	$
 
+NoStartAddressLen	DB	NoStartAddressStop-NoStartAddressText
+NoStartAddressText	DB	'No start address defined'
+NoStartAddressStop = $
+
 ConfigLineLenTextLen	DB	ConfigLineLenTextStop-ConfigLineLenText
 ConfigLineLenText	DB	'Configuration file line length exceeds 125 characters in '
 ConfigLineLenTextStop	=	$
@@ -808,6 +812,19 @@ Seg32BitWarning PROC
 	popa
 	ret
 Seg32BitWarning ENDP
+
+;--- adjustment: No start address defined (MZ exe only)
+
+NoStartAddressWarning PROC
+	pusha
+	push bx
+	mov bx,offset NoStartAddressText
+	call DisplayTextStringCRLF
+	pop bx
+	inc WarningsCount	; bump count of warnings
+	popa
+	ret
+NoStartAddressWarning ENDP
 
 ;*****************************
 ;* UNRESEXTERNALWARN         *

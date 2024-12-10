@@ -257,6 +257,8 @@ ENDIF
 
 MZHDRUNIT equ 512
 
+NoStartAddressWarning PROTO
+
 ; create the program
 
 CreateProgramFile	PROC
@@ -265,6 +267,11 @@ CreateProgramFile	PROC
 	call	DisplayLinkInfo
 	cmp	IsCreateEXEOption,OFF	; see if building EXE file
 	je	cpfprot			; no, creating protected mode file
+
+	cmp IsEntryPoint, OFF
+	jnz hasentrypoint
+	call NoStartAddressWarning
+hasentrypoint:
 
 	call	WriteMZHeader	; write the EXE header, dummy placeholders
 	call	WriteMZRelEntries	; write EXE relocation entries

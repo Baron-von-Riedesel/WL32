@@ -13,3 +13,4 @@
    - changed: 32-bit segments in DOS exe will now trigger a warning only.
    - /q option added.
    - /32 option added.
+   - /ex option: warning displayed if no start address is defined.

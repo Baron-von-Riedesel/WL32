@@ -75,6 +75,7 @@ EXTERNDEF	ResolvedSymbolCount:DWORD	; count of resolved symbols in program
 EXTERNDEF	StackValue:DWORD	; user set stack value
 EXTERNDEF	TotalCommunalCount:DWORD	; count of communals in program
 EXTERNDEF	ZeroValue:DWORD	; known zero value, for pointers to null strings
+EXTERNDEF	IsEntryPoint:BYTE
 
 IFDEF DLLSUPPORT
 EXTERNDEF	TotalEXPDEFCount:DWORD	; total count of EXPDEFs

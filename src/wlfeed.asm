@@ -89,7 +89,7 @@ ENDIF
 IFDEF WATCOM_ASM
 				DB	' Version 1.33'
 ENDIF
-				DB	CR,LF, 'Public Domain - originally written by Michael Devore; adjusted by japheth.'
+				DB	CR,LF, 'Public Domain - originally written by Michael Devore; extended by japheth.'
 CreditTextStop	=	$
 
 SuccessTextLen	DB	SuccessTextStop-SuccessText
@@ -97,8 +97,8 @@ SuccessText		DB	CR,LF,'Link of executable file successfully completed.'
 SuccessTextStop	=	$
 
 Summary1TextLen	DW	Summary1TextStop-Summary1Text
-Summary1Text	DB	'WL32'
-				DB	' STANDARD LINK OPTIONS:'
+Summary1Text	DB	' Usage: WL32 [options] objs | libs [,exefilel[,mapfile]',CR,LF
+				DB	' Options:'
 CRLFText		DB	CR,LF	; double duty as printable CR/LF
 				DB	CR,LF
 				DB	' /32         no warning for 32-bit segments with /ex option'
