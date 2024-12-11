@@ -411,6 +411,8 @@ BackPatchLEDATA	ENDP
 Pass1Resolution	PROC
 	cmp	IsDOSSEG,OFF	; see if dosseg is set
 	je	pr2				; no
+	cmp IsNoNullDossegOption, OFF	;option /non set?
+	jnz pr2
 	call	DOSSEGTextSegAdjust	; yes, adjust _TEXT segment with 16 prefixed bytes
 
 pr2:

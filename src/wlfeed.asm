@@ -101,7 +101,7 @@ Summary1Text	DB	' Usage: WL32 [options] objs | libs [,exefilel[,mapfile]',CR,LF
 				DB	' Options:'
 CRLFText		DB	CR,LF	; double duty as printable CR/LF
 				DB	CR,LF
-				DB	' /32         no warning for 32-bit segments with /ex option'
+				DB	' /32         no warning on 32-bit segments (option /ex)'
 				DB	CR,LF
 				DB	' /3p         Create protected mode 3P-format executable without DOS extender'
 				DB	CR,LF
@@ -116,7 +116,7 @@ ENDIF
 				DB	' /ex         create DOS MZ EXE-format file'
 				DB	CR,LF
 IFDEF WATCOM_ASM
-				DB	' /f          create FLAT model CauseWay executable (needs CWSTUB.EXE)'
+				DB	' /f          create protected-mode CauseWay executable, CWSTUB.EXE added (def.)'
 				DB	CR,LF
 ENDIF
 				DB	' /fl         use Fast Load EXE file DOS extender feature'
@@ -137,17 +137,15 @@ IFNDEF CLARION
 ENDIF
 				DB	' /m          create MAP file'
 				DB	CR,LF
-COMMENT !
-				DB	' /nc         do Not display Copyright or successful link message'
-				DB	CR,LF
-END COMMENT !
 				DB	' /nd         do Not use Default library names in object modules'
+				DB	CR,LF
+				DB	' /non        do Not add 16 NUL bytes to _TEXT if dosseg segorder active'
 				DB	CR,LF
 				DB	' /nwd        do Not Warn on Duplicate symbols'
 				DB	CR,LF
 				DB	' /nwld       do Not Warn on Library only Duplicate symbols'
 				DB	CR,LF
-				DB	' /q          suppress display of logo'
+				DB	' /q          suppress logo display'
 				DB	CR,LF
 ;@@@				DB	' /s          Symbol names are case sensitive when linking'
 ;@@@				DB	CR,LF
@@ -462,14 +460,14 @@ dffrevloop:
 	dec si				; si -> char in reversed number buffer
 	mov al,[si]			; get reversed char
 	stosb 				; put in unreversed buffer
-	loop    dffrevloop ; unreverse as many chars as in number
+	loop dffrevloop		; unreverse as many chars as in number
 
 	mov bx,OFFSET NumberBuff ;  ds:bx -> string to write
 	call	DisplayVarStringCRLF
 
 dff2:
-	cmp	IsNoCopyrightOption,0	; see if copyright display shut off
-	jne	dffret
+;	cmp	IsNoLogoOption,0	; logo & link success display shut off
+;	jne	dffret
 	mov	bx,OFFSET SuccessText
 	call	DisplayTextStringCRLF
 
@@ -494,9 +492,9 @@ DisplayParseResults	PROC
 	mov	bx,STDOUT
 
 optloop:
-	cmp	WORD PTR [si],-1	; see if at end of options
+	cmp	[si].OPTITEM.wOptText,-1	; see if at end of options
 	je	endopt			; yes
-	mov	di,[si+OPTLISTOFFOPTPTR]	; get pointer to option flag byte
+	mov	di,[si].OPTITEM.wOptVal	; get pointer to option flag byte
 	cmp	BYTE PTR [di],0	; see if option is set
 	je	nextopt			; no
 
@@ -510,17 +508,17 @@ optloop:
 	inc	dx				; dx -> option text
 	call	DisplayShortString
 
-	test	WORD PTR [si+OPTLISTOFFARGFLAGS],STRINGPARAMETER	; see if string parameter
+	test [si].OPTITEM.wArgFlgs,STRINGPARAMETER	; see if string parameter
 	je	chkword			; no, check if word parameter
-	mov	bx,[si+4]	; bx -> string
+	mov	bx,[si].OPTITEM.wArgPtr	; bx -> string
 	call	DisplayVarStringNoCRLF
 
 chkword:
-	test	WORD PTR [si+OPTLISTOFFARGFLAGS],DWORDPARAMETER	; see if dword parameter
+	test [si].OPTITEM.wArgFlgs,DWORDPARAMETER	; see if dword parameter
 	je	doterm			; no
 
 ; show the dword parameter value
-	mov	di,[si+OPTLISTOFFARGPTR]	; di -> dword value
+	mov	di,[si].OPTITEM.wArgPtr	; di -> dword value
 	mov	eax,[di]
 	mov	di,OFFSET NumberBuffer
 	call	DwordToDecimalString	; convert dword value to string
@@ -534,7 +532,7 @@ doterm:
 	call	DisplayShortString
 
 nextopt:
-	add	si,OPTLISTSIZE			; move to next option entry
+	add	si,sizeof OPTITEM			; move to next option entry
 	jmp	SHORT optloop
 
 endopt:

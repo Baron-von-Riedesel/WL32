@@ -54,14 +54,24 @@ FILEADDLIBFLAG	EQU	40000h
 PARAMETERFLAG	EQU	80000h
 
 ; option list equates
-OPTLISTOFFTEXTPTR	EQU	0
-OPTLISTOFFOPTPTR	EQU	2
-OPTLISTOFFARGPTR	EQU	4
-OPTLISTOFFARGFLAGS	EQU	6
-OPTLISTOFFPARAMLOW	EQU	8
-OPTLISTOFFPARAMHIGH	EQU	12
-OPTLISTOFFEXTRAFLAG	EQU	16
-OPTLISTSIZE		EQU	20
+;OPTLISTOFFTEXTPTR	EQU	0
+;OPTLISTOFFOPTPTR	EQU	2
+;OPTLISTOFFARGPTR	EQU	4
+;OPTLISTOFFARGFLAGS	EQU	6
+;OPTLISTOFFPARAMLOW	EQU	8
+;OPTLISTOFFPARAMHIGH	EQU	12
+;OPTLISTOFFEXTRAFLAG	EQU	16
+
+OPTITEM struct
+wOptText dw ?	; offset option text
+wOptVal  dw ?	; offset option value
+wArgPtr  dw ?	; offset argument storage
+wArgFlgs dw ?	; argument flags
+dwParamLow dd ?	; low boundary
+dwParamHigh dd ?; high boundary
+dwExtraFlgs dd ?; extra processing flags
+OPTITEM ends
+
 
 ; object record type names
 BLKDEF	EQU	 7ah		; non-Microsoft, ignore

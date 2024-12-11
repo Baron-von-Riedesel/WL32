@@ -246,8 +246,8 @@ EXTRN	SaveOBJLIBFileName:PROC
 ParseConfigFile	PROC
 	push	si			; save critical register
 	push	bx			; save bx -> option
-	or	WORD PTR [bx+OPTLISTOFFARGFLAGS],IGNOREIFONFLAG	; turn on ignore flag
-	mov	dx,[bx+OPTLISTOFFARGPTR]	; ds:dx -> file name
+	or [bx].OPTITEM.wArgFlgs,IGNOREIFONFLAG	; turn on ignore flag
+	mov	dx,[bx].OPTITEM.wArgPtr	; ds:dx -> file name
 	mov	CurrentConfigFileNamePtr,dx	; keep pointer to configuration file name in case of error
 	call	CheckCurrentDirectory
 	jnc	pcfopen			; configuration file is present
@@ -336,7 +336,7 @@ pcfend:
 	mov	ah,3eh			; close file
 	int	21h
 	pop	bx				; restore bx -> option
-	and	WORD PTR [bx+OPTLISTOFFARGFLAGS],NOT IGNOREIFONFLAG	; shut off ignore flag
+	and	[bx].OPTITEM.wArgFlgs,NOT IGNOREIFONFLAG	; shut off ignore flag
 	pop	si				; restore critical register
 	ret
 ParseConfigFile	ENDP
@@ -579,7 +579,7 @@ op2:
 	jbe	opsuccess		; no, successful match
 
 opnext:
-	add	bx,OPTLISTSIZE		; move to next option to check
+	add	bx,sizeof OPTITEM	; move to next option to check
 	jmp	SHORT opmainloop	; reset pointers
 
 ; valid option
@@ -633,7 +633,7 @@ AddOptionProc	PROC
 	mov	dx,si			; dx -> start of option
 
 aopmainloop:
-	mov	di,[bx]		; ds:di -> option text string prefixed by length byte
+	mov	di,[bx].OPTITEM.wOptText	; ds:di -> option text string prefixed by length byte
 	cmp	di,-1			; see if end of option list
 	je	aopfail			; yes
 
@@ -660,7 +660,7 @@ aop2:
 	jbe	aopsuccess		; no, successful match
 
 aopnext:
-	add	bx,OPTLISTSIZE		; move to next option to check
+	add	bx,sizeof OPTITEM	; move to next option to check
 	jmp	SHORT aopmainloop	; reset pointers
 
 ; valid option

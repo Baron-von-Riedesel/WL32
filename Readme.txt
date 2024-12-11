@@ -1,8 +1,8 @@
 
- WL32 LINKER SOURCE FILE DOCUMENTATION
+ WL32 Linker Source File Documentation
 
 
- 1. COMMENTS ON THE SOURCE CODE
+ 1. Comments on the Source Code
 
   If you wish to rebuild the source files, rather than use the
  current binary release, you can do so using the batch files
@@ -24,7 +24,7 @@
  WL32.EXE binary.
 
 
- DISTRIBUTION FILES
+ 2. Distribution Files
 
  Following is the file list for WL32, with comments.
 
@@ -66,11 +66,11 @@
  Clarion-specific WL32.  CLIPIT.BAT builds the Clipper-specific
  WL32:
 
- MWL32.BAT      create WL32 with JWasm and WL32
- MWL32M.BAT     use Masm v6+ instead of JWasm
- MWLCLAR.BAT
- MWLCLIP.BAT
- DOALL.BAT      runs MWL32.BAT, MWLCLAR.BAT and MWLCLIP.BAT
+ MAKE.BAT       create WL32 with JWasm and WL32
+ MAKEM.BAT      use Masm v6+ instead of JWasm
+ MAKECLAR.BAT
+ MAKECLIP.BAT
+ DOALL.BAT      runs MAKE.BAT, MAKECLAR.BAT and MAKECLIP.BAT
 
  Linker response files:
 
@@ -80,7 +80,7 @@
  WL32CLIP.RSP   WL32 resp. file to build Clipper WL32.EXE
 
 
- 2. LEGAL NOTES
+ 3. Legal Notes
 
  As of January 9, 2000, Michael Devore surrendered all his
  copyrights for CauseWay for Watcom C/C++ & Assembly Language and

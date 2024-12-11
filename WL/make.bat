@@ -1,41 +1,41 @@
 @echo off
 if not exist Build\NUL mkdir Build
-jwasm -c -nologo -Zm -FoBuild\ machlink.asm
-jwasm -c -nologo -Zm -FoBuild\ mlclean.asm 
-jwasm -c -nologo -Zm -FoBuild\ mlclip.asm  
-jwasm -c -nologo -Zm -FoBuild\ mlcomm.asm  
-jwasm -c -nologo -Zm -FoBuild\ mlcredit.asm
-jwasm -c -nologo -Zm -FoBuild\ mlddl1.asm  
-jwasm -c -nologo -Zm -FoBuild\ mlddl2.asm  
-jwasm -c -nologo -Zm -FoBuild\ mlerror.asm 
-jwasm -c -nologo -Zm -FoBuild\ mlgetarg.asm
-jwasm -c -nologo -Zm -FoBuild\ mlimage1.asm
-jwasm -c -nologo -Zm -FoBuild\ mlimage2.asm
-jwasm -c -nologo -Zm -FoBuild\ mllib1.asm  
-jwasm -c -nologo -Zm -FoBuild\ mllib2.asm  
-jwasm -c -nologo -Zm -FoBuild\ mlmap.asm   
-jwasm -c -nologo -Zm -FoBuild\ mlmemory.asm
-jwasm -c -nologo -Zm -FoBuild\ mlovl1.asm  
-jwasm -c -nologo -Zm -FoBuild\ mlovlfil.asm
-jwasm -c -nologo -Zm -FoBuild\ mlovlres.asm
-jwasm -c -nologo -Zm -FoBuild\ mlparovl.asm
-jwasm -c -nologo -Zm -FoBuild\ mlparse.asm 
-jwasm -c -nologo -Zm -FoBuild\ mlpass1.asm 
-jwasm -c -nologo -Zm -FoBuild\ mlpass1a.asm
-jwasm -c -nologo -Zm -FoBuild\ mlpass1b.asm
-jwasm -c -nologo -Zm -FoBuild\ mlpass1c.asm
-jwasm -c -nologo -Zm -FoBuild\ mlpass2.asm 
-jwasm -c -nologo -Zm -FoBuild\ mlpass2a.asm
-jwasm -c -nologo -Zm -FoBuild\ mlpass2b.asm
-jwasm -c -nologo -Zm -FoBuild\ mlpass2c.asm
-jwasm -c -nologo -Zm -FoBuild\ mlpass2d.asm
-jwasm -c -nologo -Zm -FoBuild\ mlpass2e.asm
-jwasm -c -nologo -Zm -FoBuild\ mlquick.asm 
-jwasm -c -nologo -Zm -FoBuild\ mlsetup.asm 
-jwasm -c -nologo -Zm -FoBuild\ mlshared.asm
-jwasm -c -nologo -Zm -FoBuild\ mlsum.asm   
+jwasm -c -nologo -Zm -FoBuild\ src\machlink.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mlclean.asm 
+jwasm -c -nologo -Zm -FoBuild\ src\mlclip.asm  
+jwasm -c -nologo -Zm -FoBuild\ src\mlcomm.asm  
+jwasm -c -nologo -Zm -FoBuild\ src\mlcredit.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mlddl1.asm  
+jwasm -c -nologo -Zm -FoBuild\ src\mlddl2.asm  
+jwasm -c -nologo -Zm -FoBuild\ src\mlerror.asm 
+jwasm -c -nologo -Zm -FoBuild\ src\mlgetarg.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mlimage1.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mlimage2.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mllib1.asm  
+jwasm -c -nologo -Zm -FoBuild\ src\mllib2.asm  
+jwasm -c -nologo -Zm -FoBuild\ src\mlmap.asm   
+jwasm -c -nologo -Zm -FoBuild\ src\mlmemory.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mlovl1.asm  
+jwasm -c -nologo -Zm -FoBuild\ src\mlovlfil.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mlovlres.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mlparovl.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mlparse.asm 
+jwasm -c -nologo -Zm -FoBuild\ src\mlpass1.asm 
+jwasm -c -nologo -Zm -FoBuild\ src\mlpass1a.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mlpass1b.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mlpass1c.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mlpass2.asm 
+jwasm -c -nologo -Zm -FoBuild\ src\mlpass2a.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mlpass2b.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mlpass2c.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mlpass2d.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mlpass2e.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mlquick.asm 
+jwasm -c -nologo -Zm -FoBuild\ src\mlsetup.asm 
+jwasm -c -nologo -Zm -FoBuild\ src\mlshared.asm
+jwasm -c -nologo -Zm -FoBuild\ src\mlsum.asm   
 cd Build
-WL32 /q /ex /m /cs @..\wl.rsp
+WL32 /q /ex /m /cs /non @..\wl.rsp
 rem jwlink format dos f { @..\wlj.rsp } n WL.EXE op q,m
-rem \msvc\bin\link /nologo /map @..\wl.rsp;
+rem \msvc\bin\link /nologo /map /non @..\wl.rsp;
 cd ..

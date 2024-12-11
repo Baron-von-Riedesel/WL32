@@ -39,6 +39,12 @@ PUBLIC  link_error,dos_error,link_warning,give_warn_count,fixup_warning
 PUBLIC  check_xms_error
 
 ;*****************************
+;* Data begins               *
+;*****************************
+
+.DATA
+
+;*****************************
 ;* External declarations     *
 ;*****************************
 
@@ -47,11 +53,6 @@ EXTRN   frame_method:BYTE,target_method:BYTE,target_disp:DWORD
 EXTRN   frext_ingroup:BYTE
 EXTRN   frame_ent_ptr:WORD,targ_ent_ptr:WORD
 
-;*****************************
-;* Data begins               *
-;*****************************
-
-.DATA
 
 ; initialized local variables
 

@@ -115,6 +115,8 @@ sumlines3	DB  CR,LF
 ENDIF
             DB  '/nd            No Default libraries'
             DB  CR,LF
+            DB  "/non           Don't add NUL bytes prefix to _TEXT if DOSSEG active"
+            DB  CR,LF
             DB  '/ql            perform QuickLinker link'
             DB  CR,LF
 IFNDEF DEMO

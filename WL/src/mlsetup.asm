@@ -73,12 +73,9 @@ EXTRN	delete_temp_file:NEAR,delete_qlk_file:NEAR
 ; initial linker setup
 
 setup       PROC
-    mov ax,DGROUP           ; point data segment at DGROUP
-    mov ds,ax
+
     mov psp,es              ; save PSP value to memory variable
-
     cld                     ; make all string operations increment
-
     mov ah,33h              ; get or set Ctrl-Break flag
     xor al,al               ; get flag
     int 21h                 ; status returned in dl register
@@ -142,7 +139,7 @@ cb_feed:
     mov bx,STDOUT           ; write to standard output device
     mov ah,40h              ; write to device
     int 21h
-    jmp DWORD PTR old_ctrlc
+    jmp old_ctrlc
 control_break   ENDP
 
 ;*****************************
@@ -233,7 +230,7 @@ cx_ret:
 cx_getaddr:
     mov ax,4310h            ; get XMS driver entry point
     int 2fh
-    mov WORD PTR xms_addr,bx    ; save it
+    mov WORD PTR xms_addr+0,bx
     mov WORD PTR xms_addr+2,es
     ret
 check_xms   ENDP

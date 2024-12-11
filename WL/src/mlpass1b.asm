@@ -655,6 +655,8 @@ pms_1:
 
     cmp is_comfile,0        ; .COM file?
     jnz pms_2               ; then no insert
+    cmp is_nonuldosseg,0    ; /non option?
+    jnz pms_2               ; then no insert
 
     mov bx,OFFSET DGROUP:_texttext  ; text to check segment name against
     mov di,OFFSET DGROUP:name_field ; text of segment name

@@ -1,3 +1,3 @@
-call mwl32.bat
-call mwlclar.bat
-call mwlclip.bat
+call make.bat
+call makeclar.bat
+call makeclip.bat

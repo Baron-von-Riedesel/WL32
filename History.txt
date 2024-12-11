@@ -14,3 +14,4 @@
    - /q option added.
    - /32 option added.
    - /ex option: warning displayed if no start address is defined.
+   - /non option added.

@@ -522,7 +522,7 @@ set_option  PROC
 ; set the option with a nonzero value, for best efficiency use AL as the
 ; value for Boolean flags since all allowed options are nonzero chars.
 
-    cmp al,'A'              ; maximum Allocated Space option
+    cmp al,'A'              ; maximum Allocated Space option /as
     jne so_cla
     mov al,[si]             ; peek ahead at next char
     cmp al,'s'              ; see if allocated space option
@@ -688,14 +688,20 @@ IFNDEF DEMO
 ENDIF
 
 so_8:
-    cmp al,'N'              ; No default libraries option
+    cmp al,'N'              ; No default libraries option   (/nd
     jne so_9
     mov al,[si]             ; peek ahead at next char
     cmp al,'d'              ; see if no default libraries option
     je  so_nodef            ; yes
     cmp al,'D'              ; check for uppercase option
+    je  so_nodef
+    mov ax,[si]
+    or  ax, 2020h
+    cmp ax,"no"             ; /non option?
     jne bad_option          ; no
-
+    lodsw
+    mov is_nonuldosseg, 1
+    jmp cont_opt_chk
 so_nodef:
     lodsb                   ; gobble second char
     mov is_nodeflib,al      ; set no default libraries flag

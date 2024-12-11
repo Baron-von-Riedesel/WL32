@@ -21,8 +21,8 @@ EXTERNDEF	IsLinkConfigOption:BYTE	; /lc
 EXTERNDEF	IsLinkInfoLimitOption:BYTE	; /il
 EXTERNDEF	IsLinkInfoOption:BYTE	; /i
 EXTERNDEF	IsMAPOption:BYTE		; /m
-EXTERNDEF	IsNoCopyrightOption:BYTE	; /nc
 EXTERNDEF	IsNoDefaultLIBOption:BYTE	; /nd
+EXTERNDEF	IsNoNullDossegOption:BYTE	; /non
 EXTERNDEF	IsNoWarnDupeOption:BYTE	; /nwd
 EXTERNDEF	IsNoWarnLIBDupeOption:BYTE	; /nwld
 EXTERNDEF	IsParseDisplayOption:BYTE	; /pd
@@ -32,7 +32,7 @@ EXTERNDEF	IsStackOption:BYTE		; /st
 EXTERNDEF	IsSYMOption:BYTE		; /sy
 EXTERNDEF	IsThreePOption:BYTE		; /3p
 EXTERNDEF	IsWarnRetCode1Option:BYTE	; /w1
-EXTERNDEF	IsWarnUnknownOption:BYTE	; /wu
+EXTERNDEF	IsWarnUnknownOption:BYTE; /wu
 
 IFDEF WATCOM_ASM
 EXTERNDEF	IsCaseSensitiveOption:BYTE	; /cs

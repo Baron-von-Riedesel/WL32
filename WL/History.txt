@@ -1,0 +1,7 @@
+
+   Changelog
+
+   initial:
+   - setup small model, free DOS memory and clear _BSS on startup.
+   - allow DOSSEG setting for .COM files ( without having to add /non).
+   - /non option added.

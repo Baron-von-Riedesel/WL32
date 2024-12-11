@@ -825,8 +825,8 @@ eos_chksize:
 	shl ax,1				; *16, ax holds 1K block count
 	mov cx,ax				; save 1K block count
 	mov ah,8				; query free extended memory
-	call	DWORD PTR xms_addr
-	call	check_xms_error	; see if error occurred
+	call xms_addr
+	call check_xms_error	; see if error occurred
 	cmp ax,cx				; see if largest free block meets 1K block count
 	jb  eos_noxms			; no
 	jmp NEAR PTR eos_usexms	; yes, use XMS
@@ -925,8 +925,8 @@ eos_doserr:
 eos_usexms:
 	mov dx,cx				; get blocks to allocate in K
 	mov ah,9				; allocate extended memory block
-	call	DWORD PTR xms_addr
-	call	check_xms_error	; see if error occurred
+	call xms_addr
+	call check_xms_error	; see if error occurred
 	mov xms_ovl_handle,dx	; save xms handle
 	mov ovl_empb.es_dest_handle,dx	; save in parameter block
 
@@ -968,8 +968,8 @@ eos_xmsread:
 ; read from file, transfer to XMS
 	mov ah,0bh				; move extend memory block
 	mov si,OFFSET DGROUP:ovl_empb	; ds:si -> parameter block
-	call	DWORD PTR xms_addr
-	call	check_xms_error	; see if error occurred
+	call xms_addr
+	call check_xms_error	; see if error occurred
 
 	add WORD PTR ovl_empb.es_dest_offset,16384	; bump dword offset in XMS
 	adc WORD PTR ovl_empb.es_dest_offset+2,0	; carry to high word
@@ -1059,15 +1059,15 @@ eos_chksize:
 	shl ax,1				; *16, ax holds 1K block count
 	mov cx,ax				; save 1K block count
 	mov ah,8				; query free extended memory
-	call	DWORD PTR xms_addr
-	call	check_xms_error	; see if error occurred
+	call xms_addr
+	call check_xms_error	; see if error occurred
 	cmp ax,cx				; see if largest free block meets 1K block count
 	jb  eos_noxms			; no
 
 	mov dx,cx				; get blocks to allocate in K
 	mov ah,9				; allocate extended memory block
-	call	DWORD PTR xms_addr
-	call	check_xms_error	; see if error occurred
+	call xms_addr
+	call check_xms_error	; see if error occurred
 	mov xms_ovl_handle,dx	; save xms handle
 
 ; successful allocation for overlay file stashing
@@ -2926,8 +2926,8 @@ xor_loop:
 
 	mov ah,0bh				; move extend memory block
 	mov si,OFFSET DGROUP:ovl_empb	; ds:si -> parameter block
-	call	DWORD PTR xms_addr
-	call	check_xms_error	; see if error occurred
+	call xms_addr
+	call check_xms_error	; see if error occurred
 
 	add WORD PTR curr_ems_pos,cx	; adjust for bytes read
 	adc WORD PTR curr_ems_pos+2,0	; carry to high word
@@ -3067,8 +3067,8 @@ xow_loop:
 
 	mov ah,0bh				; move extended memory block
 	mov si,OFFSET DGROUP:ovl_empb	; ds:si -> parameter block
-	call	safe_xms_addr
-	call	check_xms_error	; see if error occurred
+	call safe_xms_addr
+	call check_xms_error	; see if error occurred
 
 	add WORD PTR curr_ems_pos,cx	; adjust for bytes read
 	adc WORD PTR curr_ems_pos+2,0	; carry to high word
@@ -3213,8 +3213,8 @@ eot_5:
 
 	mov ah,0bh				; move extend memory block
 	mov si,OFFSET DGROUP:ovl_empb	; ds:si -> parameter block
-	call	DWORD PTR xms_addr
-	call	check_xms_error	; see if error occurred
+	call xms_addr
+	call check_xms_error	; see if error occurred
 
 	mov bx,ovl_handle
 	xor dx,dx
@@ -3246,9 +3246,9 @@ ems_ovl_to_file ENDP
 ; register but shouldn't
 
 safe_xms_addr	PROC
-	push	bx
-	call	DWORD PTR xms_addr
-	pop	bx
+	push bx
+	call xms_addr
+	pop bx
 	ret
 safe_xms_addr	ENDP
 

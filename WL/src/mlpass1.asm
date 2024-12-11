@@ -31,34 +31,22 @@ INCLUDE MLDATA.INC
 PUBLIC  pass1,make_symbols
 
 ;*****************************
-;* External declarations     *
-;*****************************
-
-EXTRN   perform_pass:NEAR,get_pubdecl_entry:NEAR,add_pubdef_name:NEAR
-EXTRN   alloc_memory:NEAR,init_segdef_entry:NEAR
-
-IFNDEF JUNIOR
-EXTRN   save_lib_name:NEAR,check_extension:NEAR
-ENDIF
-
-;*****************************
 ;* Data begins               *
 ;*****************************
      
 .DATA
+
+;*****************************
+;* External declarations     *
+;*****************************
+
+EXTRN   smartmem_count:WORD
 
 .DATA?
 
 ; uninitialized local variables
 
 nullcode_segdef DW  ?   ; segdef entry of null code first segment
-
-;*****************************
-;* External declarations     *
-;*****************************
-
-; variables
-EXTRN   smartmem_count:WORD
 
 ;*****************************
 ;* Constant data             *
@@ -90,6 +78,13 @@ smartmem_text   DB  'SMARTMEM.XXX',0
 ;*****************************
 
 .CODE
+
+EXTRN   perform_pass:NEAR,get_pubdecl_entry:NEAR,add_pubdef_name:NEAR
+EXTRN   alloc_memory:NEAR,init_segdef_entry:NEAR
+
+IFNDEF JUNIOR
+EXTRN   save_lib_name:NEAR,check_extension:NEAR
+ENDIF
 
 ;*****************************
 ;* PASS1                     *

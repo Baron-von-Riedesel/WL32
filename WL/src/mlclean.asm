@@ -86,7 +86,7 @@ free_ems    PROC
 ; overlay in XMS, free it
     mov dx,xms_ovl_handle
     mov ah,0ah              ; free extended memory block
-    call    DWORD PTR xms_addr  ; do it
+    call xms_addr
 
 fe_chktmp:
     cmp tmp_in_xms,0        ; see if XMS was used for temporary file
@@ -95,7 +95,7 @@ fe_chktmp:
 ; temp file in XMS, free it
     mov dx,xms_tmp_handle
     mov ah,0ah              ; free extended memory block
-    call    DWORD PTR xms_addr  ; do it
+    call xms_addr
 
 fe_chkems:
     cmp is_no_ems,0         ; see if ems was used

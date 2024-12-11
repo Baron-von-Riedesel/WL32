@@ -1,110 +1,44 @@
 ;*********************************************************************
-;*   MLGLOBAL.INC                                                    *
+;*   MACHLINK.ASM                                                    *
 ;*                                                                   *
 ;*   By:            Michael Devore                                   *
-;*   Date:          12/21/92                                         *
+;*   Date:          11/06/92                                         *
 ;*   Model:         Small                                            *
 ;*   Version:       2.5                                              *
 ;*   Assembler:     MASM 5.0                                         *
 ;*   Environment:   MS-DOS 2.x+                                      *
 ;*                                                                   *
-;*   Global data public declarations                                 *
+;*   main driver for linker                                          *
 ;*                                                                   *
 ;*********************************************************************
 
-PUBLIC  is_args,is_comfile,is_mapfile,is_casesense,is_nodeflib
-PUBLIC  is_ondisk,is_msextlib,is_dosseg,is_dgroup
-PUBLIC  is_inlib,is_inmem,is_mapexpand,is_reload,is_stackval
-PUBLIC  is_maxparval,is_nowarn,is_exit0,is_beep,is_linkinfo
-PUBLIC  is_tempfile
-PUBLIC	is_quick,is_sympac,is_ohp,is_oht,is_umb,ems3_flag
-PUBLIC  ctrlbreak,dos_version,wrap_flag,prev_flag,eof_flag
-PUBLIC  warn_count,stack_value,maxpar_value
-PUBLIC  obj_count,lib_count,seg_count,current_obj, current_lib
-PUBLIC  module_count,segdef_count
-PUBLIC  number_reloc,communal_count
-PUBLIC  pub_sym_count,tot_sym_count
-PUBLIC  highest_exe_write
+TITLE   WARPLINK machlink
+PAGE    50,80
 
-; linker overlay and language specific related values
-IFNDEF JUNIOR
-PUBLIC  is_anyovls,is_clip5,is_min_pool
-PUBLIC  obj_ovl_flag
-PUBLIC  ovl_ox_evar
-PUBLIC  ovl_class,exact_ovl_class,ovl_pool,ovl_mem_alloc
-PUBLIC  ovl_max_load,ovl_max_load_size,ovl_stack
-PUBLIC  ovl_filename,ovl_nopath,ddldat_filename
-PUBLIC  ovl_count
-PUBLIC  ovl_handle
-PUBLIC  ovl_ioblk
-PUBLIC  seg_ovlclass
-PUBLIC  ovlpub_array,ovl_reloc_array,lookup_tbl_array,ind_tbl_array
-PUBLIC  first_ovlpubblk_ptr,alloc_ovlpubblk_ptr
-PUBLIC  ovl_pubcount
-PUBLIC  lookup_tbl_segdef
-PUBLIC  ind_tbl_segdef
-PUBLIC  segcall_tbl_segdef
-PUBLIC  largest_ovl
-PUBLIC  second_ovl
-PUBLIC  ovl_code_id
-PUBLIC  ovl_data_id
-PUBLIC  data_ovlblk_ptr
-PUBLIC  nonovl_rvect
-PUBLIC  inc_padval,is_clpinc,is_smartmem,is_xms
-PUBLIC  is_clarion,is_internal,is_no_ems,is_ems_ovlpool
-PUBLIC  inc_seg_clcode
-PUBLIC  _dt_seg_size,_dat_seg_size
-PUBLIC  _dt_seg_index,_dat_seg_index
-PUBLIC  ems_handle,ems_base,ems_pagecount
-PUBLIC  ems_currmap,ems_page_avail
-PUBLIC  tmp_in_emsxms,tmp_in_xms
-PUBLIC  xms_addr
-PUBLIC  is_ddl,use_ddl,any_ddl
-PUBLIC  is_xtstash,is_xpstash
-PUBLIC  udl_proc_pass
-PUBLIC	ovl_ohp_size,ovl_oht_size
-PUBLIC	ovl_ohp_alloc,ovl_oht_alloc
+IFNDEF  NODOS
+    DOSSEG
 ENDIF
 
-PUBLIC  first_objblk_ptr,last_objblk_ptr,first_libblk_ptr,last_libblk_ptr
-PUBLIC  first_pdeclblk_ptr,first_cdeclblk_ptr
-PUBLIC  alloc_pdeclblk_ptr,alloc_cdeclblk_ptr
-PUBLIC  alloc_pdnameblk_ptr,alloc_lnamesblk_ptr
-PUBLIC  first_segdefblk_ptr,alloc_segdefblk_ptr
-PUBLIC  first_segpartblk_ptr,alloc_segpartblk_ptr
-PUBLIC  first_grpblk_ptr,alloc_grpblk_ptr
-PUBLIC  first_relblk_ptr,alloc_relblk_ptr
-PUBLIC  first_libent_ptr,alloc_libent_ptr
-;***PUBLIC  first_local_ptr
-PUBLIC  first_fixblk_ptr,alloc_fixblk_ptr
-PUBLIC  first_binblk_ptr,alloc_binblk_ptr
-PUBLIC  psp
-PUBLIC  _edata_pubaddr,_end_pubaddr,_edata_segaddr,_end_segaddr
-PUBLIC  image_handle,image_mem_ptr,map_handle
-PUBLIC  memory_blk_base,memory_blk_size,memory_blk_end
-PUBLIC  allocation_base,allocation_top
-PUBLIC  buffer_base,buffer_end,buffer_head,buffer_tail,buffer_size
-PUBLIC  read_buff_ptr,prev_read_ptr,prev_rec_len
-PUBLIC  current_lnames,current_extdef,current_segdef,current_grpdef
-PUBLIC  eof_pos,data_fixup_count
-PUBLIC  stack_segval,stack_offval
-PUBLIC  entry_segval,entry_offval
+.MODEL  SMALL
+.STACK  400h
 
-PUBLIC  file_pos_adj,prev_pos_adj,lib_pos_adj
-PUBLIC  image_size,lib_id
+;*****************************
+;* Include files             *
+;*****************************
 
-PUBLIC  cmd_line,prev_libname,tmod_name,exe_name,map_name,ovl_class_name
-PUBLIC  pubdecl_hash,segdef_hash
-PUBLIC  zero_table
-PUBLIC  lnames_hash
-PUBLIC  frame_thrd_meth,target_thrd_meth
-PUBLIC  seg_partent_indptr,seg_defent_indptr
-PUBLIC  grp_ent_indptr,ext_defent_indptr
-PUBLIC  env_opt_storage,lib_page_storage,data_fixup_flag
-PUBLIC  frame_thrd_index,target_thrd_index
-PUBLIC  lnames_ent_indptr,ddl_symbol_lookup,ddl_hold_buff
-PUBLIC  master_segblk
-PUBLIC  ovl_filepos_blk
+INCLUDE MLEQUATE.INC
+INCLUDE MLDATA.INC
+INCLUDE MLERRMES.INC
+
+;*****************************
+;* Public declarations       *
+;*****************************
+
+PUBLIC  exit_link
+
+;*****************************
+;* Data begins               *
+;*****************************
 
 ;*****************************
 ;   Initialized data         *
@@ -112,114 +46,76 @@ PUBLIC  ovl_filepos_blk
 
 .DATA
 
+;*****************************
+;* External declarations     *
+;*****************************
+
+; variables
+EXTRN   mod_alloc_base:WORD
+EXTRN	writing_qlk_flag:BYTE
+
 ; linker defaults, byte values
-EVEN                        ; maximize speed on 8086 and better
 is_args         DB  0       ; nonzero if arguments passed to linker
-EVEN
 is_comfile      DB  0       ; nonzero if .COM file creation indicated
-EVEN
 is_mapfile      DB  0       ; nonzero if .MAP file creation indicated
-EVEN
 is_mapexpand    DB  0       ; nonzero if expanded .MAP file indicated
-EVEN
 is_casesense    DB  0       ; nonzero if symbol names are case sensitive
-EVEN
 is_ondisk       DB  0       ; nonzero if program image in temporary disk file
-EVEN
 is_inmem        DB  0       ; nonzero if program image is in memory
-EVEN
 is_msextlib     DB  0       ; nonzero if use extended ms lib format
-EVEN
 is_nodeflib     DB  0       ; nonzero if no default libraries
-EVEN
 is_dosseg       DB  0       ; nonzero if DOSSEG segment ordering specified
-EVEN
+is_nonuldosseg  DB  0       ; nonzero if option /non is set
 is_stackval     DB  0       ; nonzero if stack size set by /st option
-EVEN
 wrap_flag       DB  0       ; nonzero if read from file buffer wraps to beginning of buffer
-EVEN
 prev_flag       DB  0       ; nonzero if keeping previously read record (pass 2 L?DATA record prior to fixup)
-EVEN
 eof_flag        DB  0       ; nonzero if end of file was encountered loading file buffer
-EVEN
 is_dgroup       DB  0       ; nonzero if DGROUP group encountered
-EVEN
 is_inlib        DB  0       ; nonzero if currently processing LIB file
-EVEN
 is_anyovls      DB  0       ; nonzero if any overlaid modules were specified
-EVEN
 is_reload       DB  0       ; nonzero if reload active but swapped out overlays
-EVEN
 is_maxparval    DB  0       ; maximum paragraph allocation specified
-EVEN
 is_nowarn       DB  0       ; nonzero if warnings disabled
-EVEN
 is_exit0        DB  0       ; nonzero if warnings generate exit code of 0
-EVEN
 is_beep         DB  0       ; nonzero if beep on exit
-EVEN
 is_linkinfo     DB  0       ; nonzero if print linker info
-EVEN
 is_tempfile     DB  0       ; nonzero if temporary file name specified
-EVEN
 is_no_ems       DB  1       ; default is set, nonzero if don't use available EMS during link
-EVEN
 is_ems_ovlpool  DB  0       ; nonzero if EMS used for overlay pool
-EVEN
 is_internal     DB  0       ; nonzero if internal overlays specified
-EVEN
 is_clarion      DB  0       ; clarion overlays specified
-EVEN
 is_smartmem     DB  0       ; nonzero if using SMARTMEM.XXX functions
-EVEN
 is_clpinc       DB  0       ; nonzero if Clipper incremental link
-EVEN
 inc_padval      DB  48      ; pad value to add to segments for incremental link
-EVEN
 is_clip5        DB  0       ; zero if Clipper 5 overlays specified
-EVEN
 tmp_in_emsxms   DB  0       ; nonzero if temporary file image is in EMS/XMS
-EVEN
 tmp_in_xms      DB  0       ; nonzero if temporary file image in XMS only
-EVEN
 is_xms          DB  0       ; nonzero if XMS present and available
-EVEN
 is_min_pool     DB  0       ; nonzero if minimum pool specified through op:m option
-EVEN
 is_ddl          DB  0       ; nonzero if creating DDL
-EVEN
 use_ddl         DB  0       ; nonzero if using DDL(s)
-EVEN
 any_ddl         DB  0       ; nonzero if creating OR using DDL(s)
-EVEN
 is_xtstash      DB  0       ; nonzero if stashing swapped overlays in extended memory (/ort)
-EVEN
 is_xpstash      DB  0       ; nonzero if stashing swapped overlays in EMS 4.0 (/orp)
-EVEN
-is_quick		DB	0		; nonzero if QuickLinker option set (/ql)
-EVEN
-is_sympac		DB	0		; nonzero if automatic symbol table compaction for Clipper
-EVEN
-is_ohp			DB	0		; nonzero if ohp option used
-EVEN
-is_oht			DB	0		; nonzero if oht option used
-EVEN
-is_umb			DB	0		; nonzero if UMB overlay option (/ou) used
-EVEN
-ems3_flag		DB	0		; nonzero if explicit EMS 3.0 compatibility specified for /ohp
+is_quick        DB  0       ; nonzero if QuickLinker option set (/ql)
+is_sympac       DB  0       ; nonzero if automatic symbol table compaction for Clipper
+is_ohp          DB  0       ; nonzero if ohp option used
+is_oht          DB  0       ; nonzero if oht option used
+is_umb          DB  0       ; nonzero if UMB overlay option (/ou) used
+ems3_flag       DB  0       ; nonzero if explicit EMS 3.0 compatibility specified for /ohp
 
 ; linker defaults, word values
 EVEN
-stack_value DW  0           ; stack size set by /st option
+stack_value     DW  0       ; stack size set by /st option
 maxpar_value    DW  0       ; maximum paragraph allocation set by /pa option
-warn_count  DW  0           ; count of warning messages
-obj_count   DW  0           ; count of object modules
-lib_count   DW  0           ; count of libraries
+warn_count      DW  0       ; count of warning messages
+obj_count       DW  0       ; count of object modules
+lib_count       DW  0       ; count of libraries
 module_count    DW  0       ; count of all modules linked, object and library
-seg_count   DW  0           ; count of all discrete (after combined) segments in all object modules
+seg_count       DW  0       ; count of all discrete (after combined) segments in all object modules
 segdef_count    DW  0       ; count of all different segments
-current_obj DW  0           ; current object module
-current_lib DW  0           ; current library
+current_obj     DW  0       ; current object module
+current_lib     DW  0       ; current library
 number_reloc    DW  0       ; number of relocation items in .EXE header
 communal_count  DW  0       ; count of communal variables
 stack_segval    DW  0       ; program's initial stack segment (SS) value
@@ -251,9 +147,9 @@ ovl_max_load_size   DW  96*16	; size of array for loaded overlay (ovl_max_load*1
 ovl_stack   DW  2048        ; overlay stack size, user set maximum 63K
 ovl_count   DW  0           ; count of overlays
 ovl_pubcount    DW  0       ; count of overlaid publics
-ddldat_filename LABEL   BYTE    ; name of DAT file for DDL file to read
-ovl_filename    DB  128 DUP (0) ; name of overlay file, including .OVL extension and path
-ovl_nopath  DB  128 DUP (0) ; name of overlay file WITHOUT prepended path (if any)
+;ddldat_filename LABEL   BYTE    ; name of DAT file for DDL file to read
+;ovl_filename    DB  128 DUP (0) ; name of overlay file, including .OVL extension and path
+;ovl_nopath  DB  128 DUP (0) ; name of overlay file WITHOUT prepended path (if any)
 first_ovlpubblk_ptr DW  0   ; segment of first overlaid public declarations block
 alloc_ovlpubblk_ptr DW  0   ; segment of last allocated overlaid public declarations block
 largest_ovl DW  0           ; size of largest overlay
@@ -265,6 +161,17 @@ data_ovlblk_ptr DW  0       ; segment of first data overlay block
 ems_handle  DW  0           ; handle of EMS blocks used by WarpLink
 ems_currmap DW  4 DUP (-1)  ; current logical page mapping of EMS physical pages
 ENDIF
+
+stpass_len      DB  stpass_stop-stpass_text
+stpass_text     DB  CR,LF,'*** Start of pass '
+stpass_num      DB  '1'
+stpass_stop     =   $
+
+endpass_len     DB  endpass_stop-endpass_text
+endpass_text    DB  CR,LF,'*** End of pass '
+endpass_num     DB  '1'
+endpass_stop    =   $
+EVEN
 
 ; zero initialized segment word pointers to various control blocks
 
@@ -299,26 +206,32 @@ _end_pubaddr    DW  0       ; address of public declaration entry of _end
 _edata_segaddr  DW  0       ; address of BSS segment's segdef entry that _edata points to
 _end_segaddr    DW  0       ; address of STACK segment's segdef entry that _end points to
 
-; zero init'ed character or byte strings
-EVEN
-exe_name    DB  128 DUP (0) ; executable file name, including any path
-EVEN
-map_name    DB  128 DUP (0) ; map file name, including any path
-
-EVEN
-; word arrays
-pubdecl_hash    DW  HASH_ARRAY_SIZE DUP (0) ; hashed pointers to public declaration entries
-segdef_hash     DW  HASH_ARRAY_SIZE DUP (0) ; hashed pointers to segdef entries
-zero_table  DW  256 DUP (0) ; table of 512-byte page of zeros
-
-; doubleword arrays
-lnames_hash     DD  HASH_ARRAY_SIZE DUP (0) ; hashed pointers to lnames logical name entries
-
 ;*****************************
 ;   Uninitialized data       *
 ;*****************************
 
 .DATA?
+
+; zero init'ed character or byte strings
+EVEN
+exe_name    DB  128 DUP (?) ; executable file name, including any path
+EVEN
+map_name    DB  128 DUP (?) ; map file name, including any path
+
+ddldat_filename LABEL   BYTE    ; name of DAT file for DDL file to read
+ovl_filename    DB  128 DUP (?) ; name of overlay file, including .OVL extension and path
+ovl_nopath  DB  128 DUP (?) ; name of overlay file WITHOUT prepended path (if any)
+
+EVEN
+; word arrays
+pubdecl_hash    DW  HASH_ARRAY_SIZE DUP (?) ; hashed pointers to public declaration entries
+segdef_hash     DW  HASH_ARRAY_SIZE DUP (?) ; hashed pointers to segdef entries
+zero_table  DW  256 DUP (?) ; table of 512-byte page of zeros
+
+; doubleword arrays
+lnames_hash     DD  HASH_ARRAY_SIZE DUP (?) ; hashed pointers to lnames logical name entries
+
+;.DATA?
 
 ; byte values
 EVEN                        ; maximize speed on 8086 and better
@@ -426,3 +339,342 @@ target_thrd_index   DW  4 DUP (?)   ; target fixup thread index
 ; doubleword arrays
 ddl_symbol_lookup   LABEL   DWORD   ; used by ddl's to translate symbol seg:off to file position
 lnames_ent_indptr   DD  LNAMES_MAX DUP (?)  ; indexed segment:offset pointers to lnames entries of last read lnames record
+
+;*****************************
+;* Constant data             *
+;*****************************
+
+.CONST
+
+beep3   DB  BELL,BELL,BELL
+
+IFNDEF DEMO
+ddlpass_len     DB  ddlpass_stop-ddlpass_text
+ddlpass_text    DB  CR,LF,'*** Start of main DDL processing pass'
+ddlpass_stop    =   $
+ENDIF
+
+obj_len         DB  obj_stop-obj_text
+obj_text        DB  ' on object modules'
+obj_stop        =   $
+
+lib_len         DB  lib_stop-lib_text
+lib_text        DB  ' on library modules'
+lib_stop        =   $
+
+stwrite_len     DB  stwrite_stop-stwrite_text
+stwrite_text    DB  CR,LF,'*** Begin writing file(s)'
+stwrite_stop    =   $
+
+endwrite_len    DB  endwrite_stop-endwrite_text
+endwrite_text   DB  CR,LF,'*** End writing file(s)'
+endwrite_stop   =   $
+
+;*****************************
+;* Code begins               *
+;*****************************
+
+.CODE
+
+;*****************************
+;* External declarations     *
+;*****************************
+
+EXTRN   setup:NEAR,getargs:NEAR,credits:NEAR,summary:NEAR
+EXTRN   get_memory:NEAR,free_memory:NEAR,parse:NEAR
+EXTRN   pass1:NEAR,proc1_libs:NEAR
+EXTRN   init_map:NEAR,setup_exe_image:NEAR,finish_map:NEAR
+EXTRN   pass2:NEAR,proc2_libs:NEAR,write_program:NEAR,cleanup:NEAR
+EXTRN   give_warn_count:NEAR,give_load_size:NEAR
+
+EXTRN   resolve_communals:NEAR
+;*** EXTRN   show_unreferenced:NEAR
+EXTRN   ovl_entry_point:NEAR,do_incremental:NEAR
+EXTRN   ilf_rewind:NEAR,ilf_write_eof:NEAR,check_ems:NEAR
+EXTRN   alloc_ems_trans:NEAR,check_xms:NEAR
+EXTRN	check_qlk:NEAR,write_qlk_unres:NEAR
+
+IFNDEF DEMO
+EXTRN   reinit_variables:NEAR
+EXTRN	ddl_save_libmod_entry:NEAR,proc_ddl:NEAR,create_ddl:NEAR
+ENDIF
+
+;*****************************
+;* MAIN                      *
+;*****************************
+
+start:
+	mov ax, DGROUP	; setup small model: DS=SS=DGROUP
+	mov ds, ax
+	mov dx, ss
+	sub dx, ax
+	mov cl, 4
+	shl dx, cl
+	mov ss, ax
+	add sp, dx
+
+	mov bx, sp		; free rest of DOS memory
+	shr bx, cl
+	mov cx, es
+	sub ax, cx
+	add bx, ax
+	mov ah, 4Ah
+	int 21h
+
+;--- clear _BSS segment
+externdef _edata:abs
+externdef _end:abs
+	push es
+	mov di, offset _edata
+	mov cx, offset _end
+	sub cx, di
+	xor ax, ax
+	push ds
+	pop es
+	cld
+	rep stosb
+	pop es
+
+main        PROC
+    call    setup           ; system changes, segment register setup, etc.
+    call    getargs         ; get command line arguments from PSP
+    call    credits         ; display linker credit line
+    or  is_args,0           ; check for arguments to linker
+    jne m2                  ; at least one argument
+    call    summary         ; display summary of linker syntax/commands
+
+to_exit_1:
+    jmp NEAR PTR exit_1     ;   and exit program
+m2:
+    call    get_memory      ; allocate memory for file buffers and control blocks
+
+    mov ax,allocation_base
+    mov mod_alloc_base,ax   ; save base of allocations prior to any allocations
+
+    call    parse           ; parse linker command line
+    call    free_memory     ; de-allocate memory prior to new memory allocation
+
+    call    check_ems       ; see if useable EMS
+    call    check_xms       ; see if useable XMS
+    cmp is_clpinc,0         ; see if clipper incremental link flag set
+    je  m3                  ; no
+    call    do_incremental  ; do incremental link or setup if no ILF flag
+    cmp al,'N'              ; check if should exit link (success or can't incremental link)
+	je	to_exit_1			; yes
+
+; incremental link failed, continuing with full link
+; reparse options in case of library module
+	mov	ax,mod_alloc_base
+	mov	allocation_base,ax	; reset memory allocation base
+    call    get_memory		; allocate memory for file buffers and control blocks
+    call    parse			; parse linker command line
+    call    free_memory		; de-allocate memory prior to new memory allocation
+    call    check_ems       ; see if useable EMS
+    call    check_xms       ; see if useable XMS
+
+m3:
+    call    get_memory      ; allocate memory for file buffers and control blocks
+
+    call    alloc_ems_trans ; allocate EMS transfer buffer if necessary
+
+IFNDEF DEMO
+    mov al,is_ddl
+    or  al,use_ddl          ; see if creating or using DDL
+    mov any_ddl,al          ; save any DDL usage flag
+    je  m_nocreate          ; no
+	mov	is_sympac,0			; no symbol table compaction with DDLs
+    call    create_ddl      ; create the DDL
+ENDIF
+
+m_nocreate:
+    mov ax,allocation_base
+    mov mod_alloc_base,ax   ; save base of allocations prior to any module stuff
+
+    cmp is_linkinfo,0       ; see if linker information to be printed
+    je  p1ostart            ; no
+    mov bx,OFFSET DGROUP:stpass_text
+    call    print_info
+    mov bx,OFFSET DGROUP:obj_text
+    call    print_info
+
+p1ostart:
+    call    pass1           ; perform first pass of linker
+    cmp is_linkinfo,0       ; see if linker information to be printed
+    je  p1oend              ; no
+    mov bx,OFFSET DGROUP:endpass_text
+    call    print_info
+    mov bx,OFFSET DGROUP:obj_text
+    call    print_info
+    mov bx,OFFSET DGROUP:stpass_text
+    call    print_info
+    mov bx,OFFSET DGROUP:lib_text
+    call    print_info
+
+p1oend:
+	cmp	is_quick,0			; see if quick linking
+	je	p1_p1lib			; yes
+	call	check_qlk		; check quick link file
+
+p1_p1lib:
+    call    proc1_libs      ; perform first pass library processing
+    cmp is_linkinfo,0       ; see if linker information to be printed
+    je  p1lend              ; no
+    mov bx,OFFSET DGROUP:endpass_text
+    call    print_info
+    mov bx,OFFSET DGROUP:lib_text
+    call    print_info
+
+p1lend:
+    mov al,'2'
+    mov stpass_num,al       ; change pass number to 2
+    mov endpass_num,al
+
+IFNDEF DEMO
+    cmp any_ddl,0           ; see if creating or using DDL
+    je  m4                  ; no
+
+    cmp udl_proc_pass,1     ; see if processing UDL w/libs
+    jne no_udl              ; no
+
+    call    free_memory     ; de-allocate memory prior to new memory allocation
+    inc udl_proc_pass       ; bump flag to indicate UDL processing done
+    call    reinit_variables    ; reset the variables
+    mov module_count,0      ; reinit module count
+    mov ax,mod_alloc_base
+    mov allocation_base,ax  ; restore base of allocations prior to any module stuff
+    call    ddl_save_libmod_entry   ; save the library module entries in low memory
+    call    get_memory      ; allocate memory for file buffers and control blocks
+
+    cmp is_linkinfo,0       ; see if linker information to be printed
+    je  p1ostart            ; no
+    mov bx,OFFSET DGROUP:ddlpass_text
+    call    print_info
+    jmp NEAR PTR p1ostart      ; reloop and process as UDL
+
+no_udl:
+    call    proc_ddl        ; finish processing the DDL
+    xor al,al               ; init return code to zero
+    jmp NEAR PTR exit_link  ; done
+ENDIF
+
+m4:
+    call    resolve_communals   ; resolve communal variables if any, adjust segments
+    call    free_memory     ; de-allocate memory prior to new memory allocation
+
+    call    ilf_rewind      ; rewind ilf file if exists
+
+    call    init_map        ; if map file, write header info
+    call    setup_exe_image ; compute segment frame values and allocate disk/memory for executable image
+
+    call    ilf_write_eof   ; write eof mark to ilf file, if exists
+
+    call    get_memory      ; allocate memory for file buffers and control blocks
+    cmp is_linkinfo,0       ; see if linker information to be printed
+    je  p2ostart            ; no
+    mov bx,OFFSET DGROUP:stpass_text
+    call    print_info
+    mov bx,OFFSET DGROUP:obj_text
+    call    print_info
+
+p2ostart:
+    call    pass2           ; perform second pass of linker
+    cmp is_linkinfo,0       ; see if linker information to be printed
+    je  p2oend              ; no
+    mov bx,OFFSET DGROUP:endpass_text
+    call    print_info
+    mov bx,OFFSET DGROUP:obj_text
+    call    print_info
+    mov bx,OFFSET DGROUP:stpass_text
+    call    print_info
+    mov bx,OFFSET DGROUP:lib_text
+    call    print_info
+
+p2oend:
+    call    proc2_libs      ; perform second pass library processing
+	cmp	writing_qlk_flag,0	; see if writing qlk file
+	je	p2_endlib			; no
+	call	write_qlk_unres
+
+p2_endlib:
+    cmp is_linkinfo,0       ; see if linker information to be printed
+    je  p2lend              ; no
+    mov bx,OFFSET DGROUP:endpass_text
+    call    print_info
+    mov bx,OFFSET DGROUP:lib_text
+    call    print_info
+
+p2lend:
+    call    free_memory     ; de-allocate memory
+
+    cmp ovl_count,0         ; see if any overlays
+    je  mach_1              ; no
+    call    ovl_entry_point ; make entry point go to overlay mananger
+
+mach_1:
+    cmp is_linkinfo,0       ; see if linker information to be printed
+    je  wstart              ; no
+    mov bx,OFFSET DGROUP:stwrite_text
+    call    print_info
+
+wstart:
+    call    write_program   ; write finished .COM or .EXE program
+    call    finish_map      ; if map file, write remaining info
+    cmp is_linkinfo,0       ; see if linker information to be printed
+    je  wend                ; no
+    mov bx,OFFSET DGROUP:endwrite_text
+    call    print_info
+
+wend:
+
+;***    call    show_unreferenced   ; show symbols not referenced
+    call    give_warn_count ; give count of warning messages, if any
+    call    give_load_size  ; give EXE load image size
+
+exit_1:
+    xor al,al               ; init return code to zero
+    cmp warn_count,0        ; see if any warnings were generated
+    je  exit_link           ; no
+    cmp is_exit0,0          ; see if warnings generate exit code of 0
+    jne exit_link           ; yes
+    inc al                  ; return exit code of 1 for warnings
+
+exit_link:
+    mov ah,4ch              ; terminate
+    push    ax              ; save terminate and return code
+    call    cleanup         ; clean up any interim system changes made
+
+IFNDEF DEMO
+    cmp is_beep,0           ; see if should beep
+    je  exit_3              ; no
+
+    mov bx,STDOUT
+    mov dx,OFFSET DGROUP:beep3
+    mov cx,3
+    mov ah,40h              ; write to file or device
+    int 21h                 ; beep the speaker three times
+ENDIF
+
+exit_3:
+    pop ax                  ; restore terminate and return code
+    int 21h
+main        ENDP
+
+;*****************************
+;* PRINT_INFO                *
+;*****************************
+
+; print linker pass info
+; upon entry bx -> text to print, with length byte preceding
+; destroys ax,bx,cx,dx
+
+print_info  PROC
+    mov cl,[bx-1]           ; get length of string to print
+    mov dx,bx               ; ds:dx -> string
+    xor ch,ch               ; zap high byte of cx
+    mov bx,STDOUT           ; write to standard output device
+    mov ah,40h              ; write to device
+    int 21h
+    ret
+print_info  ENDP
+
+END start
