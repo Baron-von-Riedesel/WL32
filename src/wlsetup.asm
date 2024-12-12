@@ -60,9 +60,8 @@ _BSS ENDS
 
 CONST	SEGMENT WORD PUBLIC USE16 'DATA'
 
-TermTextLen	DB	TermTextStop-TermText
+	DB	sizeof TermText
 TermText	DB	CR,LF,'Link terminated by user.'
-TermTextStop	=	$
 
 CONST ENDS
 

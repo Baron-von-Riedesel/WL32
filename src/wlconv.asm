@@ -124,32 +124,22 @@ ByteToHexString	ENDP
 ; destroys eax,bx,cx,edx
 
 DwordToDecimalString	PROC
-	push	di			; save di -> destination
-	mov	di,OFFSET TempBuffer
-	xor	cx,cx			; init count of digits in number
+	mov cx, sp
 	mov	ebx,0ah			; number divisor, constant
-
 divloop:
 	xor	edx,edx			; zero high word value
 	div	ebx				; divide by 10
-	xchg	edx,eax		; quotient into edx, remainder into eax
-	or	al,30h			; change remainder to ASCII
-	stosb				; save char
-	inc	cx				; bump digit count
-	mov	eax,edx			; eax holds quotient
+	or	dl,'0'			; change remainder to ASCII
+	push	dx
 	test	eax,eax		; stop dividing when zero
 	jne	divloop
 
-; di -> end of reversed number value, cx holds digits in number
-	mov	bx,di
-	pop	di				; di -> number storage for printing
-
 revloop:
-	dec	bx				; bx -> char in reversed number
-	mov	al,[bx]		; get char
-	stosb				; place in printing string
-	loop	revloop		; unrevers all chars in buffer
-
+	pop ax
+	mov [di],al
+	inc di
+	cmp cx,sp
+	jnz revloop		; unrevers all chars in buffer
 	mov	BYTE PTR [di],0	; null terminate string
 	ret
 DwordToDecimalString	ENDP

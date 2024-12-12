@@ -11,7 +11,9 @@
      longer part of WL32.EXE itself.
    - fixed: ResizeMemory32, did ignore hiword of new size.
    - changed: 32-bit segments in DOS exe will now trigger a warning only.
-   - /q option added.
+   - /q and /qq option added.
    - /32 option added.
-   - /ex option: warning displayed if no start address is defined.
+   - /ex option: warning displayed if no start address is defined or if
+     start address is in a 32-bit segment.
    - /non option added.
+   - created wl32.htm (original files: page_14.htm ... page_34.htm).

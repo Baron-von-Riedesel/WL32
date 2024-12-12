@@ -74,8 +74,13 @@ _BSS ENDS
 
 CONST	SEGMENT WORD PUBLIC USE16 'DATA'
 
-ErrorTableLen	DW	ErrorTableStop-ErrorTable
-ErrorTable		=	$
+ERRDEF struct
+bFlgs	db ?
+wOfs	dw ?
+ERRDEF ends
+
+;	DW	NUMERRORS
+ErrorTable	label byte
 	DB	INTERNALERRORCODE
 	DB	DOSVERSIONERRORCODE
 	DB	RSPLINELENERRORCODE
@@ -95,226 +100,171 @@ ErrorTable		=	$
 	DB	CONFIGLINELENERRORCODE
 	DB	BADCONFIGLINEERRORCODE
 	DB	BADSYMBOLTOKENERRORCODE
-ErrorTableStop	=	$
+NUMERRORS equ ( $ - ErrorTable )
 
 ; MUST be in sync with ErrorTable
 ; first byte is flag byte, second word is pointer to text to print
-; set bit 0 then dx -> additional string to print
-; set bit 7 the file name to print
-ErrorInfo	=	$
-	DB	WORDVALUEPRINT
-	DW	OFFSET InternalText
-	DB	0
-	DW	OFFSET DOSVersionText
-	DB	TEXTSTRINGPRINT OR FILENAMESTRING
-	DW	OFFSET RSPLineLenText
-	DB	TEXTSTRINGPRINT OR FILENAMESTRING
-	DW	OFFSET BadOptionText
-	DB	TEXTSTRINGPRINT OR FILENAMESTRING
-	DW	OFFSET RSPNestLevelText
-	DB	0
-	DW	OFFSET AllocFailText
-	DB	0
-	DW	OFFSET SizeFailText
-	DB	0
-	DW	OFFSET NoOBJFileText
-	DB	TEXTSTRINGPRINT OR WORDVALUEPRINT OR FILENAMESTRING
-	DW	OFFSET BadOBJRecText
-	DB	TEXTSTRINGPRINT OR WORDVALUEPRINT OR FILENAMESTRING
-	DW	OFFSET UnsupOBJRecText
-	DB	0
-	DW	OFFSET ReleaseFailText
-	DB	TEXTSTRINGPRINT OR WORDVALUEPRINT OR FILENAMESTRING
-	DW	OFFSET BadOBJLenText
-	DB	TEXTSTRINGPRINT OR WORDVALUEPRINT OR FILENAMESTRING
-	DW	OFFSET PoorFormOBJText
-	DB	TEXTSTRINGPRINT
-	DW	OFFSET SegLen64KText
-	DB	TEXTSTRINGPRINT OR FILENAMESTRING
-	DW	OFFSET BadLIBText
-	DB	TEXTSTRINGPRINT
-	DW	OFFSET Seg32BitEXEText
-	DB	TEXTSTRINGPRINT OR FILENAMESTRING
-	DW	OFFSET ConfigLineLenText
-	DB	TEXTSTRINGPRINT OR FILENAMESTRING
-	DW	OFFSET BadConfigLineText
-	DB	TEXTSTRINGPRINT OR WORDVALUEPRINT OR FILENAMESTRING
-	DW	OFFSET BadSymbolTokenText
+; set bit 0 (TEXTSTRINGPRINT) then dx -> additional string to print
+; set bit 7 (FILENAMESTRING) the file name to print
 
-; end specific error code feedback messages
+ErrorInfo label ERRDEF
+	ERRDEF <WORDVALUEPRINT, OFFSET InternalText>
+	ERRDEF <0             , OFFSET DOSVersionText>
+	ERRDEF <TEXTSTRINGPRINT OR FILENAMESTRING,	OFFSET RSPLineLenText>
+	ERRDEF <TEXTSTRINGPRINT OR FILENAMESTRING,	OFFSET BadOptionText>
+	ERRDEF <TEXTSTRINGPRINT OR FILENAMESTRING,	OFFSET RSPNestLevelText>
+	ERRDEF <0,  								OFFSET AllocFailText>
+	ERRDEF <0,  								OFFSET SizeFailText>
+	ERRDEF <0,  								OFFSET NoOBJFileText>
+	ERRDEF <TEXTSTRINGPRINT OR WORDVALUEPRINT OR FILENAMESTRING,OFFSET BadOBJRecText>
+	ERRDEF <TEXTSTRINGPRINT OR WORDVALUEPRINT OR FILENAMESTRING,OFFSET UnsupOBJRecText>
+	ERRDEF <0,  												OFFSET ReleaseFailText>
+	ERRDEF <TEXTSTRINGPRINT OR WORDVALUEPRINT OR FILENAMESTRING,OFFSET BadOBJLenText>
+	ERRDEF <TEXTSTRINGPRINT OR WORDVALUEPRINT OR FILENAMESTRING,OFFSET PoorFormOBJText>
+	ERRDEF <TEXTSTRINGPRINT,									OFFSET SegLen64KText>
+	ERRDEF <TEXTSTRINGPRINT OR FILENAMESTRING,  				OFFSET BadLIBText>
+	ERRDEF <TEXTSTRINGPRINT,									OFFSET Seg32BitEXEText>
+	ERRDEF <TEXTSTRINGPRINT OR FILENAMESTRING,  				OFFSET ConfigLineLenText>
+	ERRDEF <TEXTSTRINGPRINT OR FILENAMESTRING,  				OFFSET BadConfigLineText>
+	ERRDEF <TEXTSTRINGPRINT OR WORDVALUEPRINT OR FILENAMESTRING,OFFSET BadSymbolTokenText>
 
-InternalTextLen	DB	InternalTextStop-InternalText
+DOSErrorTable label byte
+	DB	2				; file not found
+	DB	3				; path not found
+	DB	4				; too many open files, no handles left
+	DB	5				; access denied
+	DB	8				; insufficient memory
+NUMDOSERROR equ $ - DosErrorTable
+
+; MUST be in sync with DOSErrorTable
+
+DOSErrorInfo label ERRDEF
+	ERRDEF <FILENAMESTRING, OFFSET FileNotFoundText>
+	ERRDEF <FILENAMESTRING, OFFSET PathNotFoundText>
+	ERRDEF <FILENAMESTRING, OFFSET NoHandlesText>
+	ERRDEF <FILENAMESTRING, OFFSET AccessDeniedText>
+	ERRDEF <0,				OFFSET OutOfMemoryText>
+
+	DB	sizeof InternalText
 InternalText	DB	'Internal linker error occurred during linking process'
-InternalTextStop	=	$
 
-DOSVersionTextLen	DB	DOSVersionTextStop-DOSVersionText
-CRLFText	LABEL	BYTE
-DOSVersionText	DB	CR,LF,'MS-DOS or PC-DOS version must be 3.0 or above.'
-DOSVersionTextStop	=	$
+	DB	sizeof DOSVersionText
+DOSVersionText	DB	'MS-DOS or PC-DOS version must be 3.0 or above.'
 
-RSPLineLenTextLen	DB	RSPLineLenTextStop-RSPLineLenText
+	DB	sizeof RSPLineLenText
 RSPLineLenText	DB	'Response file line length exceeds 253 characters in '
-RSPLineLenTextStop	=	$
 
-BadOptionTextLen	DB	BadOptionTextStop-BadOptionText
+	DB	sizeof BadOptionText
 BadOptionText	DB	'Invalid option: '
-BadOptionTextStop	=	$
 
-RSPNestLevelTextLen	DB	RSPNestLevelTextStop-RSPNestLevelText
+	DB	sizeof RSPNestLevelText
 RSPNestLevelText	DB	'Response files nested more than 10 levels deep in '
-RSPNestLevelTextStop	=	$
 
-AllocFailLen	DB	AllocFailStop-AllocFailText
+	DB	AllocFailStop-AllocFailText
 AllocFailText	DB	'Allocate memory attempt failed.'
 SpaceText		DB	'  '	; cheap way to reference text of two spaces
 				DB	'Probably out of virtual memory.'
 AllocFailStop	=	$
 
-SizeFailLen	DB	SizeFailStop-SizeFailText
+	DB	sizeof SizeFailText
 SizeFailText	DB	'Resize memory attempt failed.  Probably out of virtual memory.'
-SizeFailStop	=	$
 
-NoOBJFileLen	DB	NoOBJFileStop-NoOBJFileText
+	DB	sizeof NoOBJFileText
 NoOBJFileText	DB	'At least one object module file must be specified when linking.'
-NoOBJFileStop	=	$
 
-BadOBJRecLen	DB	BadOBJRecStop-BadOBJRecText
+	DB	sizeof BadOBJRecText
 BadOBJRecText	DB	'Bad object record type in '
-BadOBJRecStop	=	$
 
-PoorFormOBJLen	DB	PoorFormOBJStop-PoorFormOBJText
+	DB	sizeof PoorFormOBJText
 PoorFormOBJText	DB	'Poorly formed object record in '
-PoorFormOBJStop	=	$
 
-SegLen64KLen	DB	SegLen64KStop-SegLen64KText
+	DB	sizeof SegLen64KText
 SegLen64KText	DB	'Segment size exceeds 64K: '
-SegLen64KStop	=	$
 
-BadLIBLen	DB	BadLIBStop-BadLIBText
+	DB	sizeof BadLIBText
 BadLIBText	DB	'Bad or invalid library (.LIB) file format in '
-BadLIBStop	=	$
 
-Seg32BitEXELen	DB	Seg32BitEXEStop-Seg32BitEXEText
+	DB	sizeof Seg32BitEXEText
 Seg32BitEXEText	DB	'32-bit segment in DOS EXE file: '
-Seg32BitEXEStop	=	$
 
-NoStartAddressLen	DB	NoStartAddressStop-NoStartAddressText
+	DB	sizeof NoStartAddressText
 NoStartAddressText	DB	'No start address defined'
-NoStartAddressStop = $
 
-ConfigLineLenTextLen	DB	ConfigLineLenTextStop-ConfigLineLenText
+	DB	sizeof Entry32bitText
+Entry32bitText	DB	'Program entry in 32-bit segment'
+
+	DB	sizeof ConfigLineLenText
 ConfigLineLenText	DB	'Configuration file line length exceeds 125 characters in '
-ConfigLineLenTextStop	=	$
 
-BadConfigLineTextLen	DB	BadConfigLineTextStop-BadConfigLineText
+	DB	sizeof BadConfigLineText
 BadConfigLineText	DB	'Invalid configuration file line: '
-BadConfigLineTextStop	=	$
 
-BadSymbolTokenTextLen	DB	BadSymbolTokenTextStop-BadSymbolTokenText
+	DB	sizeof BadSymbolTokenText
 BadSymbolTokenText	DB	'Bad Clipper symbol token in '
-BadSymbolTokenTextStop	=	$
 
 ; end specific error code feedback messages
 
-UnsupOBJRecLen	DB	UnsupOBJRecStop-UnsupOBJRecText
+	DB	sizeof UnsupOBJRecText
 UnsupOBJRecText	DB	'Unsupported object record type in '
-UnsupOBJRecStop	=	$
 
-ReleaseFailLen	DB	ReleaseFailStop-ReleaseFailText
+	DB	sizeof ReleaseFailText
 ReleaseFailText	DB	'Release memory attempt failed.'
-ReleaseFailStop	=	$
 
-BadOBJLenLen	DB	BadOBJLenStop-BadOBJLenText
+	DB	sizeof BadOBJLenText
 BadOBJLenText	DB	'Object record length too large in '
-BadOBJLenStop	=	$
 
-UnknownTextLen	DB	UnknownTextStop-UnknownText
+	DB	sizeof UnknownText
 UnknownText		DB	'Unknown error occurred during linking process.'
-UnknownTextStop	=	$
 
-FatalLinkerTextLen	DB	FatalLinkerTextStop-FatalLinkerText
-FatalLinkerText	DB	'FATAL error encountered using '
-				DB	'WL32'
-				DB	'.'
-				DB	CR,LF,'Link terminated.  No executable file created.'
-FatalLinkerTextStop	=	$
+	DB	sizeof FatalLinkerText
+FatalLinkerText	DB	'FATAL error encountered using ',LINKERNAME,'.',CR,LF,'Link terminated.  No executable file created.'
 
-ValueTextLen	DB	ValueTextStop-ValueText
+	DB	sizeof ValueText
 ValueText		DB	', value '
-ValueTextStop	=	$
 
-DOSErrorTextLen		DB	DOSErrorTextStop-DOSErrorText
-DOSErrorText		DB	'DOS error'
-DOSErrorTextStop	=	$
+	DB	sizeof DOSErrorText
+DOSErrorText	DB	'DOS error'
 
-DOSErrorTextTable	=	$
-	DB	2				; file not found
-	DB	FILENAMESTRING	; flag file name associated
-	DW	OFFSET FileNotFoundText
-	DB	3				; path not found
-	DB	FILENAMESTRING
-	DW	OFFSET PathNotFoundText
-	DB	4				; too many open files, no handles left
-	DB	FILENAMESTRING
-	DW	OFFSET NoHandlesText
-	DB	5				; access denied
-	DB	FILENAMESTRING
-	DW	OFFSET AccessDeniedText
-	DB	8				; insufficient memory
-	DB	0				; no file name
-	DW	OFFSET OutOfMemoryText
-	DW	-1				; flags end of table
-
-FileNotFoundTextLen	DB	FileNotFoundTextStop-FileNotFoundText
+	DB	sizeof FileNotFoundText
 FileNotFoundText	DB	'File not found'
-FileNotFoundTextStop	=	$
 
-PathNotFoundTextLen	DB	PathNotFoundTextStop-PathNotFoundText
+	DB	sizeof PathNotFoundText
 PathNotFoundText	DB	'Path not found'
-PathNotFoundTextStop	=	$
 
-NoHandlesTextLen	DB	NoHandlesTextStop-NoHandlesText
+	DB	sizeof NoHandlesText
 NoHandlesText	DB	'Too many open files, no handles left'
-NoHandlesTextStop	=	$
 
-AccessDeniedTextLen	DB	AccessDeniedTextStop-AccessDeniedText
+	DB	sizeof AccessDeniedText
 AccessDeniedText	DB	'Access denied'
-AccessDeniedTextStop	=	$
 
-OutOfMemoryTextLen	DB	OutOfMemoryTextStop-OutOfMemoryText
+	DB	sizeof OutOfMemoryText
 OutOfMemoryText	DB	'Out of memory'
-OutOfMemoryTextStop	=	$
 
-WhichFileTextLen	DB	WhichFileTextStop-WhichFileText
+	DB	sizeof WhichFileText
 WhichFileText		DB	', File: '
-WhichFileTextStop	=	$
 
 LeftParenText	DB	'('
 RightParenText	DB	')',0	; must have terminating zero for final print
 
-SymDefTextLen	DB	SymDefTextStop-SymDefText
+	DB	sizeof SymDefText
 SymDefText		DB	'Symbol defined more than once: '
-SymDefTextStop	=	$
 
-DefinedInTextLen	DB	DefinedInTextStop-DefinedInText
+	DB	sizeof DefinedInText
 DefinedInText	DB	13,10,'Defined in '
-DefinedInTextStop	=	$
 
-DuplicatedInTextLen	DB	DuplicatedInTextStop-DuplicatedInText
+	DB	sizeof DuplicatedInText
 DuplicatedInText	DB	', duplicated in '
-DuplicatedInTextStop	=	$
 
-UnresTextLen	DB	UnresTextStop-UnresText
+	DB	sizeof UnresText
 UnresText		DB	'Unresolved externally declared symbol: '
-UnresTextStop	=	$
 
-DeclaredInTextLen	DB	DeclaredInTextStop-DeclaredInText
+	DB	sizeof DeclaredInText
 DeclaredInText	DB	13,10,'Declared in '
-DeclaredInTextStop	=	$
 
-UnknownOptionTextLen	DB	UnknownOptionTextStop-UnknownOptionText
+	DB	sizeof UnknownOptionText
 UnknownOptionText		DB	'Unknown linker option or command, ignored: '
-UnknownOptionTextStop	=	$
+
+CRLFText	db CR,LF
 
 CONST ENDS
 
@@ -323,8 +273,6 @@ CONST ENDS
 ;*****************************
 
 _DATA	SEGMENT WORD PUBLIC USE16 'DATA'
-
-_DATA ENDS
 
 ;*****************************
 ;* External data             *
@@ -337,6 +285,8 @@ EXTRN	LIBDictTablePtr:WORD
 EXTRN	ModuleCount:DWORD
 EXTRN	OBJBuffSelTablePtr:WORD
 EXTRN	UnresSymPtr:DWORD
+
+_DATA ENDS
 
 ;*****************************
 ;* Code begins               *
@@ -380,6 +330,17 @@ LinkerErrorExit	PROC
 
 LinkerErrorExit	ENDP
 
+DisplayCRLF	PROC
+	push	dx			; save critical registers
+	push	cx
+	mov dx,OFFSET CRLFText
+	mov cx,2
+	call DisplayShortString
+	pop	cx				; restore critical registers
+	pop	dx
+	ret
+DisplayCRLF	ENDP
+
 ;*****************************
 ;* LINKERERRORFEEDBACK       *
 ;*****************************
@@ -391,15 +352,7 @@ LinkerErrorExit	ENDP
 
 LinkerErrorFeedback	PROC
 	push	ax			; save error code
-
-; write string terminating CR/LF
-	push	dx			; save critical registers
-	push	cx
-	mov	dx,OFFSET CRLFText
-	mov	cl,2
-	call	DisplayShortString
-	pop	cx				; restore critical registers
-	pop	dx
+	call	DisplayCRLF
 	pop	ax
 	push	ax			; restore ax
 
@@ -407,7 +360,7 @@ LinkerErrorFeedback	PROC
 	pop	es				; es -> wl32 data
 	mov	ErrorWordValue,cx	; save associated error value, if any
 	mov	di,OFFSET ErrorTable	; es:di -> lookup table for errors
-	mov	cx,[di-2]	; get number of entries in table
+	mov	cx,NUMERRORS	; number of entries in table
 	repne	scasb
 	je	founderr		; found the error entry
 
@@ -429,21 +382,19 @@ lefatal:
 founderr:
 	dec	di				; di -> matching entry
 	sub	di,OFFSET ErrorTable	; di == error code offset
-	mov	bx,di
-	add	di,di			; word offset
-	add	di,bx			; 3 byte (byte+word) offset
+	imul di, sizeof ERRDEF   
 	add	di,OFFSET ErrorInfo	; di -> entry in ErrorInfo table
 	mov	si,dx			; si -> additional string to print, if any
-	mov	bx,[di+1]	; bx -> initial string to print
-	test	BYTE PTR [di],ANYTEXTPRINT
+	mov	bx,[di].ERRDEF.wOfs	; bx -> initial string to print
+	test	[di].ERRDEF.bFlgs,ANYTEXTPRINT
 	je	ledisp			; no additional text to print, print only and continue
 
 ; additional text strings, don't print with CR/LF
 	call	DisplayTextStringNoCRLF
-	test	BYTE PTR [di],TEXTSTRINGPRINT
+	test	[di].ERRDEF.bFlgs,TEXTSTRINGPRINT
 	je	le2				; no text string
 	mov	bx,si			; bx -> second string to print
-	test	BYTE PTR [di],WORDVALUEPRINT
+	test	[di].ERRDEF.bFlgs,WORDVALUEPRINT
 	jne	leno1			; value string, no crlf after text
 	call	DisplayVarStringCRLF	; display variable length text string
 	jmp	SHORT le2
@@ -452,7 +403,7 @@ leno1:
 	call	DisplayVarStringNoCRLF	; display variable length text string
 
 le2:
-	test	BYTE PTR [di],WORDVALUEPRINT
+	test	[di].ERRDEF.bFlgs,WORDVALUEPRINT
 	je	le3				; no word value string to print
 
 ; print word value in hex, value in cx
@@ -512,9 +463,7 @@ DOSErrorFeedback	PROC
 	mov	si,dx			; si -> file name to print, if any
 
 ; write string terminating CR/LF
-	mov	dx,OFFSET CRLFText
-	mov	cl,2
-	call	DisplayShortString
+	call	DisplayCRLF
 
 	mov	bx,OFFSET DOSErrorText
 	call	DisplayTextStringNoCRLF
@@ -532,22 +481,26 @@ DOSErrorFeedback	PROC
 ; check for extra explanatory information
 	pop	ax				; ax == error code (al only)
 	push	ax			; restore to stack
-	mov	di,OFFSET DOSErrorTextTable
-
+	mov	di,OFFSET DOSErrorTable
+	mov cx,NUMDOSERROR
 defloop:
-	cmp	WORD PTR [di],-1	; see if at end of table to check
-	je	defcrlf			; yes, no string to bring, print number with crlf
 	cmp	al,[di]		; see if entry in table
 	je	deffound		; yes
-	add	di,4			; move to next entry
-	jmp	SHORT defloop
+	add	di,sizeof ERRDEF + 1	; move to next entry
+	loop	defloop
+	call	DisplayVarStringCRLF	; display error value
+	jmp	deffatal
 
 ; extra info to display with DOS error
 deffound:
 	call	DisplayVarStringNoCRLF	; display error value
 
+	sub di, OFFSET DOSErrorTable
+	imul di, sizeof ERRDEF
+	add di, OFFSET DOSErrorInfo
+    
 ; see if file name to print
-	test	BYTE PTR [di+1],FILENAMESTRING
+	test	[di].ERRDEF.bFlgs,FILENAMESTRING
 	je	defmess			; no file name to print
 	mov	bx,OFFSET WhichFileText
 	call	DisplayTextStringNoCRLF	; display file text
@@ -562,14 +515,10 @@ defmess:
 	mov	dx,OFFSET LeftParenText
 	mov	cl,1
 	call	DisplayShortString
-	mov	bx,[di+2]	; bx -> explanatory message
+	mov	bx,[di].ERRDEF.wOfs	; bx -> explanatory message
 	call	DisplayTextStringNoCRLF	; show it
 	mov	bx,OFFSET RightParenText
 	call	DisplayVarStringCRLF	; display final paren and do cr/lf
-	jmp	SHORT deffatal	; done, display fatal message
-
-defcrlf:
-	call	DisplayVarStringCRLF	; display error value
 
 deffatal:
 	mov	bx,OFFSET FatalLinkerText
@@ -716,9 +665,7 @@ MultipleDefSymWarn	PROC
 
 ; write string terminating CR/LF
 mss2:
-	mov	dx,OFFSET CRLFText
-	mov	cl,2
-	call	DisplayShortString
+	call	DisplayCRLF
 
 	inc	WarningsCount	; bump count of warnings
 	mov	bx,OFFSET SymDefText
@@ -817,14 +764,21 @@ Seg32BitWarning ENDP
 
 NoStartAddressWarning PROC
 	pusha
-	push bx
 	mov bx,offset NoStartAddressText
 	call DisplayTextStringCRLF
-	pop bx
 	inc WarningsCount	; bump count of warnings
 	popa
 	ret
 NoStartAddressWarning ENDP
+
+Entry32bitWarn	PROC
+	pusha
+	mov bx,offset Entry32bitText
+	call DisplayTextStringCRLF
+	inc WarningsCount	; bump count of warnings
+	popa
+	ret
+Entry32bitWarn	ENDP
 
 ;*****************************
 ;* UNRESEXTERNALWARN         *
@@ -846,9 +800,7 @@ UnresExternalWarn	PROC
 	jne	uewret			; feedback already given
 
 ; write string terminating CR/LF
-	mov	dx,OFFSET CRLFText
-	mov	cl,2
-	call	DisplayShortString
+	call	DisplayCRLF
 
 	inc	WarningsCount	; bump count of warnings
 	mov	bx,OFFSET UnresText
@@ -886,10 +838,7 @@ UnknownOptionWarn	PROC
 	push	dx
 
 ; write string terminating CR/LF
-	mov	dx,OFFSET CRLFText
-	mov	cl,2
-	call	DisplayShortString
-
+	call	DisplayCRLF
 	mov	bx,OFFSET UnknownOptionText
 	call	DisplayTextStringNoCRLF
 	pop	bx				; bx -> option/command string

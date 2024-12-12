@@ -38,7 +38,7 @@ PUBLIC	ProcessBAKPATRecords
 
 ; public for debugger
 PUBLIC	ResolveCOMDATs,csosegaddr
-IFDEF	DLLSUPPORT
+IFDEF DLLSUPPORT
 PUBLIC	ResolveIMPDEFs
 ENDIF
 
@@ -421,14 +421,14 @@ pr2:
 	call	ComputeSegOrder	; compute the proper segment order for program
 	call	SetDOSSEGSymbols	; set/create _edata and _end symbols
 
-IFDEF	DLLSUPPORT
+IFDEF DLLSUPPORT
 	call	ResolveIMPDEFs	; set impdef pointers to symbol entries, set module & function number
 ENDIF
 
 	ret
 Pass1Resolution	ENDP
 
-IFDEF	DLLSUPPORT
+IFDEF DLLSUPPORT
 
 ;*****************************
 ;* RESOLVEIMPDEFS            *
@@ -1447,7 +1447,7 @@ csodores:
 	dec	UnresolvedSegCount	; drop count of unresolved segments
 	or	fs:[bx+MasterSegDefRecStruc.mssFlags],RESOLVEDSEGFLAG	; flag segment resolved
 	mov	ax,SegmentID	; set, update segment identifier
-	mov	fs:[bx+MasterSegDefRecStruc.mssSegmentID],ax
+	mov	fs:[bx].MasterSegDefRecStruc.mssSegmentID,ax
 	inc	SegmentID
 	cmp	WORD PTR LastSegDefPtr+2,0	; see if first segdef
 	jne	csouplast		; no
@@ -1560,7 +1560,7 @@ csodebug3:
 csoisdebug:
 	inc	DebugSegmentCount	; bump count of debug segments
 	dec	SegmentID		; reset segment identifier
-	mov	fs:[bx+MasterSegDefRecStruc.mssSegmentID],-1
+	mov	fs:[bx].MasterSegDefRecStruc.mssSegmentID,-1
 
 	mov	eax,SegStartOffset
 	mov	fs:[bx+MasterSegDefRecStruc.mssSegOffset],eax	; set offset to current

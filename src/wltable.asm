@@ -47,7 +47,7 @@ PUBLIC	NormalGSBXSource
 PUBLIC	SetGrpPtrTableEntry
 PUBLIC	SetSymPtrTableEntry
 
-IFDEF	DLLSUPPORT
+IFDEF DLLSUPPORT
 PUBLIC	GetEXPDEFEntry
 PUBLIC	GetIMPDEFEntry
 ENDIF
@@ -141,7 +141,7 @@ SymbolHashTable	DD	256 DUP (0)	; hash table of pointers to symbol entries based 
 
 TotalGetPubCount	DD	0
 
-IFDEF	DLLSUPPORT
+IFDEF DLLSUPPORT
 FirstEXPDEFBlkPtr	DW	0	; first allocated expdef block pointer
 FirstIMPDEFBlkPtr	DW	0	; first allocated impdef block pointer
 LastEXPDEFBlkPtr	DW	0	; last allocated expdef block pointer
@@ -230,13 +230,6 @@ GetMasterSegDefEntry	PROC
 	mov	ax, WORD PTR [bx+SegDefHashTable+2]	; get hash code selector
 	or	ax,ax			; see if used
 	je	gmnouse			; no
-
-if 1
-    lar ax, ax
-    jz @F
-    int 3
-@@:
-endif    
 
 ; hash code used, check for collision or duplicate master segdef entry
 	lfs	bp, [bx+SegDefHashTable]	; fs:bp -> master segdef entry of first segdef with same hash code
@@ -478,6 +471,7 @@ if 0
 	call	NormalizeErrorExit	; normalize text string, do linker error exit
 else
 Seg32BitWarning PROTO
+
 	cmp IsSeg32Option, OFF	; warning off for 32-bit segments in MZ exe?
 	jnz gmchkstk
 	push gs
@@ -1679,7 +1673,7 @@ GetPubSymEntry	PROC
 	mov	WORD PTR PubSymNamePtr,bx	; save pointer to name
 	mov	WORD PTR PubSymNamePtr+2,fs
 
-IFDEF	WATCOM_ASM
+IFDEF WATCOM_ASM
 	cmp	IsCaseSensitiveOption,OFF
 	jne	gpshash			; no uppercase conversion
 ENDIF
@@ -2138,7 +2132,7 @@ mcdfirst:
 	ret
 MakeComDatBlk	ENDP
 
-IFDEF	DLLSUPPORT
+IFDEF DLLSUPPORT
 
 ;*****************************
 ;* GETEXPDEFENTRY            *

@@ -133,7 +133,7 @@ OBJRecPtr	DD	?		; pointer to start of current object record
 RelocationTable	DW	512 DUP (?)	; temporary storage of relocation fixup items
 								; 16-bit offset, 16-bit segment (non-EXE only)
 
-IFDEF	DLLSUPPORT
+IFDEF DLLSUPPORT
 IMPDEFFixupType	DB	?	; IMPDEF fixup type, with flags
 IsFrameIMPDEF	DB	?	; nonzero if fixup frame is IMPDEF-based
 IsIMPDEFSymbol	DB	?	; nonzero is symbol is IMPDEF based
@@ -232,11 +232,11 @@ CONST ENDS
 _DATA	SEGMENT WORD PUBLIC USE16 'DATA'
 
 EntryOffsetValue	DD	0	; program entry offset value
-EntrySegmentID	DW	0	; program entry segment ID
+EntrySegmentID		DW	0	; program entry segment ID
 EntrySegmentValue	DD	0	; program entry segment value
 FirstRelocEntryBlkPtr	DW	0	; first allocated relocation entry block pointer
 HighestOffsetWritten	DD	0	; highest address offset written
-IsEntryPoint	DB	0	; nonzero if program has entry point
+IsEntryPoint		DB	0	; nonzero if program has entry point
 	align 2
 LastLEDATASegIndex	DW	0	; last parsed segment index for LEDATA/LIDATA object record
 LastRelocEntryBlkPtr	DW	0	; last allocated relocation entry block pointer
@@ -282,10 +282,6 @@ EXTRN	CompressThisModule:BYTE
 EXTRN	RelocationAdjustment:DWORD
 ENDIF
 
-IFDEF WATCOM_ASM
-EXTRN	IsFlatOption:BYTE
-ENDIF
-
 ;*****************************
 ;* Code begins               *
 ;*****************************
@@ -312,7 +308,9 @@ EXTRN	ReadNameString:PROC
 EXTRN	ReadWordDecCX:PROC,ReadDwordDecCX:PROC
 EXTRN	ScanAhead:PROC
 EXTRN	SetOBJBuffer:PROC
-EXTRN	UnresExternalWarn:PROC
+
+UnresExternalWarn PROTO
+Entry32bitWarn    PROTO
 
 IFDEF SYMBOLPACK
 EXTRN	CheckCompressedSymbol:PROC
@@ -521,7 +519,7 @@ SetSegDefDataFlag	PROC
 
 ; save individual segment pointer for L?DATA record
 ssdsave:
-	mov	WORD PTR LDATAIndSegPtr,bx
+	mov	WORD PTR LDATAIndSegPtr+0,bx
 	mov	WORD PTR LDATAIndSegPtr+2,gs
 	mov	IsDebugSeg,OFF	; init debug segment flag
 
@@ -538,7 +536,7 @@ ssdset:
 	mov	gs:[bx+IndSegDefRecStruc.isdrDataPtr],eax
 	lgs	bx,gs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; gs:bx -> master segdef
 
-	test	gs:[bx+MasterSegDefRecStruc.mssFlags],(DEBUGTYPESSEGMENTFLAG OR DEBUGSYMBOLSSEGMENTFLAG)
+	test	gs:[bx].MasterSegDefRecStruc.mssFlags,(DEBUGTYPESSEGMENTFLAG OR DEBUGSYMBOLSSEGMENTFLAG)
 	je	ssdchk32		; not a debug segment
 
 ; debug segment, so flag, and reset associated data so debug keeps getting flagged
@@ -548,9 +546,9 @@ ssdset:
 	ret					; don't worry about 32-bit segments if they are debug
 
 ssdchk32:
-	or	gs:[bx+MasterSegDefRecStruc.mssFlags],ASSOCIATEDDATAFLAG
+	or	gs:[bx].MasterSegDefRecStruc.mssFlags,ASSOCIATEDDATAFLAG
 	mov	Is32BitSeg,OFF	; init 32-bit segment flag
-	test	gs:[bx+MasterSegDefRecStruc.mssFlags],SEGMENT32BITFLAG	; flag if 32-bit segment
+	test	gs:[bx].MasterSegDefRecStruc.mssFlags,SEGMENT32BITFLAG	; flag if 32-bit segment
 	je	ssdret			; not 32-bit segment
 	mov	Is32BitSeg,ON	; flag 32-bit segment
 
@@ -713,7 +711,7 @@ p2f4:
 	mov	IsAbsoluteSeg,al
 	mov	IsAbsoluteSym,al
 
-IFDEF	DLLSUPPORT
+IFDEF DLLSUPPORT
 	mov	IsIMPDEFSymbol,al	; init impdef symbol flag
 	mov	IsFrameIMPDEF,al
 ENDIF
@@ -1334,7 +1332,7 @@ gtaseg2:
 	mov	Is32BitSeg,ON	; flag 32-bit segment in case of pointer fixup
 
 gtaseg3:
-	mov	dx,fs:[bx+MasterSegDefRecStruc.mssSegmentID]	; get segment ID
+	mov	dx,fs:[bx].MasterSegDefRecStruc.mssSegmentID	; get segment ID
 	mov	FixupSegmentID,dx	; save segment ID
 	mov	edx,fs:[bx+MasterSegDefRecStruc.mssSegOffset]	; get master segment offset
 	mov	CanonicFrame,edx	; save as canonic frame in case of LOC type fixup
@@ -1378,7 +1376,7 @@ gtagrp2:
 	add	eax,TargetDisplacement	; add in original target displacement
 	mov	TargetProgOffset,eax	; update target program offset
 	lfs	bx,fs:[bx+GrpDefRecStruc.gdrFirstSegPtr]	; fs:bx -> first segment of group
-	mov	ax,fs:[bx+MasterSegDefRecStruc.mssSegmentID]	; get segment ID
+	mov	ax,fs:[bx].MasterSegDefRecStruc.mssSegmentID	; get segment ID
 	mov	FixupSegmentID,ax	; save segment ID
 	ret
 
@@ -1532,7 +1530,7 @@ ENDIF
 	mov	eax,fs:[bx+MasterSegDefRecStruc.mssSegOffset]	; get segment offset
 	shr	eax,4			; convert to paras
 	mov	TargetSegment,eax	; save as target segment
-	mov	ax,fs:[bx+MasterSegDefRecStruc.mssSegmentID]	; get segment ID
+	mov	ax,fs:[bx].MasterSegDefRecStruc.mssSegmentID	; get segment ID
 	mov	FixupSegmentID,ax	; save segment ID
 	ret
 
@@ -1568,7 +1566,7 @@ gfagrp3:
 	shr	eax,4			; convert to paras
 	mov	TargetSegment,eax	; save as target segment
 	lfs	bx,fs:[bx+GrpDefRecStruc.gdrFirstSegPtr]	; fs:bx -> first segment of group
-	mov	ax,fs:[bx+MasterSegDefRecStruc.mssSegmentID]	; get segment ID
+	mov	ax,fs:[bx].MasterSegDefRecStruc.mssSegmentID	; get segment ID
 	mov	FixupSegmentID,ax	; save segment ID
 	ret
 
@@ -1790,7 +1788,7 @@ p2f34:
 	mov	IsAbsoluteSeg,al
 	mov	IsAbsoluteSym,al
 
-IFDEF	DLLSUPPORT
+IFDEF DLLSUPPORT
 	mov	IsIMPDEFSymbol,al	; init impdef symbol flag
 	mov	IsFrameIMPDEF,al
 ENDIF
@@ -3205,6 +3203,11 @@ ENDIF
 	cmp	IsUnresSymbol,OFF	; see if unresolved symbol
 	jne	p2m3unres		; yes
 
+	cmp	IsCreateEXEOption,OFF	; see if building EXE file
+	je	p2m3isnotexe
+	call	Entry32bitWarn	; warning: entry point in std .exe is 32-bit
+p2m3isnotexe:
+
 ; fixup segment relative
 p2m3segrel:
 	mov	eax,TargetSegment
@@ -3227,6 +3230,7 @@ p2m3ret:
 p2m3unres:
 	call	UnresExternalWarn
 	jmp	p2m3ret
+
 
 Pass2MODEND32Proc	ENDP
 
@@ -3268,7 +3272,7 @@ Pass2LINNUMProc	PROC
 pnmgetoff:
 	mov	edx,gs:[bx+IndSegDefRecStruc.isdrSegOffset]	; get offset from base segment address
 	les	di,gs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; es:di => master segdef
-	mov	ax,es:[di+MasterSegDefRecStruc.mssSegmentID]	; get segment ID
+	mov	ax,es:[di].MasterSegDefRecStruc.mssSegmentID	; get segment ID
 	mov	LineSegmentID,ax	; save line number segment
 	mov	ebx,edx			; segment offset to ebx register
 
@@ -3366,7 +3370,7 @@ Pass2LINNUM32Proc	PROC
 pnm3getoff:
 	mov	edx,gs:[bx+IndSegDefRecStruc.isdrSegOffset]	; get offset from base segment address
 	les	di,gs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; es:di => master segdef
-	mov	ax,es:[di+MasterSegDefRecStruc.mssSegmentID]	; get segment ID
+	mov	ax,es:[di].MasterSegDefRecStruc.mssSegmentID	; get segment ID
 	mov	LineSegmentID,ax	; save line number segment
 	mov	ebx,edx			; segment offset to ebx register
 

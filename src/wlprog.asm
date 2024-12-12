@@ -81,9 +81,8 @@ _BSS ENDS
 
 CONST	SEGMENT WORD PUBLIC USE16 'DATA'
 
-CreatingEXETextLen	DB	CreatingEXETextStop-CreatingEXEText
+	DB	sizeof CreatingEXEText
 CreatingEXEText	DB	CR,LF,'*** Creating executable file'
-CreatingEXETextStop		=	$
 
 _CODEText	DB	"_"		; uses next four bytes of "CODE" after "_"
 CODEText	DB	"CODE"
@@ -396,7 +395,7 @@ IFNDEF CLIPPER
 	je	cpfseggrp			; no
 
 	lfs	bx,_ENDSegDefPtr	; fs:bx -> master segdef of stack segment
-	or	WORD PTR fs:[bx+MasterSegDefRecStruc.mssFlags],SEGMENT32BITFLAG	; flag 32-bit segment
+	or	fs:[bx].MasterSegDefRecStruc.mssFlags,SEGMENT32BITFLAG	; flag 32-bit segment
 ENDIF
 
 cpfseggrp:
@@ -501,7 +500,7 @@ SetSegGrpLength	ENDP
 ;  don't write debug segments
 
 Write3PSegEntries	PROC
-	mov	bx,WORD PTR FirstSegment	; ax:bx -> first segment in program
+	mov	bx,WORD PTR FirstSegment+0	; ax:bx -> first segment in program
 	mov	ax,WORD PTR FirstSegment+2
 	xor	di,di
 	mov	es,IOBlockSeg	; es:di -> i/o buffer block
@@ -515,7 +514,7 @@ w3pssegloop:
 
 ; check if debug segment, if so, then increment debug segment count
 ;  and don't save
-	test	fs:[bx+MasterSegDefRecStruc.mssFlags],(DEBUGSYMBOLSSEGMENTFLAG OR DEBUGTYPESSEGMENTFLAG)
+	test	fs:[bx].MasterSegDefRecStruc.mssFlags,(DEBUGSYMBOLSSEGMENTFLAG OR DEBUGTYPESSEGMENTFLAG)
 	jne	w3psnextent		; debug segment
 
 w3pssave:
@@ -526,7 +525,7 @@ w3pssave:
 ; if Clarion program set all global data segments to size
 ; ProgramImageSize-segment start or 64K if >64K
 IFDEF CLARION
-	test	fs:[bx+MasterSegDefRecStruc.mssFlags],CLARIONGLOBALDATAFLAG
+	test	fs:[bx].MasterSegDefRecStruc.mssFlags,CLARIONGLOBALDATAFLAG
 	je	wp3sgran		; not a global data segment
 	push	eax			; save critical register
 	mov	eax,ProgramImageSize	; compute new segment size
@@ -552,7 +551,7 @@ ENDIF
 w3ps2:
 	or	eax,edx			; merge segment type with segment length+granularity
 	mov	edx,FORCEDBITRESETFLAG	; assume 16-bit segment
-	test	fs:[bx+MasterSegDefRecStruc.mssFlags],SEGMENT32BITFLAG	; see if 32-bit segment
+	test	fs:[bx].MasterSegDefRecStruc.mssFlags,SEGMENT32BITFLAG	; see if 32-bit segment
 	je	w3pssize		; no
 	mov	edx,FORCEDBITSETFLAG	; 32-bit segment
 
@@ -562,7 +561,7 @@ w3pssize:
 IFDEF WATCOM_ASM
 	cmp	IsFlatOption,0	; see if flat option turned on
 	je	w3pscont		; no
-	test	fs:[bx+MasterSegDefRecStruc.mssFlags],SEGMENT32BITFLAG	; see if 32-bit segment
+	test	fs:[bx].MasterSegDefRecStruc.mssFlags,SEGMENT32BITFLAG	; see if 32-bit segment
 	je	w3pscont		; no
 	or	eax,TRUEFLATSEGMENTFLAG	; flag as true flat segment (not near)
 
@@ -572,8 +571,8 @@ ENDIF
 	stosd				; save segment length+flags
 
 w3psnextent:
-	mov	ax,WORD PTR fs:[bx+MasterSegDefRecStruc.mssNextSegPtr]+2
-	mov	bx,WORD PTR fs:[bx+MasterSegDefRecStruc.mssNextSegPtr]
+	mov	ax,WORD PTR fs:[bx].MasterSegDefRecStruc.mssNextSegPtr+2
+	mov	bx,WORD PTR fs:[bx].MasterSegDefRecStruc.mssNextSegPtr+0
 	jmp	w3pssegloop
 
 ; done processing segments, write them out
@@ -856,7 +855,7 @@ Setup3PHeader	PROC
 	je	s3ph2			; no
 
 	lfs	bx,_ENDSegDefPtr	; fs:bx -> master segdef of stack segment
-	mov	ax,fs:[bx+MasterSegDefRecStruc.mssSegmentID]
+	mov	ax,fs:[bx].MasterSegDefRecStruc.mssSegmentID
 	mov	NewHeader.NewEntrySS,ax	; save SS value
 
 IFDEF WATCOM_ASM
@@ -1261,7 +1260,7 @@ weefind:
 	add	eax,gs:[di+PubSymRecStruc.pssOffset]	; add in public offset
 	mov	DWORD PTR WorkingBuffer,eax	; save exported offset value
 	lfs	si,fs:[si+IndSegDefRecStruc.isdrMasterPtr]	; fs:si -> master segdef
-	mov	ax,fs:[si+MasterSegDefRecStruc.mssSegmentID]	; get segment identifier
+	mov	ax,fs:[si].MasterSegDefRecStruc.mssSegmentID	; get segment identifier
 	mov	WORD PTR WorkingBuffer+4,ax	; save exported segment value
 
 	pop	fs			; restore fs:bx -> expdef entry
@@ -1876,7 +1875,7 @@ isnotbs:
 	call CopyCWStub
 	mov dx, OFFSET CurrentFileName
 	mov al, 40h		; read only, deny none access
-	call OpenFile
+	call OpenFile	; open extender stub (CWSTUB.EXE)
 extenderfound:
 
 	mov	bx,ax			; save file handle
@@ -2172,9 +2171,9 @@ webmainloop:
 	test	ax,ax		; see if segment exists
 	je	webdone			; no, done
 	mov	gs,ax			; gs:bx -> master segdef entry
-	test	gs:[bx+MasterSegDefRecStruc.mssFlags],ASSOCIATEDDATAFLAG	; see if data for segment
+	test	gs:[bx].MasterSegDefRecStruc.mssFlags,ASSOCIATEDDATAFLAG	; see if data for segment
 	je	webnextseg		; no data from segment, no file write needed
-	test	gs:[bx+MasterSegDefRecStruc.mssFlags],(DEBUGTYPESSEGMENTFLAG OR DEBUGSYMBOLSSEGMENTFLAG)
+	test	gs:[bx].MasterSegDefRecStruc.mssFlags,(DEBUGTYPESSEGMENTFLAG OR DEBUGSYMBOLSSEGMENTFLAG)
 	jne	webnextseg		; debug segment, ignore
 	call	DisplaySegmentName	; display segment name being processed
 

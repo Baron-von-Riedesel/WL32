@@ -153,8 +153,8 @@ _BSS ENDS
 
 CONST	SEGMENT WORD PUBLIC USE16 'DATA'
 
-OBJRecTableLen	DW	OBJRecTableStop-OBJRecTable
-OBJRecTable		=	$
+	DW	OBJRecTableStop-OBJRecTable
+OBJRecTable	label byte
 	DB	LEDATA
 	DB	LEDATA32
 	DB	FIXUPP
@@ -204,7 +204,7 @@ OBJRecTableStop	=	$
 
 ; MUST be in sync with OBJRecTable
 ; routine vectors for object record types
-Pass1OBJRecVector	=	$
+Pass1OBJRecVector	label word
 	DW	Pass1LEDATAProc
 	DW	Pass1LEDATA32Proc
 	DW	Pass1FIXUPPProc
@@ -263,7 +263,7 @@ COMENTClassTable		=	$
 	DB	COMENTLZEXTFLAG
 	DB	COMENTPHARLAPFLAG
 
-IFDEF	DLLSUPPORT
+IFDEF DLLSUPPORT
 	DB	COMENTOMFEXT
 ENDIF
 
@@ -282,19 +282,17 @@ COMENTClassVector	=	$
 	DW	COMENTClassLZEXTProc
 	DW	COMENTClassPharLapProc
 
-IFDEF	DLLSUPPORT
+IFDEF DLLSUPPORT
 	DW	COMENTClassOMFEXTProc
 ENDIF
 
 ZeroValue	DD	0	; known zero value, for pointers to null strings
 
-ProcessModTextLen	DB	ProcessModTextStop-ProcessModText
+	DB	sizeof ProcessModText
 ProcessModText	DB	CR,LF,'*** Processing library module: '
-ProcessModTextStop		=	$
 
-InTextLen	DB	InTextStop-InText
+	DB	sizeof InText
 InText	DB	' in '
-InTextStop		=	$
 
 IFDEF SYMBOLPACK
 Clipper5Text	DB	'CLIPPER5'
@@ -404,7 +402,7 @@ EXTRN	SaveOBJLIBFileName:PROC
 EXTRN	SetGrpPtrTableEntry:PROC
 EXTRN	SetSymPtrTableEntry:PROC
 
-IFDEF	DLLSUPPORT
+IFDEF DLLSUPPORT
 EXTRN	GetEXPDEFEntry:PROC
 EXTRN	GetIMPDEFEntry:PROC
 ENDIF
@@ -2276,7 +2274,7 @@ COMENTClassOMFEXTProc	PROC
 	je	omfret
 	call	ReadByteDecCX	; get subtype
 
-IFDEF	DLLSUPPORT
+IFDEF DLLSUPPORT
 	cmp	al,COMENTEXPDEF
 	jne	omfchkimp			; not an export definition
 	call	Pass1EXPDEFProc
@@ -2291,7 +2289,7 @@ omfret:
 	ret
 COMENTClassOMFEXTProc	ENDP
 
-IFDEF	DLLSUPPORT
+IFDEF DLLSUPPORT
 
 ;*****************************
 ;* PASS1EXPDEFPROC           *

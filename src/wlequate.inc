@@ -12,7 +12,7 @@
 ;*                                                                   *
 ;*********************************************************************
 
-LINKER		EQU	"WL32"
+LINKERNAME	textequ	<"WL32">
 
 ; general use equates
 STDIN	EQU 0			; standard input device
@@ -61,6 +61,13 @@ PARAMETERFLAG	EQU	80000h
 ;OPTLISTOFFPARAMLOW	EQU	8
 ;OPTLISTOFFPARAMHIGH	EQU	12
 ;OPTLISTOFFEXTRAFLAG	EQU	16
+
+;--- wArgFlgs values
+OPTFLG_NOPARAM    equ 0
+OPTFLG_STRINGPARAM equ 2
+OPTFLG_DWORDPARAM equ 4
+OPTFLG_GOBBLESPACE equ 4000h
+OPTFLG_IGNOREIFON  equ 8000h
 
 OPTITEM struct
 wOptText dw ?	; offset option text

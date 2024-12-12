@@ -17,7 +17,8 @@
 
  The original files were assembled with TASM 2.0 or 2.5 in MASM
  emulation. Now the source is assembled with either JWasm or Masm v6.
- To link the binary, either WL32, (J)Wlink or MS link may be used.
+ To link the binary, either WL32, (J)Wlink, MS link or WL itself
+ may be used.
 
  Finally, a naming note.  WarpLink was originally called Machlink
  when it was in development before initial release.  That's why you
@@ -100,7 +101,7 @@
  MAKE.BAT           create WL.EXE with JWasm and WL32, (J)Wlink or MS link
  MAKEM.BAT          create WL.EXE with Masm v6+ and WL32, (J)Wlink or MS link
 
- The assembler ( JWasm and Masm ) is launched with the "Masm v5 compatibility"
+ The assembler ( JWasm or Masm ) is launched with the "Masm v5 compatibility"
  option -Zm. Masm v6 seems to have a small problem then: uninitialized data
  defined in the _BSS segment may trigger the creation of OMF LEDATA records.
  This in turn causes the linker to add the contents of this section to the

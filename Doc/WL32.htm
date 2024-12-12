@@ -1,0 +1,489 @@
+<HTML>
+<HEAD><TITLE>WL32 Documentation</TITLE></HEAD>
+<BODY>
+
+<P ALIGN=CENTER><FONT SIZE=4><B>1.&nbsp;&nbsp;&nbsp;About WL32 LINKER</B></FONT></P>
+<P>WL32 is used for creating DOS extended assembly language programs. It optionally can be used to link Watcom C object modules instead of WLINK, although full source debugging is not supported.</P>
+<P>Operate the WL32 protected mode linker from the DOS command line or a batch or make file. There are no menus and operating modes. Simply type WL32 followed by specific command options and one or more filenames. Using WL32 is similar to using Borland's TLink or Microsoft Link, although you may optionally make WL32 work like RTLink, PLink and other linkers of that style. (See the <I>Configuration Files</I> chapter for more details on modifying WL32's behavior.)</P>
+<P>Use the following format for running WL32 from the DOS prompt:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>WL32 [command options] OBJECT_FILES, [<I>program_file</I>],[<I>map_file</I>],[<I>library_files</I>]</P>
+</FONT><FONT SIZE=3><P>Items in brackets ([ ]) are optional. Do not actually type the brackets if you use the optional items. Replace command options with any of the WL32 options.</P>
+<P><I>OBJECT_FILES</I> indicates a list of one or more object module file names. WL32 uses a default extension of .OBJ for object module files if none is given. You can override the default extension by explicit use of a different extension in the file name.</P>
+<P><I>program_file</I> indicates the name of the executable file that WL32 creates as output. WL32 uses a default extension of .EXE for executable files if none is given. You can override the default extension by explicit use of a different extension in the file name. If no executable file name is listed, WL32 uses the first .OBJ file name with a .EXE extension as the executable file name.</P>
+<P><I>map_file</I> indicates the name of the map file WL32 creates that contains information about the executable file. WL32 uses a default extension of .MAP for s if none is given. You can override the default extension by explicit use of a different extension in the file name. If no map file name is listed and the /m option is specified, Wl32 uses the .EXE file name with a .MAP extension. If a map file name is not listed and the /m option is not used, a map file is not created.</P>
+
+<P><I>library_files</I> indicates a list of one or more library file names. WL32 uses a default extension of .LIB for library files if none is given. You can override the default extension by explicit use of a different extension in the file name.</P>
+<P>When entering more than one file name type, you must use commas as shown. They are not optional. For example, when specifying a program name and library name without a map file name, use two commas to separate the file names. However, do not use commas as separators between the same file types. In other words, do not place commas between multiple object module file names or multiple library file names.</P>
+
+<B><P>NOTES</P></B>
+<P>It is possible to override the default link format through use of the FREEFORMAT morphing command in a configuration definitions file. Refer to the <I>Configuration Files</I> chapter for more information.</P>
+<P>The message "Link of executable file successfully completed" appears at the end of the link if errors did not occur during linking. If a link error does occur, the application's executable and map file are deleted.</P>
+<P>Warnings during the link are NOT the same as errors. Instead, they are an indication that the linker has encountered an unusual situation which could lead to a problem when operating the linked program. Warnings do not abort the link process and the success message appears even if warnings are present. The total number of warnings will be displayed by WL32 at the end of the link if any warnings do occur.</P>
+<P>WL32 automatically zeroes the CodeView segments $$TYPE and $$SYMBOL in a program so that they don't bulk up EXE size or disk space unnecessarily when debug code is linked in.</P>
+
+
+<P ALIGN=CENTER><FONT SIZE=4><B>2.&nbsp;&nbsp;&nbsp;WL32 OPTIONS</B></FONT></P>
+<FONT SIZE=3><P>WL32 options let you control how programs are linked and specify linker output while creating the programs. You can specify these linker options from the DOS command line, in a batch or make file, or in a response file. If you are using the optional morphing command feature described in the <I>Configuration Files</I> chapter, the options listed below may not appear the same as in your command line, response, batch, or make file. The formats listed in this chapter, however, are always valid.</P>
+<P>All options are case insensitive, e.g. both /b and /B refer to the beep when link is complete option. Type WL32 without parameters at the DOS command line to display a summary of linker options.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/32 Allow <B>32</B>-bit segments for option <B>/ex</B>.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This option makes WL32 accept 32-bit segments without warning.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/3P Create protected-mode <B>3P</B> format without DOS extender (CWSTUB.EXE).</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This option creates a binary that cannot be executed directly, since the format isn't known by DOS.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/b <B>B</B>eep the speaker at linker completion.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This option causes WL32 to beep your speaker three times at the completion of the linking process by writing
+ three Control-G characters to the standard output device.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/cs Perform <B>C</B>ase <B>S</B>ensitive symbols link.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This option preserves case sensitivity when linking. If you need case sensitive symbols in your application,
+ use the /cs option. This is generally only critical for nonassembly language programs and not always then.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/ds Set <B>D</B>S to <B>S</B>S at startup.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This option sets the DS segment register to the SS segment register value at application startup, rather
+ than the application's PSP. The /ds option is required for proper Watcom C/C++ flat model operation.</P>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/ex Create DOS <B>EX</B>E-format file.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This option instructs WL32 to create a standard real mode DOS EXE- format file, similar to those created by
+ non-DOS extended linkers such as TLink or Microsoft Link. Creating a standard DOS EXE-format file only works for programs
+ which do not exceed the DOS memory limit when fully loaded into memory. Medium to large-sized programs which require a
+ DOS extender or overlays probably will not work when linked using the /ex option.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/f Create <B>f</B>lat memory model executable.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This option directs WL32 to create an executable in 3P format and adds a
+ DOS extender stub, CWSTUB.EXE, to it. The executable may be a 16-bit or 32-bit program. 32-bit programs can 
+ be either zero-based flat ( memory model FLAT ) or "near" ( memory model TINY or SMALL ).</P>
+
+ <P>In case the VCPI API isn't available, the executable can only be launched by CWSTUB.EXE if a DPMI host is
+ installed. The executables will then run as 16- or 32-bit clients, depending on their own "bitness".
+
+ </P>
+ </FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/fl Use <B>f</B>ast <B>l</B>oad EXE file DOS extender features.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This option optimizes the load format of the executable so that it will load more quickly at startup.
+ Fast load /has no effect on the application after it has begun execution. Startup times will decrease from 20-80% over
+ applications that are not linked with fast load. You may not compress fast load executables (i.e. with CWC) since compression
+ and the fast load format are incompatible.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/i Display link process <B>i</B>nformation.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This option provides extensive information about WL32 while it is working. When this option is specified,
+ WL32 displays the current file or library module being processed and the segments being written to the executable file,
+ as well as identifying the start of major link phases.</P>
+<P>The /i option may help you troubleshoot any problems that occur when using WL32 by narrowing down where the trouble
+ spot lies. Technical support frequently requests a redirected output of the link process using the /i option if you
+ experience a problem with WL32.</P>
+<B><P>NOTE: </B>This option may noticeably affect WL32 link speed and should not be specified if it is not needed.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>&nbsp;/il Display link process <B>i</B>nformation; <B>l</B>imit information displayed.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This option is very similar to the /i option except that it only displays the file being read by WL32 and
+ the beginning of major link phases. The /i option display is more comprehensive than /il. The /il option makes the
+ information display more manageable. Also, because limited information is displayed, linker execution speed is faster
+ when using the /il option as compared with the /i option.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/lc:&lt;name&gt; Use <B>l</B>ink options <B>c</B>onfiguration file name.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This /lc option supplies a configuration file name to WL32 for use with the command morphing feature.
+ If no configuration file name is listed, no morphing occurs. The configuration file must be in the current directory
+ or be listed in the option with the drive and directory in which the configuration file resides.
+ Multiple configuration files are allowed. They are processed in the order in which they are encountered.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/ls <B>L</B>ibrary <B>s</B>earch logic for symbol resolution.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This option forces WL32 to search libraries for symbol resolutions in the order in which they were specified,
+ exhaustively returning to process the first library after a single pass on the subsequent library. The behavior is analogous
+ to RTLink's SEARCH, required by some third party vendors for use with their libraries. Since the search logic employed when
+ this option is set can increase link time by a significant amount, the option is recommended only if needed.</P>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>&nbsp;/m Create <B>M</B>AP file.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>The /m option creates a map file. This option is also set if a map file name is explicitly listed in a linker
+ response file or command line.</P>
+<P>Map files contain the size, name, class, and count of segments in the created program, the name, time, and date created of
+ the executable file, and the program entry point address. Map files list the names and addresses of public symbols in the
+ program. This information is useful for debugging your program and identifying space requirements for each segment. The
+ CauseWay debugger (CWD) can use map files to display symbolic addresses of the CauseWay executable file being debugged.
+ Symbols are present in a .MAP file only if they are declared public in the module that defines the symbol.</P>
+<B><P>NOTE:</B> This option may noticeably affect WL32 link speed and should not be specified if it is not needed.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/nd Do not use <B>d</B>efault library <B>n</B>ames in object modules. </FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>Most language compilers and assemblers embed the name of one or more runtime libraries directly into .OBJ
+ files so that these libraries do not have to be explicitly specified in the linker command line or response file. These
+ .LIB files are called the default libraries. You can prevent WL32 from using the embedded default libraries by using the
+ /nd option. The /nd option allows you to link programs without automatically linking in default libraries. This may be
+ useful when linking in replacement libraries or if you rename default libraries.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/non Do not add 16 NUL bytes to _TEXT if DOSSEG segment order is active.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This option is meant for /ex only. The DOSSEG directive tells the linker to 1) order segments in a specific way
+ and 2) add 16 NUL bytes at the start of the first segment (_TEXT). If /non is given, part 2) is omitted.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/nwd <B>N</B>o <B>w</B>arning on <B>d</B>uplicate symbols.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This option directs WL32 not to return a warning when duplicate symbols are encountered during linking.
+ This feature is available for use with replacement or third party libraries when you do not desire such warnings because
+ more than one module resolves the same symbol. Remember that all such warnings are eliminated, so use this option with
+ care. There may be circumstances in which a duplicate symbol warning is appropriate and useful. If you have any unexplained
+ problems, remove the /nwd option and check that the duplicate symbol warnings are benign.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/nwld <B>N</B>o <B>w</B>arning on <B>l</B>ibrary only <B>d</B>uplicate symbols.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This is similar to option /nwd, but the warnings are suppressed for libraries only.</FONT></P>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/q No logo display.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This option makes WL32 suppress the display of the logo.</FONT></P>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/qq No logo and link success display.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>If warnings have occured, the link success message will be displayed, even if this option is given.</FONT></P>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/st:&lt;size&gt; Set program <B>st</B>ack size in bytes.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This option modifies the linked program's stack size. It overrides any default stack set by the program modules if the default stack is smaller than the size specified by the /st option. The value may range from 1 to 65535 bytes.</P>
+<P>If no stack is set by this option or by the program, a default 1K (1024 bytes) stack is created by WL32. Executable programs should always have a stack segment.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/sy Create <B>SY</B>M file for CWD debugger.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>The /sy option is only useful for operating a CauseWay application with the CWD debugger. When the option is set, WL32 creates a .SYM file that contains information on the public symbols within the application. When using MAP files that have many public symbols, CWD may take a long time to process all of the symbolic information. The .SYM contains this information in an optimized form and allows an application to load under CWD more quickly. CWD will first check for and use a .SYM file. If no .SYM file is available then it uses a .MAP file (if present) for symbolic information.</P>
+<P>SYM files also allow source-level debugging of assembly language files if the module is coupled with line numbers.</P>
+<P><B>NOTE:</B> This option may noticeably affect WL32 link speed and should not be specified if it is not needed.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/w1 <B>W</B>arnings generate exit code of <B>1</B>, not zero.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>Unlike errors, warnings do not normally generate a non-zero exit code (also known as the DOS ERRORLEVEL or the return code) when WL32 finishes linking. When the /w1 option is used, warnings cause a exit code of 1 rather than 0 to be returned. This behavior can be useful when creating programs using make or batch files that need to detect warning conditions.</P>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/wu Issue <B>w</B>arning on <B>u</B>nknown linker options or commands.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>WL32 normally ignores without feedback an unknown linker option or command provided that the unknown text is not preceded by a slash (/). When the /wu option is set, all ignored text is listed by WL32 in a warning message. This option is most useful for detecting an unknown command or option if you are using morphing configuration files with the FREEFORMAT option.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP"><P><FONT SIZE=3>/zu <B>Z</B>ero fill <B>U</B>ninitialized segments.</FONT></TD></TR>
+</TABLE>
+<FONT SIZE=3><P>This option zero fills uninitialized segments, including the stack. It is useful for applications which expect uninitialized data segments to be set to zero. Note that a stack segment must be present and at the end of the application for this to work. If for some reason the stack is located in the middle of an application, then only uninitialized segments up through the stack will be zero filled. Note that this option can increase program size significantly since all bytes in the program image are explicitly written, although CWC compression should bring it back down. Some Watcom C applications may require this option because they expect zero'ed uninitialized data segments.</P>
+
+
+
+<P ALIGN=CENTER><FONT SIZE=4><B>3.&nbsp;&nbsp;&nbsp;RESPONSE FILES</B></FONT></P>
+</B><P><FONT SIZE=3>Rather than supplying option and file information to WL32 on the DOS command line, you can place the information in an ASCII text file, called a response file. Response files are often referred to as link files, command scripts, or script files. Use response files to ease repetitive linking tasks and to allow longer entries than can be typed on the DOS command line. There is no limit to the number of options and files you can list and there is no need to worry about introducing typing errors with each link.</P>
+<B><P>RESPONSE FILE FORMAT</P>
+</B><P>Use the following format for using a response file with WL32:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>WL32 @FILENAME.EXT</P>
+</FONT><FONT SIZE=3><P>The at (@) symbol designates the file as a response file instead of a .OBJ file or .LIB .file. You may list more than one response file when linking and can nest one response file inside another. This allows one response file to specify other response files to be used by WL32 during the link process. Response files can be nested to a depth of ten levels, that is, a response file can specify another response file which in turn can specify another response file, up to a maximum of ten layers. Nesting response files is most useful when linking in the FREEFORMAT mode described in the <I>Configuration Files</I> chapter.</P>
+<P>The maximum line length for a response file is 253 characters. There is no restriction on total number of lines in a response file.</P>
+<B><P>USING A RESPONSE FILE</P>
+</B><P>A response file contains exactly what you would type after WL32 on the DOS command line. To break up a response file into several lines, use a plus sign at the end of a line containing lists of .OBJ and LIB files. A line that ends without a plus sign (+) or a comma (,) indicates a new file type in the subsequent line. </P>
+
+<P>For example, the following response file:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>MYFILE1+</P>
+<P>MYFILE2</P>
+<P>MYFILE3</P>
+</FONT><FONT SIZE=3><P>causes WL32 to link MYFILE1.OBJ and MYFILE2.OBJ into MYFILE3.EXE because the MYFILE2 line does not end of with the plus sign. The same effect can be achieved by this response file:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>MYFILE1+</P>
+<P>MYFILE2,MYFILE3</P>
+</FONT><FONT SIZE=3><P>In contrast, the following response file:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>MYFILE1+</P>
+<P>MYFILE2+</P>
+<P>MYFILE3</P>
+</FONT><FONT SIZE=3><P>links together MYFILE1.OBJ, MYFILE2.OBJ, and MYFILE3.OBJ to create MYFILE1.EXE because of a trailing plus sign after MYFILE2.</P>
+<P>When linking with response files, you must specify the file extension if one is required. WL32 does not assume a .LNK or .RSP file extension. However, by using a configuration definitions file command you may specify a default response file extension. Refer to the <I>Configuration Files</I> chapter for more information.</P>
+<P>If a response file is not found in the current directory, WL32 will search the LIB environment variable directories for the response file. </P>
+<P><B>COMMENTS IN A RESPONSE FILE</B></P>
+<P>You can add comments to WL32's response files for documentation purposes. Use the pound sign (#) to insert comments into a response file. Two slash (//) characters also may be used to indicate a comment. All characters on a line after the pound sign or slashes are ignored by WL32. The comment indicator can be modified from a pound sign to a different character using a configuration definitions file command. Read the <I>Configuration Files</I> chapter for more information.</P>
+
+
+<P ALIGN=CENTER><FONT SIZE=4><B>4.&nbsp;&nbsp;&nbsp;CONFIGURATION FILES</B></FONT></P>
+</B><P><FONT SIZE=3>For maximum flexibility and ease of use, the assembly language linker, WL32, supports response or linker script morphing commands. Morphing capability allows WL32 to read the link or response files and scripts of any linker without changing those files to conform to WL32's commands and options. This capability includes support for both positional (e.g. Microsoft Link and TLink) and freeformat (e.g. RTLink) link files and scripts.</P>
+<B><P>SYNTAX</P>
+</B><P>To use the morphing feature, place the morphing commands in a linker configuration definitions file and specify the file to WL32 through the /lc:&lt;filename&gt; option. If a morphing command configuration definitions file is not found in the current directory, WL32 will look for the file in the directory containing WL32.EXE (i.e. the invocation path of WL32).</P>
+<P>With all morphing commands in a configuration file, case is significant and WL32 returns an error for a lowercase command. However, case is not significant for the <B>&lt;string&gt; </B>or<B> &lt;option&gt;</B> listing that is translated or morphed into an instruction understood by WL32. For example, <B>LIB=LIBNAME </B>and<B> lib=LIBNAME</B> are valid definition file lines, <B>LIB=libname </B>and<B> lib=libname</B> are not. Only one command may be made per linker definition file line.</P>
+<P>An asterisk (*) character placed at the end of the <B>&lt;string&gt;</B> instructs WL32 to ignore the entire response file or command line after processing <B>&lt;string&gt;.</B> This is commonly used to ignore characters after a superfluous command, such as MODULE.</P>
+<P>A plus (+) character placed at the end of the <B>&lt;string&gt;</B> instructs WL32 to ignore the rest of the current option or command text and parameters, rather than the rest of the line. This is commonly used to ignore options and commands which have variable parameters, but which are followed on the same line by other options and commands which you do not want to ignore.</P>
+<P>Brackets ([ and ]) in a <B>&lt;string&gt;</B> have special meaning. Characters within a bracket are optional when parsing <B>&lt;string&gt;.</B> If the bracketed text is not present, <B>&lt;string&gt;</B> will still be parsed and translated correctly to the proper command.</P>
+
+<B><P>MORPHING COMMANDS</P>
+</B><P>All supported morphing commands and descriptions of their use follows:</P></FONT>
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>//&lt;any text&gt;</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>The // command allows insertion of comments or temporary removal of a pre-existing command in the DEF file. All text on the line following // is ignored by WL32. The slashes must be placed at the beginning of a line.</P></FONT>
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;character&gt;=COMMENT</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Specify one character that WL32 recognizes as the beginning of a comment line in a linker response file. WL32 uses the pound sign (#) by default. This command allows changing comment recognition to another character. WL32 also recognizes // as a comment line in a linker response file.</P>
+<P>If more than one comment line character is listed in a configuration file, only the last one specified is used.</P></FONT>
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;WL32 option&gt;=DEFAULT</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Specify a WL32 option that is set by default. For example, using:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>/b=DEFAULT</P>
+</FONT><FONT SIZE=3><P>in a configuration file will cause WL32 to always beep at the end of the link process, even if the response file does not contain the /b option. Multiple DEFAULT morphing commands are supported by WL32.</P></FONT>
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;string&gt;=EXENAME</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Specify a string that instructs WL32 to begin parsing the</P>
+<P>executable file name when in free format mode. In most cases, use the following command line:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>OUTPUT=EXENAME</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;file name&gt;=FILEDELETE</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Specify a file that will be removed from the link process if it is encountered in a link file or command line. The file will be deleted even if it is listed in the link file with a drive or directory specification. Do not list &lt;file name&gt; with a drive or directory specification. </P>
+<P>&lt;file name&gt; must contain an extension if the file to be removed has either an explicit or default extension.</P>
+<P>This command is most useful for removing superfluous object modules or libraries from link files without directly editing them. For example, overlay managers and libraries are not needed with the DOS extender and will only add unnecessary code to the program. The following command will remove a file called OVLMGR.OBJ from the link process:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>OVLMGR.OBJ=FILEDELETE</P>
+</FONT><FONT SIZE=3><P>Multiple FILEDELETE morphing commands are supported by WL32.</P>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>FREEFORMAT</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Switch the linker into freeformat parsing mode used by the RTLink and PLink linkers, as opposed to the positional format used by WarpLink, Microsoft Link, and TLink. You cannot switch back to positional parsing mode after entering freeformat. Several linker definition commands are only valid for freeformat mode.</P></FONT>
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;character&gt;=IGNORE</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Specify one character to ignore when adjacent to or part of a file name in a linker response file or command line. This command allows ignoring parentheses or brackets around overlaid file names without modifying the script file. The following two commands are commonly used with the IGNORE command for Microsoft Link and WarpLink overlaid files:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>(=IGNORE</P>
+<P>)=IGNORE</P>
+</FONT><FONT SIZE=3><P>Up to 16 ignore characters can be specified in separate lines. After 16 ignore characters are processed in the definitions file, the 17th character listed overwrites the first ignore character specified, and so on.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>ISLIB</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Force an object module to be linked as a library file. This command is useful for switching library files in the object module list back to library status.</P></FONT>
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;file name&gt;=LIBADD</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Specify a library file to be linked into a program whenever the configuration definitions file is used. The library file will be added to the library file list as soon as it is encountered in the configuration file. If the library file is not present in the current directory or cannot be found in a directory listed via the LIB environment variable, WL32 terminates with a <B>file not found</B> error.</P>
+<P>This command is most useful for languages which need replacement libraries to be used with the DOS extender. </P>
+<P>Multiple LIBADD morphing commands are supported by WL32.</P></FONT>
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;string&gt;=LIBNAME</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Specify a string when in freeformat mode that instructs WL32 to begin parsing a list of library files. The following three commands are commonly used in a definitions file with freeformat link files:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>LIB[RARY]=LIBNAME</P>
+<P>SEA[RCH]=LIBNAME</P>
+<P>ALL[OCATE]=LIBNAME</P>
+</FONT><FONT SIZE=3><P>Multiple LIBNAME morphing commands are supported by WL32.</P>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;file name&gt;=LIBSEARCH</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Specify a library file to be linked into a program whenever the configuration definitions file is used. The library file will be added to the library file list as soon as it is encountered in the configuration file. If the library file is not present in the current directory or cannot be found in a directory listed via the LIB environment variable, WL32 terminates with a <B>file not found</B> error.</P>
+<P>This command is very similar to LIBNAME, but additionally it specifies library SEARCH logic (as with WL32 /ls option). It is useful for translating RTLink SEARCH commands without having to explicitly set the /ls option.</P></FONT>
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;string&gt;=NULL</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Specify any string of characters that should be ignored by the linker in the definitions file by using the NULL command. The asterisk (*) character at the end of &lt;string&gt; instructs the linker to ignore the entire response file or command line. For example:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>/DOSSEG=NULL</P>
+</FONT><FONT SIZE=3><P>means ignore /DOSSEG in the linker script file or command line. This command:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>MOD[ULE]*=NULL</P>
+</FONT><FONT SIZE=3><P>means ignore the entire line starting with MODULE. The ULE characters are optional. This command:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>/op:+=NULL</P>
+</FONT><FONT SIZE=3><P>means ignore /op: in a linker script file or command line and all following characters up to the next option or command.</P>
+<P>Multiple NULL morphing commands are supported by WL32.</P>
+<B><P>NOTE:</B> If you wish to ignore an option in a response file that is a substring of another option to be ignored, list the smaller option second in the configuration definitions file. Otherwise, the longer option may be encountered in a response file and have only a portion of its text ignored, leaving the remaining portion open to misinterpretation by WL32. For example, you may ignore both the /s and /sp options of WarpLink. If you list /s=NULL first in the configuration file before /sp=NULL and WL32 encounters /sp, it will remove the "/s" from processing, leaving a "p" behind. Depending upon where the /sp option was positioned in the link file, the "p" could be interpreted as an object or library file name.</P></FONT>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;file name&gt;=OBJADD</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Specify an object module to be linked into a program whenever the configuration file is used. This file is added as soon as the command is encountered in the configuration file. Therefore if you list the configuration file before any object modules and do not specify an EXE file name, the EXE file name is based on the object module file name in the first OBJADD command. If the object module is not present in the current directory and cannot be found using the OBJ environment variable, WL32 terminates with a file not found error.</P>
+<P>Multiple OBJADD morphing commands are supported by WL32.</P></FONT>
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;file name&gt;=OBJAPPEND</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Specify an object module file or files that is to be linked at the end of the object module list, rather than at the beginning as with OBJADD. </P>
+<P>If the object module is not present in the current directory and cannot be found using the OBJ environment variable, WL32 terminates with a <B>file not found</B> error.</P>
+<P>Multiple OBJAPPEND morphing commands are supported by WL32.</P>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;string&gt;=OBJNAME</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Specify a string that instructs WL32 to begin parsing a list of object module files when in freeformat mode. The following is commonly used within the definitions file with freeformat link files:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>FI[LE]=OBJNAME</P>
+</FONT><FONT SIZE=3><P>Multiple OBJNAME morphing commands are supported by WL32.</P></FONT>
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;string&gt;=RESPONSEEXT</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Specify the default extension for a response or link file. This command allows emulation of linkers which automatically add the extension on a linker response file, for example .LNK. If an extension is explicitly passed to the linker, the morphing command extension will not be appended. A common use of this command would be:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>.LNK=RESPONSEEXT</P>
+</FONT><FONT SIZE=3><P>If more than one RESPONSEEXT command is encountered, the last specified extension will be the one used by WL32.</P>
+<P>Although the RESPONSEEXT command does allow adding a text suffix of up to four characters to response file names by not specifying a leading period in the RESPONSEEXT extension, the ability is of dubious value.</P></FONT>
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;character&gt;=TERMINATION</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Specify one character to terminate linker processing. Typically Microsoft Link users specify a semicolon (;), as follows:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>;=TERMINATION</P>
+</FONT><FONT SIZE=3><P>If more than one termination command line is listed, only the last one specified is used by WL32.</P>
+
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;string&gt;=&lt;WL32 option&gt;</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Translate &lt;string&gt; to the listed WL32 option. This command is most useful for a linker response file that has an option directly corresponding to a WL32 option, but with a different syntax. Here are a few common examples:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>STACK=</FONT><FONT SIZE=2>/</FONT><FONT FACE="Courier" SIZE=2>st:</P>
+<P>VERBOSE=</FONT><FONT SIZE=3>/</FONT><FONT FACE="Courier" SIZE=2>i</P>
+<P>/nod=</FONT><FONT SIZE=3>/</FONT><FONT FACE="Courier" SIZE=2>nd</P>
+</FONT><FONT SIZE=3><P>Multiple WL32 option morphing commands are supported by WL32.</P></FONT>
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;filename&gt;=+&lt;WL32 option&gt;</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Turn on &lt;WL32 option&gt; if &lt;filename&gt; is encountered in the link file as an object module or library. A path specification is not necessary for &lt;filename&gt;. </P></FONT>
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;filename&gt;=+OBJ:&lt;OBJ filename&gt;</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>This command is the same as OBJAPPEND, except linking of &lt;OBJ filename&gt; is conditional based upon the presence of &lt;filename&gt;. Useful for linking in a path object module if a library is present. If no file extension is given for &lt;OBJfilename&gt;, the default is used: .OBJ.</P></FONT>
+<TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
+<TR><TD VALIGN="TOP">
+<P><FONT SIZE=3>&lt;environment variable setting&gt;=@&lt;linkfile&gt;</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=3><P>Process &lt;linkfile&gt; only if &lt;environment variable setting&gt; is properly set. Multiple &lt;linkfile&gt; commands are processed in order listed in the .DEF file following the initial command line, link file, and DEF file processing. This command is potentially very powerful and allows you to structure and control the link process almost entirely through the environment variable settings.</P>
+<P>Example:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>COW=MOO=@MILK.LNK</P>
+</FONT><FONT SIZE=3><P>In this example, WL32 will process MILK.LNK if the environment variable COW is set to MOO. Extraneous letters following the MOO setting will also match, i.e., SET COW=MOON will trigger MILK.LNK link file processing. Remember that the environment variables are case sensitive. SET COW=moo will not trigger MILK.LNK file processing.</P>
+<P>This command is most useful for FREEFORMAT link file processing, since it would be difficult to optionally process files and libraries in the positional link file format.</P>
+
+<B><P>NOTE</P>
+</B><P>Most morphing filename commands are not stackable. They match on the first command and any following command associated with that filename is ignored. Two morphing filename commands are stackable, FILEDELETE and ISLIB. This lets you delete a file and add a replacement automatically or specify that an object module is a library and still bring in a patch file. For example:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>CLD.LIB=ISLIB</P>
+<P>CLD.LIB=+OBJ:CWUSECLD</P>
+</FONT><FONT SIZE=3><P>will force CLD.LIB to be linked as a library and CWUSECLD.OBJ to be linked as an object module.</P>
+<P>The commands:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>DOS1.BOJ=+OBJ:CWDOS1.OBJ</P>
+<P>DOS1.BOJ=FILEDELETE</P>
+</FONT><FONT SIZE=3><P>will remove DOS1.BOJ from link processing and add CWDOS1.OBJ into link processing.</P>
+<P>Do <I>not</I> try to stack any other commands besides ISLIB and FILEDELETE. The second command will either be ignored or cause inappropriate behavior, and possibly a general protection fault (GPF) when linking with WL32.</P>
+
+<B><P>CONFIGURATION FILE EXAMPLES</P>
+</B><P>Three sample configuration definition files are included in the CauseWay package. MSLINK.DEF ignores or translates several Microsoft link options. WARPLINK.DEF ignores or translates several WarpLink options; RTLINK.DEF engages freeformat parsing and translates or ignores standard commands used by RTLink. The command lists in each configuration file are not exhaustive, but do cover the most commonly used commands and options by these, and compatible, linkers.</P>
+<P>Access definition files via the following format:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>WL32 </FONT><FONT SIZE=2>/</FONT><FONT FACE="Courier" SIZE=2>lc:&lt;definitions file&gt; @&lt;link file&gt;</P>
+</FONT><FONT SIZE=3><P>For example, for the RTLink definitions configuration file use:</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>WL32 /lc:RTLINK.DEF @LINKFILE.LNK</P>
+</FONT><FONT SIZE=3><P><B>NOTES</B></P>
+<P>You may use the WL32 /wu option with a configuration file to identify options or commands which are being ignored by the linker, i.e. unknown options.</P>
+<P>The morphing ability allows you to set up link scripts that are extremely opaque and impossible for other linkers to interpret. For example, you might create a configuration file with the following morphing commands: </P>
+</FONT><FONT FACE="Courier" SIZE=3><P>FREEFORMAT</P>
+<P>/COW=/ex</P>
+<P>LINKTHISFILE=OBJNAME</P>
+<P>MYFILE3=OBJADD</P>
+<P>LINKTHISONETOO=OBJNAME</P>
+<P>HEREARELIBRARIES=LIBNAME</P>
+<P>IGNORE[THIS]*=NULL</P>
+<P>/DOESNOTHINGBUTIMPRESSIVEOPTION*=NULL</P>
+<P>@=IGNORE</P>
+<P>-=IGNORE</P>
+<P>"=IGNORE</P>
+<P>TheStackOfToday=/st:</P>
+<P>CREATE=EXENAME</P>
+<P>~=COMMENT</P>
+<P>/b=DEFAULT</P>
+</FONT><FONT SIZE=3><P>Using the above configuration file, the following response file links together MYFILE.OBJ, MYFILE2.OBJ, MYFILE3.OBJ, MYLIB1.LIB, MYLIB2.LIB, and MYLIB3.LIB, creates a standard DOS EXE-format file name MYEXE.EXE with a stack of 2K, and finally, beeps the speaker at the end of the link.</P>
+</FONT><FONT FACE="Courier" SIZE=3><P>/COW LINKTHISFILE @@myfile--</P>
+<P>LINKTHISONETOO -myfile2"</P>
+<P>HEREARELIBRARIES @mylib1@ -mylib2- @mylib3-</P>
+<P>IGNORETHIS line altogether</P>
+<P>/DOESNOTHINGBUTIMPRESSIVEOPTION</P>
+<P>TheStackOfToday 2048</P>
+<P>IGNORE as well</P>
+<P>CREATE MYEXE ~ make EXE name MYEXE.EXE</P>
+</FONT>
+
+
+</BODY>
+</HTML>

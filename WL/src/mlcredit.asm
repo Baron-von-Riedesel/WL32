@@ -37,7 +37,7 @@ PUBLIC  credits
 .CONST
 
 credline    DB  CR,LF
-            DB  LINKER,' 2.61 (05/11/93 Alpha) Written 1989-93 by Michael Devore.',CR,LF,'Public Domain.',CR,LF
+            DB  LINKER,' 2.62 -  Public Domain.',CR,LF
 credlen     EQU $-credline
 
 .CODE

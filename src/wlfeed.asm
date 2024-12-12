@@ -23,8 +23,6 @@ DGROUP	GROUP CONST,_BSS,_DATA
 ;* Equates                   *
 ;*****************************
 
-DWORDPARAMETER	EQU	4
-STRINGPARAMETER	EQU	2
 
 ;*****************************
 ;* Include files             *
@@ -61,9 +59,6 @@ PUBLIC	DisplayVarStringNoCRLF
 ;*****************************
 
 _BSS	SEGMENT WORD PUBLIC USE16 'BSS'
-
-NumberBuff2	DB	5 DUP (?)	; temporary buffer for decimal ASCII value (reversed)
-
 _BSS ENDS
 
 ;*****************************
@@ -89,124 +84,87 @@ ENDIF
 IFDEF WATCOM_ASM
 				DB	' Version 1.33'
 ENDIF
-				DB	CR,LF, 'Public Domain - originally written by Michael Devore; extended by japheth.'
+				DB	' - Public Domain.'
 CreditTextStop	=	$
 
-SuccessTextLen	DB	SuccessTextStop-SuccessText
-SuccessText		DB	CR,LF,'Link of executable file successfully completed.'
-SuccessTextStop	=	$
+	DB	sizeof SuccessText
+SuccessText		DB	'Link of executable file successfully completed.'
 
 Summary1TextLen	DW	Summary1TextStop-Summary1Text
-Summary1Text	DB	' Usage: WL32 [options] objs | libs [,exefilel[,mapfile]',CR,LF
+Summary1Text	DB	' Usage: WL32 [options] objs[,exefile][,mapfile][,libs]',CR,LF
 				DB	' Options:'
 CRLFText		DB	CR,LF	; double duty as printable CR/LF
 				DB	CR,LF
-				DB	' /32         no warning on 32-bit segments (option /ex)'
-				DB	CR,LF
-				DB	' /3p         Create protected mode 3P-format executable without DOS extender'
-				DB	CR,LF
-SpaceSlash		DB	' /b          Beep the speaker at linker completion'
-				DB	CR,LF
+				DB	' /32         no warning on 32-bit segments (option /ex)', CR,LF
+				DB	' /3p         Create protected mode 3P-format executable without DOS extender',CR,LF
+SpaceSlash		DB	' /b          Beep the speaker at linker completion',CR,LF
 IFDEF WATCOM_ASM
-				DB	' /cs         perform Case Sensitive symbols link'
-				DB	CR,LF
-				DB	' /ds         set DS to SS at startup'
-				DB	CR,LF
+				DB	' /cs         perform Case Sensitive symbols link',CR,LF
+				DB	' /ds         set DS to SS at startup',CR,LF
 ENDIF
-				DB	' /ex         create DOS MZ EXE-format file'
-				DB	CR,LF
+				DB	' /ex         create DOS MZ EXE-format file',CR,LF
 IFDEF WATCOM_ASM
-				DB	' /f          create protected-mode CauseWay executable, CWSTUB.EXE added (def.)'
-				DB	CR,LF
+				DB	' /f          create protected-mode CauseWay executable, CWSTUB.EXE added (def.)',CR,LF
 ENDIF
-				DB	' /fl         use Fast Load EXE file DOS extender feature'
-				DB	CR,LF
+				DB	' /fl         use Fast Load EXE file DOS extender feature',CR,LF
 IFDEF CLIPPER
-				DB	' /fx         use alternate FiXup logic (req. for CA Clipper Tools)'
-				DB	CR,LF
+				DB	' /fx         use alternate FiXup logic (req. for CA Clipper Tools)',CR,LF
 ENDIF
-				DB	' /i          display link process Information'
-				DB	CR,LF
-				DB	' /il         display link process Information, Limit information displayed'
-				DB	CR,LF
-				DB	' /lc:<name>  Link options Configuration file name'
-				DB	CR,LF
+				DB	' /i          display link process Information',CR,LF
+				DB	' /il         display link process Information, Limit information displayed',CR,LF
+				DB	' /lc:<name>  Link options Configuration file name',CR,LF
 IFNDEF CLARION
-				DB	' /ls         use alternate Library Search logic'
-				DB	CR,LF
+				DB	' /ls         use alternate Library Search logic',CR,LF
 ENDIF
-				DB	' /m          create MAP file'
-				DB	CR,LF
-				DB	' /nd         do Not use Default library names in object modules'
-				DB	CR,LF
-				DB	' /non        do Not add 16 NUL bytes to _TEXT if dosseg segorder active'
-				DB	CR,LF
-				DB	' /nwd        do Not Warn on Duplicate symbols'
-				DB	CR,LF
-				DB	' /nwld       do Not Warn on Library only Duplicate symbols'
-				DB	CR,LF
-				DB	' /q          suppress logo display'
-				DB	CR,LF
-;@@@				DB	' /s          Symbol names are case sensitive when linking'
-;@@@				DB	CR,LF
-;@@@				DB	' /sp         Symbol table Pack of Clipper-compiled routines'
-;@@@				DB	CR,LF
-				DB	' /st:<size>  set program STack size in bytes'
-				DB	CR,LF
-				DB	' /sy         create SYM file for CWD debugger'
-				DB	CR,LF
-;@@@				DB	' /ud:<setting>  User Defined link option setting'
-;@@@				DB	CR,LF
-				DB	' /w1         Warnings generate exit code of 1, not zero'
-				DB	CR,LF
-;@@@				DB	' /wn         Warnings are Not displayed by linker'
-;@@@				DB	CR,LF
-				DB	' /wu         issue Warning on Unknown linker options or commands'
+				DB	' /m          create MAP file',CR,LF
+				DB	' /nd         do Not use Default library names in object modules',CR,LF
+				DB	' /non        do Not add 16 NUL bytes to _TEXT if dosseg segorder active',CR,LF
+				DB	' /nwd        do Not Warn on Duplicate symbols',CR,LF
+				DB	' /nwld       do Not Warn on Library only Duplicate symbols',CR,LF
+				DB	' /q          no logo display',CR,LF
+				DB	' /qq         no logo and - if no warnings occured - no success display',CR,LF
+;@@@				DB	' /s          Symbol names are case sensitive when linking',CR,LF
+;@@@				DB	' /sp         Symbol table Pack of Clipper-compiled routines',CR,LF
+				DB	' /st:<size>  set program STack size in bytes',CR,LF
+				DB	' /sy         create SYM file for CWD debugger',CR,LF
+;@@@				DB	' /ud:<setting>  User Defined link option setting',CR,LF
+				DB	' /w1         Warnings generate exit code of 1, not zero',CR,LF
+;@@@				DB	' /wn         Warnings are Not displayed by linker',CR,LF
+				DB	' /wu         issue Warning on Unknown linker options or commands',CR,LF
 IFDEF WATCOM_ASM
-				DB	CR,LF
-				DB	' /zu         Zero fill Uninitialized segments'
+				DB	' /zu         Zero fill Uninitialized segments',CR,LF
 ENDIF
 Summary1TextStop	=	$
 
-EXETextLen	DB	EXETextStop-EXEText
+	DB	sizeof EXEText
 EXEText	DB	'EXE file name: '
-EXETextStop		=	$
 
-MAPTextLen	DB	MAPTextStop-MAPText
+	DB	sizeof MAPText
 MAPText	DB	'MAP file name: '
-MAPTextStop		=	$
 
-OBJTextLen	DB	OBJTextStop-OBJText
+	DB	sizeof OBJText
 OBJText	DB	'Object module file names: '
-OBJTextStop		=	$
 
-LIBTextLen	DB	LIBTextStop-LIBText
+	DB	sizeof LIBText
 LIBText	DB	'Library file names: '
-LIBTextStop		=	$
 
-OptionTextLen	DB	OptionTextStop-OptionText
+	DB	sizeof OptionText
 OptionText	DB	'Link Option Settings:',CR,LF
-OptionTextStop		=	$
 
-ReadFileTextLen	DB	ReadFileTextStop-ReadFileText
+	DB	sizeof ReadFileText
 ReadFileText	DB	CR,LF,'*** Reading file: '
-ReadFileTextStop		=	$
 
-ReadModTextLen	DB	ReadModTextStop-ReadModText
+	DB	sizeof ReadModText
 ReadModText	DB	CR,LF,'*** Reading library module: '
-ReadModTextStop		=	$
 
-ProcessFileTextLen	DB	ProcessFileTextStop-ProcessFileText
+	DB	sizeof ProcessFileText
 ProcessFileText	DB	CR,LF,'*** Processing file: '
-ProcessFileTextStop		=	$
 
-WriteSegTextLen	DB	WriteSegTextStop-WriteSegText
+	DB	sizeof WriteSegText
 WriteSegText	DB	CR,LF,'*** Writing segment: '
-WriteSegTextStop		=	$
 
-WarnCountTextLen	DB	WarnCountTextStop-WarnCountText
-WarnCountText	DB	CR,LF,'Total number of warnings: '
-WarnCountTextStop		=	$
+	DB	sizeof WarnCountText
+WarnCountText	DB	'Total number of warnings: '
 
 CONST ENDS
 
@@ -215,10 +173,6 @@ CONST ENDS
 ;*****************************
 
 _DATA	SEGMENT WORD PUBLIC USE16 'DATA'
-
-NumberBuff	DB	6 DUP (0)	; buffer for decimal ASCII value
-
-_DATA ENDS
 
 ;*****************************
 ;* External data             *
@@ -231,6 +185,8 @@ EXTRN	OBJNameSelector:WORD,LIBNameSelector:WORD
 EXTRN	OptionList:WORD
 EXTRN	ProcessModText:BYTE
 EXTRN	WorkingBuffer:BYTE
+
+_DATA ENDS
 
 ;*****************************
 ;* Code begins               *
@@ -335,7 +291,7 @@ DisplayTextStringCRLF	PROC
 	call	DisplayShortString
 
 ; write blank line CR/LF
-	call	DisplayShortString
+;	call	DisplayShortString
 	ret
 DisplayTextStringCRLF	ENDP
 
@@ -389,7 +345,7 @@ DisplayVarStringCRLF	PROC
 	call	DisplayShortString
 
 ; write blank line CR/LF
-	call	DisplayShortString
+;	call	DisplayShortString
 	ret
 DisplayVarStringCRLF	ENDP
 
@@ -434,43 +390,18 @@ DisplayFinalFeedback	PROC
 	je	dff2			; no
 	mov	bx,OFFSET WarnCountText
 	call	DisplayTextStringNoCRLF
-
-	mov di,OFFSET NumberBuff2	; point to temporary number buffer
-	mov ax,ds
-	mov es,ax			; es -> warplink data
-	xor cx,cx			; init count of digits
-	mov ax,WarningsCount	; get count of warning messages
-
-dffdivloop:
-	xor  dx,dx			; zero high word value
-	mov  bx,0AH			; divide by 10
-	div  bx
-	xchg    dx,ax		; swap quotient into dx, remainder into ax
-	or   al,30H			; make remainder into ASCII number
-	stosb 				; save char to buffer
-	inc cx				; bump count of digits
-	xchg    dx,ax		; restore quotient to ax
-	or   ax,ax			; check if quotient is zero
-	jne  dffdivloop		; no, continue dividing
-
-	mov si,di
-	mov di,OFFSET NumberBuff ; place to put unreversed number
-
-dffrevloop:
-	dec si				; si -> char in reversed number buffer
-	mov al,[si]			; get reversed char
-	stosb 				; put in unreversed buffer
-	loop dffrevloop		; unreverse as many chars as in number
-
-	mov bx,OFFSET NumberBuff ;  ds:bx -> string to write
+	mov	di,OFFSET NumberBuffer
+	movzx	eax, WarningsCount
+	call	DwordtoDecimalString
+	mov	bx,OFFSET NumberBuffer ;  ds:bx -> string to write
 	call	DisplayVarStringCRLF
-
+    jmp dff1
 dff2:
-;	cmp	IsNoLogoOption,0	; logo & link success display shut off
-;	jne	dffret
+	cmp	IsQuietOption,0	; logo & link success display shut off
+	jne	dffret
+dff1:
 	mov	bx,OFFSET SuccessText
 	call	DisplayTextStringCRLF
-
 dffret:
 	ret
 DisplayFinalFeedback	ENDP
@@ -508,13 +439,13 @@ optloop:
 	inc	dx				; dx -> option text
 	call	DisplayShortString
 
-	test [si].OPTITEM.wArgFlgs,STRINGPARAMETER	; see if string parameter
+	test [si].OPTITEM.wArgFlgs,OPTFLG_STRINGPARAM	; see if string parameter
 	je	chkword			; no, check if word parameter
 	mov	bx,[si].OPTITEM.wArgPtr	; bx -> string
 	call	DisplayVarStringNoCRLF
 
 chkword:
-	test [si].OPTITEM.wArgFlgs,DWORDPARAMETER	; see if dword parameter
+	test [si].OPTITEM.wArgFlgs,OPTFLG_DWORDPARAM	; see if dword parameter
 	je	doterm			; no
 
 ; show the dword parameter value

@@ -23,8 +23,6 @@ DGROUP	GROUP CONST,_BSS,_DATA
 ;* Equates                   *
 ;*****************************
 
-IGNOREIFONFLAG	EQU	8000h
-
 ;*****************************
 ;* Include files             *
 ;*****************************
@@ -74,106 +72,79 @@ _BSS ENDS
 
 CONST	SEGMENT WORD PUBLIC USE16 'DATA'
 
-AssignCommands	DW	NUMCMDS
-		DW	OFFSET IGNOREText
-		DW	IGNOREProc
-		DW	OFFSET TERMINATIONText
-		DW	TERMINATIONProc
-		DW	OFFSET COMMENTText
-		DW	COMMENTProc
-		DW	OFFSET DEFAULTText
-		DW	DEFAULTProc
-		DW	OFFSET OBJNAMEText
-		DW	OBJNAMEProc
-		DW	OFFSET LIBNAMEText
-		DW	LIBNAMEProc
-		DW	OFFSET LIBSEARCHText
-		DW	LIBSEARCHProc
-		DW	OFFSET NULLText
-		DW	NULLProc
-		DW	OFFSET EXENAMEText
-		DW	EXENAMEProc
-		DW	OFFSET FILEDELETEText
-		DW	FILEDELETEProc
-		DW	OFFSET OBJADDText
-		DW	OBJADDProc
-		DW	OFFSET LIBADDText
-		DW	LIBADDProc
-		DW	OFFSET RESPONSEEXTText
-		DW	RESPONSEEXTProc
-		DW	OFFSET OBJAPPENDText
-		DW	OBJAPPENDProc
-		DW	OFFSET ISLIBText
-		DW	ISLIBProc
-NUMCMDS equ ( $ - offset AssignCommands ) / 4
+ASGNCMD struct
+wText	dw ?
+wProc	dw ?
+ASGNCMD ends
 
-IGNORETextLen	DB	IGNORETextStop-IGNOREText
+StandAloneCommands label ASGNCMD
+	ASGNCMD <OFFSET FREEFORMATText, FREEFORMATProc>
+
+AssignCommands label ASGNCMD
+	ASGNCMD <OFFSET IGNOREText,      IGNOREProc>
+	ASGNCMD <OFFSET TERMINATIONText, TERMINATIONProc>
+	ASGNCMD <OFFSET COMMENTText,     COMMENTProc>
+	ASGNCMD <OFFSET DEFAULTText,     DEFAULTProc>
+	ASGNCMD <OFFSET OBJNAMEText,     OBJNAMEProc>
+	ASGNCMD <OFFSET LIBNAMEText,     LIBNAMEProc>
+	ASGNCMD <OFFSET LIBSEARCHText,   LIBSEARCHProc>
+	ASGNCMD <OFFSET NULLText,        NULLProc>
+	ASGNCMD <OFFSET EXENAMEText,     EXENAMEProc>
+	ASGNCMD <OFFSET FILEDELETEText,  FILEDELETEProc>
+	ASGNCMD <OFFSET OBJADDText,      OBJADDProc>
+	ASGNCMD <OFFSET LIBADDText,      LIBADDProc>
+	ASGNCMD <OFFSET RESPONSEEXTText, RESPONSEEXTProc>
+	ASGNCMD <OFFSET OBJAPPENDText,   OBJAPPENDProc>
+	ASGNCMD <OFFSET ISLIBText,       ISLIBProc>
+NUMCMDS equ ( $ - offset AssignCommands ) / sizeof ASGNCMD
+
+	DB sizeof IGNOREText
 IGNOREText	DB	'=IGNORE'
-IGNORETextStop	=	$
 
-TERMINATIONTextLen	DB	TERMINATIONTextStop-TERMINATIONText
+	DB sizeof TERMINATIONText
 TERMINATIONText	DB	'=TERMINATION'
-TERMINATIONTextStop	=	$
 
-COMMENTTextLen	DB	COMMENTTextStop-COMMENTText
+	DB sizeof COMMENTText
 COMMENTText	DB	'=COMMENT'
-COMMENTTextStop	=	$
 
-DEFAULTTextLen	DB	DEFAULTTextStop-DEFAULTText
+	DB sizeof DEFAULTText
 DEFAULTText	DB	'=DEFAULT'
-DEFAULTTextStop	=	$
 
-OBJNAMETextLen	DB	OBJNAMETextStop-OBJNAMEText
+	DB sizeof OBJNAMEText
 OBJNAMEText	DB	'=OBJNAME'
-OBJNAMETextStop	=	$
 
-LIBNAMETextLen	DB	LIBNAMETextStop-LIBNAMEText
+	DB sizeof LIBNAMEText
 LIBNAMEText	DB	'=LIBNAME'
-LIBNAMETextStop	=	$
 
-LIBSEARCHTextLen	DB	LIBSEARCHTextStop-LIBSEARCHText
+	DB sizeof LIBSEARCHText
 LIBSEARCHText	DB	'=LIBSEARCH'
-LIBSEARCHTextStop	=	$
 
-NULLTextLen	DB	NULLTextStop-NULLText
+	DB sizeof NULLText
 NULLText	DB	'=NULL'
-NULLTextStop	=	$
 
-EXENAMETextLen	DB	EXENAMETextStop-EXENAMEText
+	DB sizeof EXENAMEText
 EXENAMEText	DB	'=EXENAME'
-EXENAMETextStop	=	$
 
-FILEDELETETextLen	DB	FILEDELETETextStop-FILEDELETEText
+	DB sizeof FILEDELETEText
 FILEDELETEText	DB	'=FILEDELETE'
-FILEDELETETextStop	=	$
 
-OBJADDTextLen	DB	OBJADDTextStop-OBJADDText
+	DB sizeof OBJADDText
 OBJADDText	DB	'=OBJADD'
-OBJADDTextStop	=	$
 
-LIBADDTextLen	DB	LIBADDTextStop-LIBADDText
+	DB sizeof LIBADDText
 LIBADDText	DB	'=LIBADD'
-LIBADDTextStop	=	$
 
-RESPONSEEXTTextLen	DB	RESPONSEEXTTextStop-RESPONSEEXTText
+	DB sizeof RESPONSEEXTText
 RESPONSEEXTText	DB	'=RESPONSEEXT'
-RESPONSEEXTTextStop	=	$
 
-OBJAPPENDTextLen	DB	OBJAPPENDTextStop-OBJAPPENDText
+	DB sizeof OBJAPPENDText
 OBJAPPENDText	DB	'=OBJAPPEND'
-OBJAPPENDTextStop	=	$
 
-ISLIBTextLen	DB	ISLIBTextStop-ISLIBText
+	DB sizeof ISLIBText
 ISLIBText	DB	'=ISLIB'
-ISLIBTextStop	=	$
 
-StandAloneCommands	DW	1
-				DW	OFFSET FREEFORMATText
-				DW	FREEFORMATProc
-
-FREEFORMATTextLen	DB	FREEFORMATTextStop-FREEFORMATText
-FREEFORMATText	DB	'FREEFORMAT'
-FREEFORMATTextStop	=	$
+	DB sizeof FREEFORMATText
+FREEFORMATText	DB	'FREEFORMAT'	; '=' missing at pos 0?
 
 CONST ENDS
 
@@ -246,7 +217,7 @@ EXTRN	SaveOBJLIBFileName:PROC
 ParseConfigFile	PROC
 	push	si			; save critical register
 	push	bx			; save bx -> option
-	or [bx].OPTITEM.wArgFlgs,IGNOREIFONFLAG	; turn on ignore flag
+	or [bx].OPTITEM.wArgFlgs,OPTFLG_IGNOREIFON	; turn on ignore flag
 	mov	dx,[bx].OPTITEM.wArgPtr	; ds:dx -> file name
 	mov	CurrentConfigFileNamePtr,dx	; keep pointer to configuration file name in case of error
 	call	CheckCurrentDirectory
@@ -336,7 +307,7 @@ pcfend:
 	mov	ah,3eh			; close file
 	int	21h
 	pop	bx				; restore bx -> option
-	and	[bx].OPTITEM.wArgFlgs,NOT IGNOREIFONFLAG	; shut off ignore flag
+	and	[bx].OPTITEM.wArgFlgs,NOT OPTFLG_IGNOREIFON	; shut off ignore flag
 	pop	si				; restore critical register
 	ret
 ParseConfigFile	ENDP
@@ -491,21 +462,20 @@ pccnotadd:
 
 pccnotopt:
 	mov	bx,OFFSET AssignCommands
+	mov	bp,NUMCMDS		; number of assignment commands
 
 ; ds:si -> start of command
 pccsearch:
 	mov	ax,si			; save -> start of command
-	mov	bp,[bx]			; get number of assignment commands
-	sub	bx,2			; adjust for entry bx 2-word increment
 
 pcccomploop:
 	mov	si,ax			; ds:si -> start of command
-	add	bx,4			; bx -> assignment command string
-	mov	di,[bx]			; es:di -> assignment command string to try
+	mov	di,[bx].ASGNCMD.wText	; es:di -> assignment command string to try
 	xor	ch,ch
 	mov	cl,[di-1]	; cx holds # of chars in string
 	repe	cmpsb		; see if match
 	je	pccmatch		; found a match
+	add	bx,sizeof ASGNCMD	; bx -> assignment command string
 	dec	bp				; drop count of strings to check
 	jne	pcccomploop		; more strings to check
 
@@ -523,7 +493,7 @@ pccbadloop:
 
 ; matched existing command
 pccmatch:
-	call	WORD PTR [bx+2]	; route to appropriate routine
+	call [bx].ASGNCMD.wProc	; route to appropriate routine
 
 pccret:
 	pop	si				; si -> past command
@@ -532,6 +502,7 @@ pccret:
 ; at start of command, this command has no argument translations
 pccnoarg:
 	mov	bx,OFFSET StandAloneCommands
+	mov	bp,1
 	jmp	SHORT pccsearch	; search for command
 
 ParseConfigCommand	ENDP

@@ -53,17 +53,14 @@ _BSS ENDS
 
 CONST	SEGMENT WORD PUBLIC USE16 'DATA'
 
-ResolvingSegTextLen	DB	ResolvingSegTextStop-ResolvingSegText
+	DB	sizeof ResolvingSegText
 ResolvingSegText	DB	CR,LF,'*** Resolving segment addresses'
-ResolvingSegTextStop		=	$
 
-ApplyingOBJTextLen	DB	ApplyingOBJTextStop-ApplyingOBJText
+	DB	sizeof ApplyingOBJText
 ApplyingOBJText	DB	CR,LF,'*** Applying object module fixups'
-ApplyingOBJTextStop		=	$
 
-ApplyingLIBTextLen	DB	ApplyingLIBTextStop-ApplyingLIBText
+	DB	sizeof ApplyingLIBText
 ApplyingLIBText	DB	CR,LF,'*** Applying library module fixups'
-ApplyingLIBTextStop		=	$
 
 CONST ENDS
 
@@ -164,7 +161,8 @@ main		PROC
 
 m2:
 	call	ParseCommandLine	; parse linker command line
-	cmp	IsNoLogoOption,OFF
+	mov al, IsNoLogoOption	; /q set?
+	or  al, IsQuietOption	; /qq set?
 	jne m2a
 	call	DisplayCredits	; display linker credit line
 m2a:

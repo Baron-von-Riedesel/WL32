@@ -79,48 +79,38 @@ _BSS ENDS
 
 CONST	SEGMENT WORD PUBLIC USE16 'DATA'
 
-ProgramTextLen	DB	ProgramTextStop-ProgramText
+	DB	sizeof ProgramText
 ;ProgramText	DB	CR,LF,,' PROGRAM: '
 ProgramText	DB	CR,LF,?,' PROGRAM: '
-ProgramTextStop	=	$
 
-DateTextLen	DB	DateTextStop-DateText
+	DB	sizeof DateText
 ;DateText	DB	CR,LF,,' DATE:    '
 DateText	DB	CR,LF,?,' DATE:    '
-DateTextStop	=	$
 
-TimeTextLen	DB	TimeTextStop-TimeText
+	DB	sizeof TimeText
 ;TimeText	DB	CR,LF,,' TIME:    '
 TimeText	DB	CR,LF,?,' TIME:    '
-TimeTextStop	=	$
 
-MapSegTextLen	DB	MapSegTextStop-MapSegText
+	DB	sizeof MapSegText
 MapSegText	DB	CR,LF,CR,LF,' Start     Stop      Length    Name                    Class          Count',CR,LF
-MapSegTextStop	=	$
 
-OrgGroupTextLen	DB	OrgGroupTextStop-OrgGroupText
+	DB	sizeof OrgGroupText
 OrgGroupText	DB	CR,LF,' Origin      Group',CR,LF
-OrgGroupTextStop	=	$
 
-EntryTextLen	DB	EntryTextStop-EntryText
+	DB	sizeof EntryText
 EntryText		DB	CR,LF,' Program entry point at '
-EntryTextStop	=	$
 
-CreatingMAPTextLen	DB	CreatingMAPTextStop-CreatingMAPText
+	DB	sizeof CreatingMAPText
 CreatingMAPText	DB	CR,LF,'*** Creating map file'
-CreatingMAPTextStop		=	$
 
-CreatingSYMTextLen	DB	CreatingSYMTextStop-CreatingSYMText
+	DB	sizeof CreatingSYMText
 CreatingSYMText	DB	CR,LF,'*** Creating SYM file'
-CreatingSYMTextStop		=	$
 
-AddressTextLen	DB	AddressTextStop-AddressText
+	DB	sizeof AddressText
 AddressText		DB	CR,LF,' Address                 Publics by address',13,10,13,10
-AddressTextStop	=	$
 
-PubNameTextLen	DB	PubNameTextStop-PubNameText
+	DB	sizeof PubNameText
 PubNameText		DB	CR,LF,' Address                 Publics by name',13,10,13,10
-PubNameTextStop	=	$
 
 SYMSigText	DB	'CWDSYM02'
 
@@ -495,7 +485,7 @@ wsfnotabs:
 	lgs	si,gs:[si+IndSegDefRecStruc.isdrMasterPtr]	; gs:si -> master segdef
 	add	eax,fs:[bx+PubSymRecStruc.pssOffset]	; add in public offset
 	mov	[di+SymbolStruc.ssSymbolDword],eax	; save symbol offset value
-	mov	ax,gs:[si+MasterSegDefRecStruc.mssSegmentID]	; get segment identifier
+	mov	ax,gs:[si].MasterSegDefRecStruc.mssSegmentID	; get segment identifier
 	mov	[di+SymbolStruc.ssSymbolSeg],ax	; save segment identifier for symbol
 
 wsf2:

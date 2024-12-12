@@ -23,12 +23,7 @@ DGROUP	GROUP CONST,_BSS,_DATA
 ;* Equates                   *
 ;*****************************
 
-NOPARAMETER		EQU	0
-DWORDPARAMETER	EQU	4
-STRINGPARAMETER	EQU	2
-ANYPARAMETER	EQU	(DWORDPARAMETER OR STRINGPARAMETER)
-GOBBLESPACEFLAG	EQU	4000h
-IGNOREIFONFLAG	EQU	8000h
+OPTFLG_ANYPARAM	EQU	(OPTFLG_DWORDPARAM OR OPTFLG_STRINGPARAM)
 OPTCHAR2 EQU 0
 
 MAXOPTIONLEN		EQU	32
@@ -81,11 +76,6 @@ PUBLIC	WorkingBuffer,CurrentFileName
 
 IFDEF CLIPPER
 PUBLIC	IsSpecialFixupOption
-ENDIF
-
-IFDEF WATCOM_ASM
-PUBLIC	IsFlatOption
-PUBLIC	IsDStoSSOption
 ENDIF
 
 IFDEF DLLSUPPORT
@@ -153,66 +143,69 @@ CONST	SEGMENT WORD PUBLIC USE16 'DATA'
 ; fifth dword is [d]word parameter low boundary
 ; sixth dword is [d]word parameter high boundary
 ; seventh dword if extra processing flag
+;--- note that argument flags (wArgFlgs) is modified sometimes - might be problematic since it's in CONST!
 
 OptionList label OPTITEM	; start of built-in options to check
-	OPTITEM <OFFSET Seg32Text,OFFSET IsSeg32Option,0, NOPARAMETER>		; /32 option
-	OPTITEM <OFFSET ThreePText,OFFSET IsThreePOption,0, NOPARAMETER>	; /3p option
-	OPTITEM <OFFSET ExitBeepText,OFFSET IsExitBeepOption,0, NOPARAMETER>; /b option
+	OPTITEM <OFFSET Seg32Text,OFFSET IsSeg32Option,0, OPTFLG_NOPARAM>		; /32 option
+	OPTITEM <OFFSET ThreePText,OFFSET IsThreePOption,0, OPTFLG_NOPARAM>	; /3p option
+	OPTITEM <OFFSET ExitBeepText,OFFSET IsExitBeepOption,0, OPTFLG_NOPARAM>; /b option
 IFDEF WATCOM_ASM
-	OPTITEM <OFFSET CaseSensitiveText,OFFSET IsCaseSensitiveOption,0, NOPARAMETER>; /cs option
-	OPTITEM <OFFSET DStoSSText,OFFSET IsDStoSSOption,0, NOPARAMETER>	; /ds option
+	OPTITEM <OFFSET CaseSensitiveText,OFFSET IsCaseSensitiveOption,0, OPTFLG_NOPARAM>; /cs option
+	OPTITEM <OFFSET DStoSSText,OFFSET IsDStoSSOption,0, OPTFLG_NOPARAM>	; /ds option
 ENDIF
-	OPTITEM <OFFSET CreateEXEText,OFFSET IsCreateEXEOption,0, NOPARAMETER>; /ex option
+	OPTITEM <OFFSET CreateEXEText,OFFSET IsCreateEXEOption,0, OPTFLG_NOPARAM>; /ex option
 IFDEF WATCOM_ASM
-	OPTITEM <OFFSET FlatText,OFFSET IsFlatOption,0, NOPARAMETER>		; /f option
+	OPTITEM <OFFSET FlatText,OFFSET IsFlatOption,0, OPTFLG_NOPARAM>		; /f option
 ENDIF
-	OPTITEM <OFFSET FastLoadText,OFFSET IsFastLoadOption,0, NOPARAMETER>; /fl option
+	OPTITEM <OFFSET FastLoadText,OFFSET IsFastLoadOption,0, OPTFLG_NOPARAM>; /fl option
 IFDEF CLIPPER
-	OPTITEM <OFFSET SpecialFixupText,OFFSET IsSpecialFixupOption,0, NOPARAMETER>; /fx option
+	OPTITEM <OFFSET SpecialFixupText,OFFSET IsSpecialFixupOption,0, OPTFLG_NOPARAM>; /fx option
 ENDIF
-	OPTITEM <OFFSET LinkInfoText,OFFSET IsLinkInfoOption,0, NOPARAMETER>; /i option
-	OPTITEM <OFFSET LinkInfoLimitText,OFFSET IsLinkInfoLimitOption,0, NOPARAMETER>; /il option
-	OPTITEM <OFFSET LinkConfigText,OFFSET IsLinkConfigOption,OFFSET LinkConfigFileName, STRINGPARAMETER,
+	OPTITEM <OFFSET LinkInfoText,OFFSET IsLinkInfoOption,0, OPTFLG_NOPARAM>; /i option
+	OPTITEM <OFFSET LinkInfoLimitText,OFFSET IsLinkInfoLimitOption,0, OPTFLG_NOPARAM>; /il option
+	OPTITEM <OFFSET LinkConfigText,OFFSET IsLinkConfigOption,OFFSET LinkConfigFileName, OPTFLG_STRINGPARAM,\
 		0,0,LINKCONFIGOPTIONSET>; /lc:<name> option
-	OPTITEM <OFFSET LIBSearchText,OFFSET IsLibSearchOption,0, NOPARAMETER>; /ls option
-	OPTITEM <OFFSET MAPFileText,OFFSET IsMAPOption,0, NOPARAMETER>		; /m option
-	OPTITEM <OFFSET NoDefaultLIBText,OFFSET IsNoDefaultLIBOption,0, NOPARAMETER>; /nd option
-	OPTITEM <OFFSET NoNullDossegText,OFFSET IsNoNullDossegOption,0, NOPARAMETER>; /non option
-	OPTITEM <OFFSET NoWarnDupeText,OFFSET IsNoWarnDupeOption,0, NOPARAMETER>; /nwd option
-	OPTITEM <OFFSET NoWarnLIBDupeText,OFFSET IsNoWarnLIBDupeOption,0, NOPARAMETER>; /nwdl option
-	OPTITEM <OFFSET ParseDisplayText,OFFSET IsParseDisplayOption,0, NOPARAMETER>; /pd option
-	OPTITEM <OFFSET NoLogoText,OFFSET IsNoLogoOption,0, NOPARAMETER>	; /q option
-	OPTITEM <OFFSET StackText,OFFSET IsStackOption,OFFSET StackValue, DWORDPARAMETER OR GOBBLESPACEFLAG,
+	OPTITEM <OFFSET LIBSearchText,OFFSET IsLibSearchOption,0, OPTFLG_NOPARAM>; /ls option
+	OPTITEM <OFFSET MAPFileText,OFFSET IsMAPOption,0, OPTFLG_NOPARAM>		; /m option
+	OPTITEM <OFFSET NoDefaultLIBText,OFFSET IsNoDefaultLIBOption,0, OPTFLG_NOPARAM>; /nd option
+	OPTITEM <OFFSET NoNullDossegText,OFFSET IsNoNullDossegOption,0, OPTFLG_NOPARAM>; /non option
+	OPTITEM <OFFSET NoWarnDupeText,OFFSET IsNoWarnDupeOption,0, OPTFLG_NOPARAM>; /nwd option
+	OPTITEM <OFFSET NoWarnLIBDupeText,OFFSET IsNoWarnLIBDupeOption,0, OPTFLG_NOPARAM>; /nwdl option
+	OPTITEM <OFFSET ParseDisplayText,OFFSET IsParseDisplayOption,0, OPTFLG_NOPARAM>; /pd option
+	OPTITEM <OFFSET NoLogoText,OFFSET IsNoLogoOption,0, OPTFLG_NOPARAM>	; /q option
+	OPTITEM <OFFSET QuietText,OFFSET IsQuietOption,0, OPTFLG_NOPARAM>	; /qq option
+	OPTITEM <OFFSET StackText,OFFSET IsStackOption,OFFSET StackValue, OPTFLG_DWORDPARAM OR OPTFLG_GOBBLESPACE,\
 		1,4*(16*65536)-1,0>		; /st:<size> option
-	OPTITEM <OFFSET SYMFileText,OFFSET IsSYMOption,0, NOPARAMETER>		; /sy option
-	OPTITEM <OFFSET WarnRetCode1Text,OFFSET IsWarnRetCode1Option,0, NOPARAMETER>; /w1 option
-	OPTITEM <OFFSET WarnUnknownText,OFFSET IsWarnUnknownOption,0, NOPARAMETER>; /wu option
+	OPTITEM <OFFSET SYMFileText,OFFSET IsSYMOption,0, OPTFLG_NOPARAM>		; /sy option
+	OPTITEM <OFFSET WarnRetCode1Text,OFFSET IsWarnRetCode1Option,0, OPTFLG_NOPARAM>; /w1 option
+	OPTITEM <OFFSET WarnUnknownText,OFFSET IsWarnUnknownOption,0, OPTFLG_NOPARAM>; /wu option
 IFDEF WATCOM_ASM
-	OPTITEM <OFFSET ZeroUninitText,OFFSET IsZeroUninitOption,0, NOPARAMETER>; /zu option
+	OPTITEM <OFFSET ZeroUninitText,OFFSET IsZeroUninitOption,0, OPTFLG_NOPARAM>; /zu option
 ENDIF
 	DW	-1	; end of options, -1 pointer to text flags
 
 ; built-in link option text strings
 Seg32Text		DB	2,'32'
 ThreePText		DB	2,'3P'
-ExitBeepText	DB	1,'B'
-CreateEXEText	DB	2,'EX'
-FastLoadText	DB	2,'FL'
-LIBSearchText	DB	2,'LS'
-LinkInfoText	DB	1,'I'
+ExitBeepText		DB	1,'B'
+CreateEXEText		DB	2,'EX'
+FastLoadText		DB	2,'FL'
+LIBSearchText		DB	2,'LS'
+LinkInfoText		DB	1,'I'
 LinkInfoLimitText	DB	2,'IL'
-LinkConfigText	DB	3,'LC:'
-MapFileText	DB	1,'M'
+LinkConfigText		DB	3,'LC:'
+MapFileText		DB	1,'M'
 NoDefaultLIBText	DB	2,'ND'
 NoNullDossegText	DB	3,'NON'
-NoWarnDupeText	DB	3,'NWD'
+NoWarnDupeText		DB	3,'NWD'
 NoWarnLIBDupeText	DB	4,'NWLD'
 ParseDisplayText	DB	2,'PD'
-NoLogoText	DB	1,'Q'
-StackText	DB	3,'ST:'
-SYMFileText	DB	2,'SY'
+NoLogoText		DB	1,'Q'
+QuietText		DB	2,'QQ'
+StackText		DB	3,'ST:'
+SYMFileText		DB	2,'SY'
 WarnRetCode1Text	DB	2,'W1'
-WarnUnknownText	DB	2,'WU'
+WarnUnknownText		DB	2,'WU'
 
 IFDEF CLIPPER
 SpecialFixupText	DB	2,'FX'
@@ -222,7 +215,7 @@ IFDEF WATCOM_ASM
 CaseSensitiveText	DB	2,'CS'
 DStoSSText		DB	2,'DS'
 FlatText		DB	1,'F'
-ZeroUninitText	DB	2,'ZU'
+ZeroUninitText		DB	2,'ZU'
 ENDIF
 
 CONST ENDS
@@ -254,6 +247,7 @@ IsNoWarnDupeOption		DB	0	; /nwd option setting
 IsNoWarnLIBDupeOption	DB	0	; /nwld option setting
 IsParseDisplayOption	DB	0	; /pd option setting
 IsNoLogoOption			DB	0	; /q option setting
+IsQuietOption			DB	0	; /qq option setting
 IsStackOption			DB	0	; /st option setting
 IsSYMOption				DB	0	; /sy option setting
 IsWarnRetCode1Option	DB	0	; /w1 option setting
@@ -290,7 +284,7 @@ FreeFormatFlag	DB	0	; nonzero if free format link response file mode
 IsUserDefinedOptions	DB	0	; nonzero if user defined link options
 ParseMode	DB	0		; parse mode, 0==obj, 1==exe, 2==map, 3==lib
 RSPFileCommentChar	DB	'#'	; comment character in reponse file
-ParseTermChar	DB	0	; parse termination character
+ParseTermChar	DB	';'	; parse termination character
 	align 2
 RSPFileIgnoreChar	DB	16 DUP (0)	; characters to ignore in response file
 
@@ -457,7 +451,7 @@ iscomment:
 ; if char is <any ignore character> then ignore
 chkignore:
 	mov	di,OFFSET RSPFileIgnoreChar
-	mov	cx,16			; number of possible ignore characters
+	mov	cx,sizeof RSPFileIgnoreChar		; number of possible ignore characters
 	repne	scasb
 	jne	chkterm			; not a ignore char
 	jmp	NEAR PTR ParseLoopCont	; ignore char doesn't affect continue parse mode flag
@@ -590,6 +584,7 @@ ParseCommandLine	ENDP
 
 ; read command line or response file character
 ; returns character in al
+; in: ds:si -> source
 ; updates si char pointer
 ; destroys ax,dx
 
@@ -1055,10 +1050,10 @@ ParseLinkOption	ENDP
 
 SetLinkOption	PROC
 	mov	di,[bx].OPTITEM.wOptVal	; ds:di -> option
-	test [bx].OPTITEM.wArgFlgs,IGNOREIFONFLAG	; see if ignore parameters since already processed
+	test [bx].OPTITEM.wArgFlgs,OPTFLG_IGNOREIFON	; see if ignore parameters since already processed
 	jne	setret			; yes, ignore this option
 	mov	BYTE PTR [di],ON	; turn on option
-	test [bx].OPTITEM.wArgFlgs,ANYPARAMETER	; see if any parameters to option
+	test [bx].OPTITEM.wArgFlgs,OPTFLG_ANYPARAM	; see if any parameters to option
 	je	setret			; no parameters
 
 	call	GetOptionParameter	; get option parameter
@@ -1086,10 +1081,10 @@ SetLinkOption	ENDP
 
 GetOptionParameter	PROC
 	xor	cx,cx			; init count of chars in option string
-	test [bx].OPTITEM.wArgFlgs,STRINGPARAMETER	; see if string parameter
+	test [bx].OPTITEM.wArgFlgs,OPTFLG_STRINGPARAM	; see if string parameter
 	jne	gostring		; yes
 	mov	di,OFFSET WordBuffer	; use temporary buffer to hold word value before processing
-	test [bx].OPTITEM.wArgFlgs,GOBBLESPACEFLAG	; see if gobble space/tab char
+	test [bx].OPTITEM.wArgFlgs,OPTFLG_GOBBLESPACE	; see if gobble space/tab char
 	je	GetParamLoop	; no
 
 gobloop:
@@ -1129,7 +1124,7 @@ paramread:
 	call	ReadChar	; get response file char
 	stosb				; save the char
 	inc	cx				; bump count of chars in option string
-	test [bx].OPTITEM.wArgFlgs,STRINGPARAMETER	; see if string parameter
+	test [bx].OPTITEM.wArgFlgs,OPTFLG_STRINGPARAM	; see if string parameter
 	jne	strchk			; yes
 
 ; word value parameter
@@ -1166,7 +1161,7 @@ errloop:
 paramend:
 	mov	BYTE PTR [di],0	; null terminate string
 	jcxz	badval		; invalid null length option
-	test [bx].OPTITEM.wArgFlgs,STRINGPARAMETER	; see if string parameter
+	test [bx].OPTITEM.wArgFlgs,OPTFLG_STRINGPARAM	; see if string parameter
 	jne	goextra			; yes
 
 ; process dword value, check for out of boundary limits
