@@ -34,7 +34,8 @@
 <TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
 <TR><TD VALIGN="TOP"><P><FONT SIZE=3>/3P Create protected-mode <B>3P</B> format without DOS extender (CWSTUB.EXE).</FONT></TD></TR>
 </TABLE>
-<FONT SIZE=3><P>This option creates a binary that cannot be executed directly, since the format isn't known by DOS.</P></FONT>
+<FONT SIZE=3><P>This option creates a binary in format 3P ( CauseWay native format ) that cannot be executed directly, since the format
+isn't known by DOS and hence needs a program loader to run.</P></FONT>
 
 <TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
 <TR><TD VALIGN="TOP"><P><FONT SIZE=3>/b <B>B</B>eep the speaker at linker completion.</FONT></TD></TR>
@@ -65,8 +66,8 @@
 <TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
 <TR><TD VALIGN="TOP"><P><FONT SIZE=3>/f Create <B>f</B>lat memory model executable.</FONT></TD></TR>
 </TABLE>
-<FONT SIZE=3><P>This option directs WL32 to create an executable in 3P format and adds a
- DOS extender stub, CWSTUB.EXE, to it. The executable may be a 16-bit or 32-bit program. 32-bit programs can 
+<FONT SIZE=3><P>This option directs WL32 to create an executable in 3P format (format specific to the CauseWay DOS extender )
+ and adds a DOS extender stub, CWSTUB.EXE, to it. The executable may be a 16-bit or 32-bit program. 32-bit programs can 
  be either zero-based flat ( memory model FLAT ) or "near" ( memory model TINY or SMALL ).</P>
 
  <P>In case the VCPI API isn't available, the executable can only be launched by CWSTUB.EXE if a DPMI host is

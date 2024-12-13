@@ -1432,7 +1432,7 @@ write_ind_call  PROC
 	mov si,OFFSET DGROUP:ind_vector_bytes	; es:si -> bytes to write
 
 ; code shared with segment call via segment fixup routine
-write_shared:
+write_shared::
 	mov ax,ds
 	mov es,ax
 	mov cx,5				; write 1 vector to overlay manager

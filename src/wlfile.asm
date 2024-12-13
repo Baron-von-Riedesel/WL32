@@ -81,14 +81,6 @@ EndWriteAddress	DD	?	; last byte written+1 address relative buffer
 FileAllocBlockParent	DW	?	; parent of allocated block for reading file
 StartWriteAddress	DD	?	; write offset relative current write base
 
-LIBHeaderStruc	STRUC
-	lhsType		DB	?	; should always be 0F0h or MSLHED
-	lhsRecLen	DW	?	; record length
-	lhsDictOff	DD	?	; dictionary offset in file
-	lhsDictSize	DW	?	; dictionary size in 512-byte blocks
-	lhsFlags	DB	?	; library flags
-LIBHeaderStruc	ENDS
-
 LIBHeader	LIBHeaderStruc	<>
 
 _BSS ENDS
@@ -433,9 +425,9 @@ ocoeof:
 ; original obj name offset still on stack
 	mov	es,CurrentBaseOBJBuff	; es -> first buffer block of module
 	pop	bx				; bx -> original obj name offset
-	mov	es:[WORD PTR IOBuffHeaderStruc.ibhsFileNamePtr],bx
+	mov	WORD PTR es:[IOBuffHeaderStruc.ibhsFileNamePtr+0],bx
 	mov	bx,OBJNameSelector
-	mov	es:[WORD PTR IOBuffHeaderStruc.ibhsFileNamePtr+2],bx
+	mov	WORD PTR es:[IOBuffHeaderStruc.ibhsFileNamePtr+2],bx
 
 	pop	es				; restore critical register
 	ret
@@ -622,14 +614,14 @@ ololoop:
 ; see if need to allocate table to hold pointer to library dictionary
 	cmp	LIBDictTablePtr,0
 	jne	olohead			; already allocated
-	mov	dx,TotalLibCount
+	mov	dx,TotalLIBCount
 	add	dx,64			; total kludge, allow up to 64 new default libraries specified within library
 	add	dx,dx			; one word selector pointer per library
 	call	AllocateMemory	; allocate memory for pointers
 	mov	LIBDictTablePtr,ax	; save selector value
 
 	mov	es,ax
-	mov	cx,TotalLibCount
+	mov	cx,TotalLIBCount
 	add	cx,64
 	xor	ax,ax
 	mov	di,ax
@@ -743,9 +735,9 @@ oloall2:
 oloeof:
 	mov	es,BaseLIBDictBuff	; es -> first buffer block of library dictionary
 	pop	bx				; bx -> original lib name offset
-	mov	es:[WORD PTR LIBDictHeaderStruc.ldhsFileNamePtr],bx
+	mov	WORD PTR es:[LIBDictHeaderStruc.ldhsFileNamePtr+0],bx
 	mov	ax,LIBNameSelector
-	mov	es:[WORD PTR LIBDictHeaderStruc.ldhsFileNamePtr+2],ax
+	mov	WORD PTR es:[LIBDictHeaderStruc.ldhsFileNamePtr+2],ax
 
 	ret
 OpenCurrentLIB	ENDP
@@ -770,9 +762,9 @@ WriteToIOBuffer	PROC
 	push	ax
 
 	movzx	ecx,cx		; convert bytes to write to 32-bits
-	lgs	bx,es:[di+IndSegDefRecStruc.isdrMasterPtr]	; gs:bx -> master segdef pointer
-	add	eax,es:[di+IndSegDefRecStruc.isdrSegOffset]	; add in individual segment offset
-	add	eax,gs:[bx+MasterSegDefRecStruc.mssSegOffset]	; add in master segment offset
+	lgs	bx,es:[di].IndSegDefRecStruc.isdrMasterPtr	; gs:bx -> master segdef pointer
+	add	eax,es:[di].IndSegDefRecStruc.isdrSegOffset	; add in individual segment offset
+	add	eax,gs:[bx].MasterSegDefRecStruc.mssSegOffset	; add in master segment offset
 
 ; eax holds absolute write offset, ecx holds bytes to write
 wtioabs:

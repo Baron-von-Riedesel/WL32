@@ -165,8 +165,8 @@ ENDIF
 	OPTITEM <OFFSET LinkInfoLimitText,OFFSET IsLinkInfoLimitOption,0, OPTFLG_NOPARAM>; /il option
 	OPTITEM <OFFSET LinkConfigText,OFFSET IsLinkConfigOption,OFFSET LinkConfigFileName, OPTFLG_STRINGPARAM,\
 		0,0,LINKCONFIGOPTIONSET>; /lc:<name> option
-	OPTITEM <OFFSET LIBSearchText,OFFSET IsLibSearchOption,0, OPTFLG_NOPARAM>; /ls option
-	OPTITEM <OFFSET MAPFileText,OFFSET IsMAPOption,0, OPTFLG_NOPARAM>		; /m option
+	OPTITEM <OFFSET LIBSearchText,OFFSET IsLIBSearchOption,0, OPTFLG_NOPARAM>; /ls option
+	OPTITEM <OFFSET MapFileText,OFFSET IsMAPOption,0, OPTFLG_NOPARAM>		; /m option
 	OPTITEM <OFFSET NoDefaultLIBText,OFFSET IsNoDefaultLIBOption,0, OPTFLG_NOPARAM>; /nd option
 	OPTITEM <OFFSET NoNullDossegText,OFFSET IsNoNullDossegOption,0, OPTFLG_NOPARAM>; /non option
 	OPTITEM <OFFSET NoWarnDupeText,OFFSET IsNoWarnDupeOption,0, OPTFLG_NOPARAM>; /nwd option

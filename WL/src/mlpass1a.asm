@@ -69,7 +69,6 @@ EXTRN   mod_alloc_base:WORD
 ; initialized local variables
 
 ; byte values
-EVEN                        ; maximize speed on 8086 and better
 def_lib_flag    DB  0       ; nonzero if default library from COMENT record
 maybe_clipper	DB	0		; nonzero if module may be Clipper compiled
 known_clipper	DB	0		; nonzero if current module is known Clipper module
@@ -94,7 +93,6 @@ prev_symbol_count	DW	0	; previous to current module total count of unique SYMBOL
 ; uninitialized local variables
 
 ; byte values
-EVEN                        ; maximize speed on 8086 and better
 parse_complete  DB  ?       ; nonzero if record parsing is complete for object module
 EVEN
 ;***theadr_count    DB  ?       ; count of THEADR records in object module

@@ -548,7 +548,7 @@ wqm_5:
 	pop	bx
 	ret
 
-wqm_doserr:
+wqm_doserr::
 	jmp	NEAR PTR qlk_doserr
 
 write_qlk_mod_info	ENDP
@@ -651,7 +651,7 @@ wqu_2:
 	jc	qlk_doserr			; error occured
 	ret
 
-qlk_doserr:
+qlk_doserr::
 	mov	dx,OFFSET DGROUP:filename
     jmp NEAR PTR dos_error	; dos error
 

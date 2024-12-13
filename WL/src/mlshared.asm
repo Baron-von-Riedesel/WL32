@@ -67,7 +67,6 @@ ems_first_avail DW  4       ; first available ems logical page -- updated as use
 ; uninitialized local variables
 
 ; byte values
-EVEN                        ; maximize speed on 8086 and better
 filename    DB  128 DUP (?) ; current object module file name
 pass_number DB  ?           ; number of pass
 

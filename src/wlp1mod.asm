@@ -39,7 +39,7 @@ PUBLIC	Process1OBJRecord
 
 ; public for debugger
 PUBLIC	Pass1AliasProc,COMENTClassPharLapProc
-PUBLIC	LibModuleName,ModuleName
+PUBLIC	ModuleName
 
 IFDEF DLLSUPPORT
 PUBLIC	Pass1IMPDEFProc
@@ -132,7 +132,7 @@ SegmentLength	DD	?	; length of current segment
 SymbolOffset	DD	?	; pubdef symbol offset
 
 ModuleName	DB	128 DUP (?)	; name from T-module name field of THEADR or LHEADR record
-LIBModuleName	DB	128 DUP (?)	; library module name from COMENT record
+LibModuleName	DB	128 DUP (?)	; library module name from COMENT record
 
 IFDEF SYMBOLPACK
 IsCompressedSegment	DB	?	; nonzero if compressed symbol segment
@@ -798,7 +798,7 @@ ENDIF
 
 ; new public symbol entry
 	mov	eax,ModuleCount
-	mov	gs:[di+PubSymRecStruc.pssModuleCount],eax
+	mov	gs:[di].PubSymRecStruc.pssModuleCount,eax
 	inc	PublicSymbolCount	; bump count of unique public symbols
 	jmp	p1e3
 
@@ -808,28 +808,28 @@ ENDIF
 ;   any weak or lazy flags (they may be turned on later via module count
 ;   compare in weak and lazy external routines)
 p1e2:
-	test	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	jne	p1e3
 	mov	eax,ModuleCount
-	mov	gs:[di+PubSymRecStruc.pssModuleCount],eax
+	mov	gs:[di].PubSymRecStruc.pssModuleCount,eax
 
 ; MED 10/24/97
 IFNDEF NATHAN
-	and	gs:[di+PubSymRecStruc.pssFlags],NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)
+	and	gs:[di].PubSymRecStruc.pssFlags,NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)
 ENDIF
 
 ; save pointer to extdef in table for later fixupp use
 p1e3:
 	call	SetSymPtrTableEntry
 	inc	CurrentFixSymCount	; bump count of fixupp-referenceable symbols in module
-	call	ReadByteDecCx	; get symbol name length
+	call	ReadByteDecCX	; get symbol name length
 	mov	dx,cx			; save record length
 	mov	cl,al
 	xor	ch,ch			; cx holds name length (bytes to scan past)
 	call	ScanAhead
 	sub	dx,cx
 	mov	cx,dx			; cx holds updated record length
-	call ReadIndexDecCx	; read type index, ignore
+	call ReadIndexDecCX	; read type index, ignore
 	jmp	p1enameloop
 
 p1eret:
@@ -885,19 +885,19 @@ p1p2:
 
 ; previous entry, see if public or common duplicate, else assume extdef and setup values
 p1pprev:
-	test	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	jne	p1pdupe			; previous was public or communal, duplicate
 	inc	ResolvedSymbolCount	; bump count of resolved symbols
 
 ; set values and pointers in public entry
 ; gs:di -> public symbol entry
 p1pset:
-	and	gs:[di+PubSymRecStruc.pssFlags],NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; shut off weak/lazy flags
-	or	gs:[di+PubSymRecStruc.pssFlags],PUBLICSYMBOLFLAG	; flag public symbol
+	and	gs:[di].PubSymRecStruc.pssFlags,NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; shut off weak/lazy flags
+	or	gs:[di].PubSymRecStruc.pssFlags,PUBLICSYMBOLFLAG	; flag public symbol
 	mov	eax,SymbolOffset
-	mov	gs:[di+PubSymRecStruc.pssOffset],eax
+	mov	gs:[di].PubSymRecStruc.pssOffset,eax
 	mov	eax,ModuleCount
-	mov	gs:[di+PubSymRecStruc.pssModuleCount],eax
+	mov	gs:[di].PubSymRecStruc.pssModuleCount,eax
 	mov	ax,SymbolSegIndex
 	or	ax,ax			; see if absolute public
 	je	p1pabs
@@ -913,16 +913,16 @@ p1pset:
 	jb	p1pgetmast		; no
 
 ; segment entry has wrapped to next buffer
-	sub	si,(SIZEINDSEGDEFblk-indsegdefsysvarsize)
+	sub	si,(SIZEINDSEGDEFBLK - INDSEGDEFSYSVARSIZE)
 	mov	fs,fs:[IndSegDefBlkStruc.isdbNextPtr]	; get pointer to next block
 
 ; fs:si -> individual segdef entry
 ; gs:di -> public symbol entry
 p1pgetmast:
-	mov	WORD PTR gs:[di+PubSymRecStruc.pssIndSegDefPtr+0],si	; save -> segdef entry
-	mov	WORD PTR gs:[di+PubSymRecStruc.pssIndSegDefPtr+2],fs
-	lfs	si,fs:[si+IndSegDefRecStruc.isdrMasterPtr]	; fs:si -> master segdef entry
-	test	fs:[si+MasterSegDefRecStruc.mssFlags],ABSOLUTESEGMENTFLAG
+	mov	WORD PTR gs:[di].PubSymRecStruc.pssIndSegDefPtr+0,si	; save -> segdef entry
+	mov	WORD PTR gs:[di].PubSymRecStruc.pssIndSegDefPtr+2,fs
+	lfs	si,fs:[si].IndSegDefRecStruc.isdrMasterPtr	; fs:si -> master segdef entry
+	test	fs:[si].MasterSegDefRecStruc.mssFlags,ABSOLUTESEGMENTFLAG
 	jne	p1pabs			; absolute public symbol (attached to absolute segment)
 
 	mov	ax,SymbolGroupIndex
@@ -940,13 +940,13 @@ p1pgetmast:
 
 ; segment entry has wrapped to next buffer
 	sub	si,(SIZEGRPPTRTABLEBLK-GRPPTRTABLESYSVARSIZE)
-	mov	fs,fs:[GrpPtrTableBlkStruc.isdbNextPtr]	; get pointer to next block
+	mov	fs,fs:[GrpPtrTableBlkStruc.gptbNextPtr]	; get pointer to next block
 
 ; fs:si -> pointer to group entry
 p1pgrp:
 	mov	eax,fs:[si]		; eax -> group entry
-	mov	gs:[di+PubSymRecStruc.pssGrpDefPtr],eax
-	or	gs:[di+PubSymRecStruc.pssFlags],GROUPRELSYMBOLFLAG	; flag group relative
+	mov	gs:[di].PubSymRecStruc.pssGrpDefPtr,eax
+	or	gs:[di].PubSymRecStruc.pssFlags,GROUPRELSYMBOLFLAG	; flag group relative
 
 p1pnext:
 	pop	si				; restore fs:si -> symbol name
@@ -970,8 +970,8 @@ p1pnext:
 p1pabs:
 	mov	ax,SymbolFrame
 	movzx	eax,ax
-	mov	gs:[di+PubSymRecStruc.pssIndSegDefPtr],eax	; frame number shares with nonabsolute segdef ptr
-	or	gs:[di+PubSymRecStruc.pssFlags],ABSOLUTESYMBOLFLAG	; flag absolute
+	mov	gs:[di].PubSymRecStruc.pssIndSegDefPtr,eax	; frame number shares with nonabsolute segdef ptr
+	or	gs:[di].PubSymRecStruc.pssFlags,ABSOLUTESYMBOLFLAG	; flag absolute
 	jmp	p1pnext
 
 ; public symbol already existed, warn about multiple definitions
@@ -1028,19 +1028,19 @@ p1p32:
 
 ; previous entry, see if public or common duplicate, else assume extdef and setup values
 p1p3prev:
-	test	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	jne	p1p3dupe			; previous was public or communal, duplicate
 	inc	ResolvedSymbolCount	; bump count of resolved symbols
 
 ; set values and pointers in public entry
 ; gs:di -> public symbol entry
 p1p3set:
-	and	gs:[di+PubSymRecStruc.pssFlags],NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; shut off weak/lazy flags
-	or	gs:[di+PubSymRecStruc.pssFlags],PUBLICSYMBOLFLAG	; flag public symbol
+	and	gs:[di].PubSymRecStruc.pssFlags,NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; shut off weak/lazy flags
+	or	gs:[di].PubSymRecStruc.pssFlags,PUBLICSYMBOLFLAG	; flag public symbol
 	mov	eax,SymbolOffset
-	mov	gs:[di+PubSymRecStruc.pssOffset],eax
+	mov	gs:[di].PubSymRecStruc.pssOffset,eax
 	mov	eax,ModuleCount
-	mov	gs:[di+PubSymRecStruc.pssModuleCount],eax
+	mov	gs:[di].PubSymRecStruc.pssModuleCount,eax
 	mov	ax,SymbolSegIndex
 	or	ax,ax			; see if absolute public
 	je	p1p3abs
@@ -1056,16 +1056,16 @@ p1p3set:
 	jb	p1p3getmast		; no
 
 ; segment entry has wrapped to next buffer
-	sub	si,(SIZEINDSEGDEFBLK-INDSEGDEFSYSVARSIZE)
+	sub	si,(SIZEINDSEGDEFBLK - INDSEGDEFSYSVARSIZE)
 	mov	fs,fs:[IndSegDefBlkStruc.isdbNextPtr]	; get pointer to next block
 
 ; fs:si -> individual segdef entry
 ; gs:di -> public symbol entry
 p1p3getmast:
-	mov	WORD PTR gs:[di+PubSymRecStruc.pssIndSegDefPtr+0],si	; save -> segdef entry
-	mov	WORD PTR gs:[di+PubSymRecStruc.pssIndSegDefPtr+2],fs
-	lfs	si,fs:[si+IndSegDefRecStruc.isdrMasterPtr]	; fs:si -> master segdef entry
-	test	fs:[si+MasterSegDefRecStruc.mssFlags],ABSOLUTESEGMENTFLAG
+	mov	WORD PTR gs:[di].PubSymRecStruc.pssIndSegDefPtr+0,si	; save -> segdef entry
+	mov	WORD PTR gs:[di].PubSymRecStruc.pssIndSegDefPtr+2,fs
+	lfs	si,fs:[si].IndSegDefRecStruc.isdrMasterPtr	; fs:si -> master segdef entry
+	test	fs:[si].MasterSegDefRecStruc.mssFlags,ABSOLUTESEGMENTFLAG
 	jne	p1p3abs			; absolute public symbol (attached to absolute segment)
 
 	mov	ax,SymbolGroupIndex
@@ -1083,13 +1083,13 @@ p1p3getmast:
 
 ; segment entry has wrapped to next buffer
 	sub	si,(SIZEGRPPTRTABLEBLK-GRPPTRTABLESYSVARSIZE)
-	mov	fs,fs:[GrpPtrTableBlkStruc.isdbNextPtr]	; get pointer to next block
+	mov	fs,fs:[GrpPtrTableBlkStruc.gptbNextPtr]	; get pointer to next block
 
 ; fs:si -> pointer to group entry
 p1p3grp:
 	mov	eax,fs:[si]		; eax -> group entry
-	mov	gs:[di+PubSymRecStruc.pssGrpDefPtr],eax
-	or	gs:[di+PubSymRecStruc.pssFlags],GROUPRELSYMBOLFLAG	; flag group relative
+	mov	gs:[di].PubSymRecStruc.pssGrpDefPtr,eax
+	or	gs:[di].PubSymRecStruc.pssFlags,GROUPRELSYMBOLFLAG	; flag group relative
 
 p1p3next:
 	pop	si				; restore fs:si -> symbol name
@@ -1113,8 +1113,8 @@ p1p3next:
 p1p3abs:
 	mov	ax,SymbolFrame
 	movzx	eax,ax
-	mov	gs:[di+PubSymRecStruc.pssIndSegDefPtr],eax	; frame number shares with nonabsolute segdef ptr
-	or	gs:[di+PubSymRecStruc.pssFlags],ABSOLUTESYMBOLFLAG	; flag absolute
+	mov	gs:[di].PubSymRecStruc.pssIndSegDefPtr,eax	; frame number shares with nonabsolute segdef ptr
+	or	gs:[di].PubSymRecStruc.pssFlags,ABSOLUTESYMBOLFLAG	; flag absolute
 	jmp	p1p3next
 
 ; public symbol already existed, warn about multiple definitions
@@ -1142,21 +1142,21 @@ p1lenameloop:
 	jcxz	p1leret		; done
 	call	GetPubSymEntry	; search for public symbol, create if none,
 							; gs:di -> entry, carry flag set if new public
-	or	gs:[di+PubSymRecStruc.pssFlags],LOCALSYMBOLFLAG	; flag as local
+	or	gs:[di].PubSymRecStruc.pssFlags,LOCALSYMBOLFLAG	; flag as local
 	mov	eax,ModuleCount		; save module count for LPUBDEF matchup
-	mov	gs:[di+PubSymRecStruc.pssModuleCount],eax
+	mov	gs:[di].PubSymRecStruc.pssModuleCount,eax
 
 ; save pointer to extdef in table for later fixupp use
 	call	SetSymPtrTableEntry
 	inc	CurrentFixSymCount	; bump count of fixupp-referenceable symbols in module
-	call	ReadByteDecCx	; get symbol name length
+	call	ReadByteDecCX	; get symbol name length
 	mov	dx,cx			; save record length
 	mov	cl,al
 	xor	ch,ch			; cx holds name length (bytes to scan past)
 	call	ScanAhead
 	sub	dx,cx
 	mov	cx,dx			; cx holds updated record length
-	call ReadIndexDecCx	; read type index, ignore
+	call ReadIndexDecCX	; read type index, ignore
 	jmp	p1lenameloop
 
 p1leret:
@@ -1204,12 +1204,12 @@ p1lp2:
 ; set values and pointers in public entry
 ; gs:di -> public symbol entry
 p1lpset:
-	and	gs:[di+PubSymRecStruc.pssFlags],NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; shut off weak/lazy flags
-	or	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG or LOCALSYMBOLFLAG)
+	and	gs:[di].PubSymRecStruc.pssFlags,NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; shut off weak/lazy flags
+	or	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG or LOCALSYMBOLFLAG)
 	mov	eax,SymbolOffset
-	mov	gs:[di+PubSymRecStruc.pssOffset],eax
+	mov	gs:[di].PubSymRecStruc.pssOffset,eax
 	mov	eax,ModuleCount
-	mov	gs:[di+PubSymRecStruc.pssModuleCount],eax
+	mov	gs:[di].PubSymRecStruc.pssModuleCount,eax
 	mov	ax,SymbolSegIndex
 	or	ax,ax			; see if absolute public
 	je	p1lpabs
@@ -1225,16 +1225,16 @@ p1lpset:
 	jb	p1lpgetmast		; no
 
 ; segment entry has wrapped to next buffer
-	sub	si,(SIZEINDSEGDEFBLK-INDSEGDEFSYSVARSIZE)
+	sub	si,(SIZEINDSEGDEFBLK - INDSEGDEFSYSVARSIZE)
 	mov	fs,fs:[IndSegDefBlkStruc.isdbNextPtr]	; get pointer to next block
 
 ; fs:si -> individual segdef entry
 ; gs:di -> public symbol entry
 p1lpgetmast:
-	mov	WORD PTR gs:[di+PubSymRecStruc.pssIndSegDefPtr+0],si	; save -> segdef entry
-	mov	WORD PTR gs:[di+PubSymRecStruc.pssIndSegDefPtr+2],fs
-	lfs	si,fs:[si+IndSegDefRecStruc.isdrMasterPtr]	; fs:si -> master segdef entry
-	test	fs:[si+MasterSegDefRecStruc.mssFlags],ABSOLUTESEGMENTFLAG
+	mov	WORD PTR gs:[di].PubSymRecStruc.pssIndSegDefPtr+0,si	; save -> segdef entry
+	mov	WORD PTR gs:[di].PubSymRecStruc.pssIndSegDefPtr+2,fs
+	lfs	si,fs:[si].IndSegDefRecStruc.isdrMasterPtr	; fs:si -> master segdef entry
+	test	fs:[si].MasterSegDefRecStruc.mssFlags,ABSOLUTESEGMENTFLAG
 	jne	p1lpabs			; absolute public symbol (attached to absolute segment)
 
 	mov	ax,SymbolGroupIndex
@@ -1252,13 +1252,13 @@ p1lpgetmast:
 
 ; segment entry has wrapped to next buffer
 	sub	si,(SIZEGRPPTRTABLEBLK-GRPPTRTABLESYSVARSIZE)
-	mov	fs,fs:[GrpPtrTableBlkStruc.isdbNextPtr]	; get pointer to next block
+	mov	fs,fs:[GrpPtrTableBlkStruc.gptbNextPtr]	; get pointer to next block
 
 ; fs:si -> pointer to group entry
 p1lpgrp:
 	mov	eax,fs:[si]		; eax -> group entry
-	mov	gs:[di+PubSymRecStruc.pssGrpDefPtr],eax
-	or	gs:[di+PubSymRecStruc.pssFlags],GROUPRELSYMBOLFLAG	; flag group relative
+	mov	gs:[di].PubSymRecStruc.pssGrpDefPtr,eax
+	or	gs:[di].PubSymRecStruc.pssFlags,GROUPRELSYMBOLFLAG	; flag group relative
 
 p1lpnext:
 	pop	si				; restore fs:si -> symbol name
@@ -1282,8 +1282,8 @@ p1lpnext:
 p1lpabs:
 	mov	ax,SymbolFrame
 	movzx	eax,ax
-	mov	gs:[di+PubSymRecStruc.pssIndSegDefPtr],eax	; frame number shares with nonabsolute segdef ptr
-	or	gs:[di+PubSymRecStruc.pssFlags],(ABSOLUTESYMBOLFLAG OR LOCALSYMBOLFLAG)
+	mov	gs:[di].PubSymRecStruc.pssIndSegDefPtr,eax	; frame number shares with nonabsolute segdef ptr
+	or	gs:[di].PubSymRecStruc.pssFlags,(ABSOLUTESYMBOLFLAG OR LOCALSYMBOLFLAG)
 	jmp	p1lpnext
 
 Pass1LPUBDEFProc	ENDP
@@ -1326,12 +1326,12 @@ p1lp322:
 ; set values and pointers in public entry
 ; gs:di -> public symbol entry
 p1lp32set:
-	and	gs:[di+PubSymRecStruc.pssFlags],NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; shut off weak/lazy flags
-	or	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG or LOCALSYMBOLFLAG)
+	and	gs:[di].PubSymRecStruc.pssFlags,NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; shut off weak/lazy flags
+	or	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG or LOCALSYMBOLFLAG)
 	mov	eax,SymbolOffset
-	mov	gs:[di+PubSymRecStruc.pssOffset],eax
+	mov	gs:[di].PubSymRecStruc.pssOffset,eax
 	mov	eax,ModuleCount
-	mov	gs:[di+PubSymRecStruc.pssModuleCount],eax
+	mov	gs:[di].PubSymRecStruc.pssModuleCount,eax
 	mov	ax,SymbolSegIndex
 	or	ax,ax			; see if absolute public
 	je	p1lp32abs
@@ -1347,16 +1347,16 @@ p1lp32set:
 	jb	p1lp32getmast		; no
 
 ; segment entry has wrapped to next buffer
-	sub	si,(SIZEINDSEGDEFBLK-INDSEGDEFSYSVARSIZE)
+	sub	si,(SIZEINDSEGDEFBLK - INDSEGDEFSYSVARSIZE)
 	mov	fs,fs:[IndSegDefBlkStruc.isdbNextPtr]	; get pointer to next block
 
 ; fs:si -> individual segdef entry
 ; gs:di -> public symbol entry
 p1lp32getmast:
-	mov	WORD PTR gs:[di+PubSymRecStruc.pssIndSegDefPtr+0],si	; save -> segdef entry
-	mov	WORD PTR gs:[di+PubSymRecStruc.pssIndSegDefPtr+2],fs
-	lfs	si,fs:[si+IndSegDefRecStruc.isdrMasterPtr]	; fs:si -> master segdef entry
-	test	fs:[si+MasterSegDefRecStruc.mssFlags],ABSOLUTESEGMENTFLAG
+	mov	WORD PTR gs:[di].PubSymRecStruc.pssIndSegDefPtr+0,si	; save -> segdef entry
+	mov	WORD PTR gs:[di].PubSymRecStruc.pssIndSegDefPtr+2,fs
+	lfs	si,fs:[si].IndSegDefRecStruc.isdrMasterPtr	; fs:si -> master segdef entry
+	test	fs:[si].MasterSegDefRecStruc.mssFlags,ABSOLUTESEGMENTFLAG
 	jne	p1lp32abs			; absolute public symbol (attached to absolute segment)
 
 	mov	ax,SymbolGroupIndex
@@ -1374,13 +1374,13 @@ p1lp32getmast:
 
 ; segment entry has wrapped to next buffer
 	sub	si,(SIZEGRPPTRTABLEBLK-GRPPTRTABLESYSVARSIZE)
-	mov	fs,fs:[GrpPtrTableBlkStruc.isdbNextPtr]	; get pointer to next block
+	mov	fs,fs:[GrpPtrTableBlkStruc.gptbNextPtr]	; get pointer to next block
 
 ; fs:si -> pointer to group entry
 p1lp32grp:
 	mov	eax,fs:[si]		; eax -> group entry
-	mov	gs:[di+PubSymRecStruc.pssGrpDefPtr],eax
-	or	gs:[di+PubSymRecStruc.pssFlags],GROUPRELSYMBOLFLAG	; flag group relative
+	mov	gs:[di].PubSymRecStruc.pssGrpDefPtr,eax
+	or	gs:[di].PubSymRecStruc.pssFlags,GROUPRELSYMBOLFLAG	; flag group relative
 
 p1lp32next:
 	pop	si				; restore fs:si -> symbol name
@@ -1404,8 +1404,8 @@ p1lp32next:
 p1lp32abs:
 	mov	ax,SymbolFrame
 	movzx	eax,ax
-	mov	gs:[di+PubSymRecStruc.pssIndSegDefPtr],eax	; frame number shares with nonabsolute segdef ptr
-	or	gs:[di+PubSymRecStruc.pssFlags],(ABSOLUTESYMBOLFLAG OR LOCALSYMBOLFLAG)
+	mov	gs:[di].PubSymRecStruc.pssIndSegDefPtr,eax	; frame number shares with nonabsolute segdef ptr
+	or	gs:[di].PubSymRecStruc.pssFlags,(ABSOLUTESYMBOLFLAG OR LOCALSYMBOLFLAG)
 	jmp	p1lp32next
 
 Pass1LPUBDEF32Proc	ENDP
@@ -1465,17 +1465,17 @@ IFDEF SYMBOLPACK
 	push	si
 
 	mov	bx,di			; gs:bx -> master segdef entry
-	test	gs:[bx+MasterSegDefRecStruc.mssACBPByte],CFIELDOFACBP
+	test	gs:[bx].MasterSegDefRecStruc.mssACBPByte,CFIELDOFACBP
 	jne	psesymout		; not a private segment
 
-	les	di,gs:[bx+MasterSegDefRecStruc.mssNamePtr]	; es:di -> name
+	les	di,gs:[bx].MasterSegDefRecStruc.mssNamePtr	; es:di -> name
 	call	NormalESDIDest	; normalize es:di to destination name buffer
 	mov	si,OFFSET SYMBOLSText
 	mov	cx,2			; 8 bytes, 2 dwords
 	repe	cmpsd		; compare entry name to SYMBOLS
 	jne	psesymout		; not equal
 
-	les	di,gs:[bx+MasterSegDefRecStruc.mssClassPtr]	; es:di -> class
+	les	di,gs:[bx].MasterSegDefRecStruc.mssClassPtr	; es:di -> class
 	call	NormalESDIDest	; normalize es:di to destination name buffer
 	mov	si,OFFSET SYMBOLSText
 	mov	cx,2			; 8 bytes, 2 dwords
@@ -1620,7 +1620,7 @@ p1cnameloop:
 	call	GetPubSymEntry	; search for public symbol, create if none,
 							; gs:di -> entry, carry flag set if new public
 	pushf				; save carry flag status while get other communal info
-	call	ReadByteDecCx	; get symbol name length
+	call	ReadByteDecCX	; get symbol name length
 	mov	dx,cx			; save record length
 	mov	cl,al
 	xor	ch,ch			; cx holds name length (bytes to scan past)
@@ -1659,10 +1659,10 @@ p1cchkdupe:
 	popf				; get symbol status, carry flag from GetPubSymEntry
 	jc	p1cchklen		; new symbol
 
-	test	gs:[di+PubSymRecStruc.pssFlags],PUBLICSYMBOLFLAG
+	test	gs:[di].PubSymRecStruc.pssFlags,PUBLICSYMBOLFLAG
 	jne	p1cdupe			; symbol already exists as public
 	
-	test	gs:[di+PubSymRecStruc.pssFlags],(FARCOMSYMBOLFLAG OR NEARCOMSYMBOLFLAG)
+	test	gs:[di].PubSymRecStruc.pssFlags,(FARCOMSYMBOLFLAG OR NEARCOMSYMBOLFLAG)
 	jne	p1cchklen		; already communal
 
 ; previously flagged as external, now a communal
@@ -1672,10 +1672,10 @@ p1cchkdupe:
 ; eax == communal length
 p1cchklen:
 	mov	ebx,ModuleCount
-	mov	gs:[di+PubSymRecStruc.pssModuleCount],ebx	; save defining module
-	test	gs:[di+PubSymRecStruc.pssFlags],(FARCOMSYMBOLFLAG OR NEARCOMSYMBOLFLAG)
+	mov	gs:[di].PubSymRecStruc.pssModuleCount,ebx	; save defining module
+	test	gs:[di].PubSymRecStruc.pssFlags,(FARCOMSYMBOLFLAG OR NEARCOMSYMBOLFLAG)
 	je	p1cnewcom		; no previous communal
-	cmp	eax,gs:[di+PubSymRecStruc.pssOffset]
+	cmp	eax,gs:[di].PubSymRecStruc.pssOffset
 	jb	p1cset			; new communal length < old, don't save it
 	jmp	p1csavelen	; save the new length
 
@@ -1687,12 +1687,12 @@ p1cnewcom:
 	inc	TotalCommunalCount	; bump total count of communals
 
 p1csavelen:
-	mov	gs:[di+PubSymRecStruc.pssOffset],eax	; save communal length in public offset for now
+	mov	gs:[di].PubSymRecStruc.pssOffset,eax	; save communal length in public offset for now
 
 ; dx holds near/far flag
 p1cset:
-	and	gs:[di+PubSymRecStruc.pssFlags],NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; shut off weak/lazy flags
-	or	gs:[di+PubSymRecStruc.pssFlags],dx	; set near/far flag
+	and	gs:[di].PubSymRecStruc.pssFlags,NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; shut off weak/lazy flags
+	or	gs:[di].PubSymRecStruc.pssFlags,dx	; set near/far flag
 
 p1cptr:
 	call	SetSymPtrTableEntry	; save pointer to communal for fixup purposes
@@ -1729,7 +1729,7 @@ p1clnameloop:
 	call	GetPubSymEntry	; search for public symbol, create if none,
 							; gs:di -> entry, carry flag set if new public
 	pushf				; save carry flag status while get other communal info
-	call	ReadByteDecCx	; get symbol name length
+	call	ReadByteDecCX	; get symbol name length
 	mov	dx,cx			; save record length
 	mov	cl,al
 	xor	ch,ch			; cx holds name length (bytes to scan past)
@@ -1768,16 +1768,16 @@ p1clchkdupe:
 	popf				; get symbol status, carry flag from GetPubSymEntry
 	jc	p1clchklen		; new symbol
 
-	test	gs:[di+PubSymRecStruc.pssFlags],PUBLICSYMBOLFLAG
+	test	gs:[di].PubSymRecStruc.pssFlags,PUBLICSYMBOLFLAG
 	jne	p1cldupe			; symbol already exists as public
 
 ; save length, if previous communal length save longest
 p1clchklen:
 	mov	ebx,ModuleCount
-	mov	gs:[di+PubSymRecStruc.pssModuleCount],ebx	; save defining module
-	test	gs:[di+PubSymRecStruc.pssFlags],(FARCOMSYMBOLFLAG OR NEARCOMSYMBOLFLAG)
+	mov	gs:[di].PubSymRecStruc.pssModuleCount,ebx	; save defining module
+	test	gs:[di].PubSymRecStruc.pssFlags,(FARCOMSYMBOLFLAG OR NEARCOMSYMBOLFLAG)
 	je	p1clnewcom		; no previous communal
-	cmp	eax,gs:[di+PubSymRecStruc.pssOffset]
+	cmp	eax,gs:[di].PubSymRecStruc.pssOffset
 	jb	p1clset			; new communal length < old, don't save it
 	jmp	p1clsavelen	; save the new length
 
@@ -1786,12 +1786,12 @@ p1clnewcom:
 	inc	TotalCommunalCount	; bump total count of communals
 
 p1clsavelen:
-	mov	gs:[di+PubSymRecStruc.pssOffset],eax	; save communal length in public offset for now
+	mov	gs:[di].PubSymRecStruc.pssOffset,eax	; save communal length in public offset for now
 
 ; dx holds near/far flag
 p1clset:
-	and	gs:[di+PubSymRecStruc.pssFlags],NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; shut off weak/lazy flags
-	or	gs:[di+PubSymRecStruc.pssFlags],dx	; set near/far flag
+	and	gs:[di].PubSymRecStruc.pssFlags,NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; shut off weak/lazy flags
+	or	gs:[di].PubSymRecStruc.pssFlags,dx	; set near/far flag
 
 p1clptr:
 	call	SetSymPtrTableEntry	; save pointer to communal for fixup purposes
@@ -1907,7 +1907,7 @@ pln2:
 	shl	di,2			; convert to dword offset
 	mov	gs,LNAMESIndexSel	; gs -> LNAMES table of pointers block
 	dec	si				; backup si to name length byte (known nonzero offset)
-	mov	gs:[di],si		; keep offset pointer to LNAMES name
+	mov	gs:[di+0],si	; keep offset pointer to LNAMES name
 	mov	gs:[di+2],fs	; keep selector pointer to LNAMES name
 	xchg	dx,cx		; cx==name length+length byte dx == object record length
 	call	ScanAhead	; scan past current name to next byte
@@ -2045,7 +2045,7 @@ COMENTClassLibModProc	PROC
 	mov	gs,CurrentBaseOBJBuff
 	mov	WORD PTR gs:[IOBuffHeaderStruc.ibhsModNamePtr],si	; save pointer to module name
 	mov	WORD PTR gs:[IOBuffHeaderStruc.ibhsModNamePtr+2],fs
-	mov	di,OFFSET LIBModuleName
+	mov	di,OFFSET LibModuleName
 	call	ReadNameString	; read object record name string
 	cmp	IsLinkInfoLimitOption,OFF	; see if displaying limited link information
 	jne	clmret			; yes, don't display this
@@ -2054,7 +2054,7 @@ COMENTClassLibModProc	PROC
 
 	mov	bx,OFFSET ProcessModText
 	call	DisplayTextStringNoCRLF
-	mov	bx,OFFSET LIBModuleName
+	mov	bx,OFFSET LibModuleName
 	call	DisplayVarStringNoCRLF
 	mov	bx,OFFSET InText
 	call	DisplayTextStringNoCRLF
@@ -2138,7 +2138,7 @@ cwkloop:
 	cmp	bx,SIZESYMPTRTABLEBLK	; see if overflow to next block
 	jb	cwk2			; no
 	sub	bx,(SIZESYMPTRTABLEBLK-SYMPTRTABLESYSVARSIZE)
-	mov	gs,gs:[SymPtrTableBlkStruc.isdbNextPtr]	; get pointer to next block
+	mov	gs,gs:[SymPtrTableBlkStruc.sptbNextPtr]	; get pointer to next block
 
 ; gs:bx -> pointer to weak extern entry
 cwk2:
@@ -2155,7 +2155,7 @@ cwk2:
 	cmp	bx,SIZESYMPTRTABLEBLK	; see if overflow to next block
 	jb	cwk3			; no
 	sub	bx,(SIZESYMPTRTABLEBLK-SYMPTRTABLESYSVARSIZE)
-	mov	gs,gs:[SymPtrTableBlkStruc.isdbNextPtr]	; get pointer to next block
+	mov	gs,gs:[SymPtrTableBlkStruc.sptbNextPtr]	; get pointer to next block
 
 ; gs:bx -> pointer to default resolution symbol
 cwk3:
@@ -2168,20 +2168,20 @@ cwk3:
 	pop	eax				; eax -> default resolution symbol
 
 ; see if could be weak extern
-	test	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	jne	cwkloop			; already non-external
 
 ; module count (for extdef) must match current module
 ;  If not, then a symbol has been previously declared strongly
 ;   and cannot be reset to weak or external
 	mov	ebx,ModuleCount
-	cmp	ebx,gs:[di+PubSymRecStruc.pssModuleCount]
+	cmp	ebx,gs:[di].PubSymRecStruc.pssModuleCount
 	jne	cwkloop			; modules don't match
 
 cwkset:
-	and	gs:[di+PubSymRecStruc.pssFlags],NOT LAZYEXTERNFLAG
-	or	gs:[di+PubSymRecStruc.pssFlags],WEAKEXTERNFLAG	; and turn on is weak flag
-	mov	gs:[di+PubSymRecStruc.pssIndSegDefPtr],eax	; update weak extern default resolution pointer
+	and	gs:[di].PubSymRecStruc.pssFlags,NOT LAZYEXTERNFLAG
+	or	gs:[di].PubSymRecStruc.pssFlags,WEAKEXTERNFLAG	; and turn on is weak flag
+	mov	gs:[di].PubSymRecStruc.pssIndSegDefPtr,eax	; update weak extern default resolution pointer
 	jmp cwkloop
 	
 cwkret:
@@ -2210,7 +2210,7 @@ clzloop:
 	cmp	bx,SIZESYMPTRTABLEBLK	; see if overflow to next block
 	jb	clz2			; no
 	sub	bx,(SIZESYMPTRTABLEBLK-SYMPTRTABLESYSVARSIZE)
-	mov	gs,gs:[SymPtrTableBlkStruc.isdbNextPtr]	; get pointer to next block
+	mov	gs,gs:[SymPtrTableBlkStruc.sptbNextPtr]	; get pointer to next block
 
 ; gs:bx -> pointer to lazy extern entry
 clz2:
@@ -2227,7 +2227,7 @@ clz2:
 	cmp	bx,SIZESYMPTRTABLEBLK	; see if overflow to next block
 	jb	clz3			; no
 	sub	bx,(SIZESYMPTRTABLEBLK-SYMPTRTABLESYSVARSIZE)
-	mov	gs,gs:[SymPtrTableBlkStruc.isdbNextPtr]	; get pointer to next block
+	mov	gs,gs:[SymPtrTableBlkStruc.sptbNextPtr]	; get pointer to next block
 
 ; gs:bx -> pointer to default resolution symbol
 clz3:
@@ -2240,23 +2240,23 @@ clz3:
 	pop	eax				; eax -> default resolution symbol
 
 ; see if could be lazy extern
-	test	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	jne	clzloop			; already non-external
 
 ; module count must match current module OR symbol must already be flagged
 ;  weak or lazy.  If not, then a symbol has been previously declared strongly
 ;  and cannot be reset to weak or external
-	test	gs:[di+PubSymRecStruc.pssFlags],(WEAKEXTERNFLAG OR LAZYEXTERNFLAG)
+	test	gs:[di].PubSymRecStruc.pssFlags,(WEAKEXTERNFLAG OR LAZYEXTERNFLAG)
 	jne	clzset			; previously weak or external, use latest info
 						; spec doesn't say, maybe should stick with old info?
 	mov	ebx,ModuleCount
-	cmp	ebx,gs:[di+PubSymRecStruc.pssModuleCount]
+	cmp	ebx,gs:[di].PubSymRecStruc.pssModuleCount
 	jne	clzloop			; modules don't match
 
 clzset:
-	and	gs:[di+PubSymRecStruc.pssFlags],NOT WEAKEXTERNFLAG
-	or	gs:[di+PubSymRecStruc.pssFlags],LAZYEXTERNFLAG	; and turn on is lazy flag
-	mov	gs:[di+PubSymRecStruc.pssIndSegDefPtr],eax	; update lazy extern default resolution pointer
+	and	gs:[di].PubSymRecStruc.pssFlags,NOT WEAKEXTERNFLAG
+	or	gs:[di].PubSymRecStruc.pssFlags,LAZYEXTERNFLAG	; and turn on is lazy flag
+	mov	gs:[di].PubSymRecStruc.pssIndSegDefPtr,eax	; update lazy extern default resolution pointer
 	jmp clzloop
 
 clzret:
@@ -2300,26 +2300,26 @@ IFDEF DLLSUPPORT
 Pass1EXPDEFProc	PROC
 	call	GetEXPDEFEntry	; return pointer to EXPDEF entry in gs:di
 	call	ReadByte	; get exported flag
-	mov	gs:[di+EXPDEFRecStruc.edsExportedFlag],al	; save it
+	mov	gs:[di].EXPDEFRecStruc.edsExportedFlag,al	; save it
 
 ; fs:si -> exported name
-	mov	WORD PTR gs:[di+EXPDEFRecStruc.edsExportedNamePtr],si
-	mov	WORD PTR gs:[di+EXPDEFRecStruc.edsExportedNamePtr+2],fs
+	mov	WORD PTR gs:[di].EXPDEFRecStruc.edsExportedNamePtr+0,si
+	mov	WORD PTR gs:[di].EXPDEFRecStruc.edsExportedNamePtr+2,fs
 	call	ReadByte	; get exported name char count
 	movzx	cx,al
 	call	ScanAhead	; scan past exported name
 
 ; fs:si -> internal name
-	mov	WORD PTR gs:[di+EXPDEFRecStruc.edsInternalNamePtr],si
-	mov	WORD PTR gs:[di+EXPDEFRecStruc.edsInternalNamePtr+2],fs
+	mov	WORD PTR gs:[di].EXPDEFRecStruc.edsInternalNamePtr+0,si
+	mov	WORD PTR gs:[di].EXPDEFRecStruc.edsInternalNamePtr+2,fs
 	call	ReadByte	; get internal name char count
 	movzx	cx,al
 	call	ScanAhead	; scan past internal name
 
-	test	gs:[di+EXPDEFRecStruc.edsExportedFlag],EXPDEFORDINALBIT	; see if ordinal bit set
+	test	gs:[di].EXPDEFRecStruc.edsExportedFlag,EXPDEFORDINALBIT	; see if ordinal bit set
 	je	pedret			; ordinal bit not set, no export ordinal value
 	call	ReadWord	; get export ordinal
-	mov	gs:[di+EXPDEFRecStruc.edsExportOrdinal],ax
+	mov	gs:[di].EXPDEFRecStruc.edsExportOrdinal,ax
 
 pedret:
 	inc	TotalEXPDEFCount	; bump count of EXPDEFs
@@ -2335,29 +2335,29 @@ Pass1EXPDEFProc	ENDP
 Pass1IMPDEFProc	PROC
 	call	GetIMPDEFEntry	; return pointer to IMPDEF entry in gs:di
 	call	ReadByte	; get ordinal flag
-	mov	gs:[di+IMPDEFRecStruc.idsOrdinalFlag],al	; save it
+	mov	gs:[di].IMPDEFRecStruc.idsOrdinalFlag,al	; save it
 
 ; fs:si -> internal name
-	mov	WORD PTR gs:[di+IMPDEFRecStruc.idsInternalNamePtr],si
-	mov	WORD PTR gs:[di+IMPDEFRecStruc.idsInternalNamePtr+2],fs
+	mov	WORD PTR gs:[di].IMPDEFRecStruc.idsInternalNamePtr+0,si
+	mov	WORD PTR gs:[di].IMPDEFRecStruc.idsInternalNamePtr+2,fs
 	call	ReadByte	; get internal name char count
 	movzx	cx,al
 	call	ScanAhead	; scan past internal name
 
 ; fs:si -> module name
-	mov	WORD PTR gs:[di+IMPDEFRecStruc.idsModuleNamePtr],si
-	mov	WORD PTR gs:[di+IMPDEFRecStruc.idsModuleNamePtr+2],fs
+	mov	WORD PTR gs:[di].IMPDEFRecStruc.idsModuleNamePtr+0,si
+	mov	WORD PTR gs:[di].IMPDEFRecStruc.idsModuleNamePtr+2,fs
 	call	ReadByte	; get exported name char count
 	movzx	cx,al
 	call	ScanAhead	; scan past exported name
 
 ; fs:si -> entry ident field
-	mov	WORD PTR gs:[di+IMPDEFRecStruc.idsEntryIdentPtr],si
-	mov	WORD PTR gs:[di+IMPDEFRecStruc.idsEntryIdentPtr+2],fs
+	mov	WORD PTR gs:[di].IMPDEFRecStruc.idsEntryIdentPtr+0,si
+	mov	WORD PTR gs:[di].IMPDEFRecStruc.idsEntryIdentPtr+2,fs
 
 	xor	eax,eax
-	mov	gs:[di+IMPDEFRecStruc.idsModuleNumber],eax
-	mov	gs:[di+IMPDEFRecStruc.idsFunctionNumber],eax
+	mov	gs:[di].IMPDEFRecStruc.idsModuleNumber,eax
+	mov	gs:[di].IMPDEFRecStruc.idsFunctionNumber,eax
 
 	inc	TotalIMPDEFCount	; bump count of IMPDEFs
 	ret
@@ -2379,7 +2379,7 @@ Pass1CEXTDEFProc	PROC
 ; fs:si -> logical name index
 p1cenameloop:
 	jcxz	p1ceret		; done
-	call ReadIndexDecCx	; read logical name index
+	call ReadIndexDecCX	; read logical name index
 
 	push	fs
 	push	si
@@ -2404,7 +2404,7 @@ p1ce2:
 	inc	CurrentFixSymCount	; bump count of fixupp-referenceable symbols in module
 	pop	si
 	pop	fs				; restore fs:si -> cextdef record
-	call ReadIndexDecCx	; read type index, ignore
+	call ReadIndexDecCX	; read type index, ignore
 	jmp p1cenameloop
 
 p1ceret:
@@ -2488,7 +2488,7 @@ p1cdprecom:
 	test	COMDATFlags,COMDATCONTINUEFLAG	; see if COMDAT continuation
 	je	p1cdret		; no, ignore
 	mov	eax,ModuleCount
-	cmp	gs:[di+PubSymRecStruc.pssModuleCount],eax
+	cmp	gs:[di].PubSymRecStruc.pssModuleCount,eax
 	jne	p1cdret		; not the same module, ignore
 
 ; same module, continuation, check if continuation of appropriate comdat
@@ -2501,7 +2501,7 @@ p1cdprecom:
 	pop	eax				; eax -> public symbol of this comdat
 
 p1cdpre2:
-	cmp	gs:[di+ComDatRecStruc.cdsPubSymPtr],eax	; check if matches
+	cmp	gs:[di].ComDatRecStruc.cdsPubSymPtr,eax	; check if matches
 	je	p1cdupdlen		; yes
 
 ; need to find matching comdat for this continuation
@@ -2514,20 +2514,20 @@ p1cdpre2:
 
 ; previous entry, see if public or common duplicate, else assume extdef and setup values
 p1cdprev:
-	test	gs:[di+PubSymRecStruc.pssFlags],COMDATSYMBOLFLAG
+	test	gs:[di].PubSymRecStruc.pssFlags,COMDATSYMBOLFLAG
 	jne	p1cdprecom			; previous was comdat
-	test	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	jne	p1cddupe			; previous was public or communal, duplicate
 	inc	ResolvedSymbolCount	; bump count of resolved symbols
 
 ; set values and pointers in public entry
 ; gs:di -> public symbol entry
 p1cdset:
-	and	gs:[di+PubSymRecStruc.pssFlags],NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; shut off weak/lazy flags
-	or	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR COMDATSYMBOLFLAG)
-	mov	gs:[di+PubSymRecStruc.pssOffset],0
+	and	gs:[di].PubSymRecStruc.pssFlags,NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; shut off weak/lazy flags
+	or	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR COMDATSYMBOLFLAG)
+	mov	gs:[di].PubSymRecStruc.pssOffset,0
 	mov	eax,ModuleCount
-	mov	gs:[di+PubSymRecStruc.pssModuleCount],eax
+	mov	gs:[di].PubSymRecStruc.pssModuleCount,eax
 
 p1cdgetcom:
 ;	push	gs			; save -> public symbol on stack
@@ -2545,7 +2545,7 @@ p1cdgetcom:
 
 p1cdsavepub:
 	pop	eax				; eax -> public symbol
-	mov	gs:[di+ComDatRecStruc.cdsPubSymPtr],eax
+	mov	gs:[di].ComDatRecStruc.cdsPubSymPtr,eax
 
 p1cdupdlen:
 	mov	eax,COMDATOffset
@@ -2557,19 +2557,19 @@ p1cdupdlen:
 
 ; continuation adds to pre-existing length
 p1cdcont:
-	add	gs:[di+ComDatRecStruc.cdsLength],eax
+	add	gs:[di].ComDatRecStruc.cdsLength,eax
 	jmp p1cdret	; bypass remaining setup code
 
 p1cd3:
-	mov	gs:[di+ComDatRecStruc.cdsLength],eax	; update comdat length
+	mov	gs:[di].ComDatRecStruc.cdsLength,eax	; update comdat length
 	mov	al,COMDATFlags
-	mov	gs:[di+ComDatRecStruc.cdsRecordFlags],al
+	mov	gs:[di].ComDatRecStruc.cdsRecordFlags,al
 	mov	al,COMDATAttributes
-	mov	gs:[di+ComDatRecStruc.cdsAttributes],al
+	mov	gs:[di].ComDatRecStruc.cdsAttributes,al
 	mov	al,COMDATAlign
-	mov	gs:[di+ComDatRecStruc.cdsAlign],al
+	mov	gs:[di].ComDatRecStruc.cdsAlign,al
 	mov	eax,OBJRecPtr
-	mov	gs:[di+ComDatRecStruc.cdsRecordPtr],eax
+	mov	gs:[di].ComDatRecStruc.cdsRecordPtr,eax
 
 p1cdret:
 	ret
@@ -2670,7 +2670,7 @@ p1cd32precom:
 	test	COMDATFlags,COMDATCONTINUEFLAG	; see if COMDAT continuation
 	je	p1cd32ret		; no, ignore
 	mov	eax,ModuleCount
-	cmp	gs:[di+PubSymRecStruc.pssModuleCount],eax
+	cmp	gs:[di].PubSymRecStruc.pssModuleCount,eax
 	jne	p1cd32ret		; not the same module, ignore
 
 ; same module, continuation, check if continuation of appropriate comdat
@@ -2683,7 +2683,7 @@ p1cd32precom:
 	pop	eax				; eax -> public symbol of this comdat
 
 p1cd32pre2:
-	cmp	gs:[di+ComDatRecStruc.cdsPubSymPtr],eax	; check if matches
+	cmp	gs:[di].ComDatRecStruc.cdsPubSymPtr,eax	; check if matches
 	je	p1cd32updlen	; yes
 
 ; need to find matching comdat for this continuation
@@ -2696,20 +2696,20 @@ p1cd32pre2:
 
 ; previous entry, see if public or common duplicate, else assume extdef and setup values
 p1cd32prev:
-	test	gs:[di+PubSymRecStruc.pssFlags],COMDATSYMBOLFLAG
+	test	gs:[di].PubSymRecStruc.pssFlags,COMDATSYMBOLFLAG
 	jne	p1cd32precom		; previous was comdat
-	test	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	jne	p1cd32dupe			; previous was public or communal, duplicate
 	inc	ResolvedSymbolCount	; bump count of resolved symbols
 
 ; set values and pointers in public entry
 ; gs:di -> public symbol entry
 p1cd32set:
-	and	gs:[di+PubSymRecStruc.pssFlags],NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; shut off weak/lazy flags
-	or	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR COMDATSYMBOLFLAG)
-	mov	gs:[di+PubSymRecStruc.pssOffset],0
+	and	gs:[di].PubSymRecStruc.pssFlags,NOT (WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; shut off weak/lazy flags
+	or	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR COMDATSYMBOLFLAG)
+	mov	gs:[di].PubSymRecStruc.pssOffset,0
 	mov	eax,ModuleCount
-	mov	gs:[di+PubSymRecStruc.pssModuleCount],eax
+	mov	gs:[di].PubSymRecStruc.pssModuleCount,eax
 
 p1cd32getcom:
 ;	push	gs			; save -> public symbol on stack
@@ -2727,7 +2727,7 @@ p1cd32getcom:
 
 p1cd32savepub:
 	pop	eax				; eax -> public symbol
-	mov	gs:[di+ComDatRecStruc.cdsPubSymPtr],eax
+	mov	gs:[di].ComDatRecStruc.cdsPubSymPtr,eax
 
 	mov	ax,COMDATSegIndex
 
@@ -2742,17 +2742,17 @@ p1cd32savepub:
 	jb	p1cd32getmast		; no
 
 ; segment entry has wrapped to next buffer
-	sub	si,(SIZEINDSEGDEFblk-indsegdefsysvarsize)
+	sub	si,(SIZEINDSEGDEFBLK - INDSEGDEFSYSVARSIZE)
 	mov	fs,fs:[IndSegDefBlkStruc.isdbNextPtr]	; get pointer to next block
 
 ; fs:si -> individual segdef entry
 ; gs:di -> comdat record entry
 p1cd32getmast:
-	mov	WORD PTR gs:[di+ComDatRecStruc.cdsIndSegDefPtr+0],si	; save -> segdef entry
-	mov	WORD PTR gs:[di+ComDatRecStruc.cdsIndSegDefPtr+2],fs
-	or	gs:[di+ComDatRecStruc.cdsFlags],SEGRELCOMDATFLAG	; flag segment relative
-	lfs	si,fs:[si+IndSegDefRecStruc.isdrMasterPtr]	; fs:si -> master segdef entry
-	test	fs:[si+MasterSegDefRecStruc.mssFlags],ABSOLUTESEGMENTFLAG
+	mov	WORD PTR gs:[di].ComDatRecStruc.cdsIndSegDefPtr+0,si	; save -> segdef entry
+	mov	WORD PTR gs:[di].ComDatRecStruc.cdsIndSegDefPtr+2,fs
+	or	gs:[di].ComDatRecStruc.cdsFlags,SEGRELCOMDATFLAG	; flag segment relative
+	lfs	si,fs:[si].IndSegDefRecStruc.isdrMasterPtr	; fs:si -> master segdef entry
+	test	fs:[si].MasterSegDefRecStruc.mssFlags,ABSOLUTESEGMENTFLAG
 	jne	p1cd32attrib	; don't allow absolute frame COMDAT's
 
 p1cd32updlen:
@@ -2764,19 +2764,19 @@ p1cd32updlen:
 	je	p1cd323			; no
 
 ; continuation adds to pre-existing length
-	add	gs:[di+ComDatRecStruc.cdsLength],eax
+	add	gs:[di].ComDatRecStruc.cdsLength,eax
 	jmp p1cd32ret	; bypass remaining setup code
 
 p1cd323:
-	mov	gs:[di+ComDatRecStruc.cdsLength],eax	; update comdat length
+	mov	gs:[di].ComDatRecStruc.cdsLength,eax	; update comdat length
 	mov	al,COMDATFlags
-	mov	gs:[di+ComDatRecStruc.cdsRecordFlags],al
+	mov	gs:[di].ComDatRecStruc.cdsRecordFlags,al
 	mov	al,COMDATAttributes
-	mov	gs:[di+ComDatRecStruc.cdsAttributes],al
+	mov	gs:[di].ComDatRecStruc.cdsAttributes,al
 	mov	al,COMDATAlign
-	mov	gs:[di+ComDatRecStruc.cdsAlign],al
+	mov	gs:[di].ComDatRecStruc.cdsAlign,al
 	mov	eax,OBJRecPtr
-	mov	gs:[di+ComDatRecStruc.cdsRecordPtr],eax
+	mov	gs:[di].ComDatRecStruc.cdsRecordPtr,eax
 
 p1cd32ret:
 	ret
@@ -3073,9 +3073,9 @@ p1ap2:
 	cmp	cx,1
 	jbe	p1apret			; no more entries (this one prematurely ended)
 
-	test	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	jne	p1apgobble		; previous alias declaration was public or communal, gobble substitute and ignore
-	or	gs:[di+PubSymRecStruc.pssFlags],WEAKEXTERNFLAG	; turn on weak external
+	or	gs:[di].PubSymRecStruc.pssFlags,WEAKEXTERNFLAG	; turn on weak external
 
 	push	gs
 	push	di			; save -> alias symbol on stack
@@ -3095,8 +3095,8 @@ p1ap3:
 	push	di
 	mov	gs,ax			; gs:bx -> weak extern entry
 	pop	eax				; eax -> default resolution symbol
-	or	gs:[bx+PubSymRecStruc.pssFlags],WEAKEXTERNFLAG	; and turn on is weak flag
-	mov	gs:[bx+PubSymRecStruc.pssIndSegDefPtr],eax	; update weak extern default resolution pointer
+	or	gs:[bx].PubSymRecStruc.pssFlags,WEAKEXTERNFLAG	; and turn on is weak flag
+	mov	gs:[bx].PubSymRecStruc.pssIndSegDefPtr,eax	; update weak extern default resolution pointer
 
 p1apgobble:
 	call	ReadByteDecCX	; get 1-byte length of substitute symbol name

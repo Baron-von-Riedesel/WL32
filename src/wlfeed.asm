@@ -95,42 +95,42 @@ Summary1Text	DB	' Usage: WL32 [options] objs[,exefile][,mapfile][,libs]',CR,LF
 				DB	' Options:'
 CRLFText		DB	CR,LF	; double duty as printable CR/LF
 				DB	CR,LF
-				DB	' /32         no warning on 32-bit segments (option /ex)', CR,LF
-				DB	' /3p         Create protected mode 3P-format executable without DOS extender',CR,LF
+				DB	' /32         No warning on 32-bit segments (option /ex)', CR,LF
+				DB	' /3p         Create 3P format binary without DOS extender stub',CR,LF
 SpaceSlash		DB	' /b          Beep the speaker at linker completion',CR,LF
 IFDEF WATCOM_ASM
-				DB	' /cs         perform Case Sensitive symbols link',CR,LF
-				DB	' /ds         set DS to SS at startup',CR,LF
+				DB	' /cs         Perform Case Sensitive symbols link',CR,LF
+				DB	' /ds         Set DS to SS at startup',CR,LF
 ENDIF
-				DB	' /ex         create DOS MZ EXE-format file',CR,LF
+				DB	' /ex         Create DOS MZ EXE-format file',CR,LF
 IFDEF WATCOM_ASM
-				DB	' /f          create protected-mode CauseWay executable, CWSTUB.EXE added (def.)',CR,LF
+				DB	' /f          Create 3P format binary with DOS extender stub CWSTUB.EXE (def.)',CR,LF
 ENDIF
-				DB	' /fl         use Fast Load EXE file DOS extender feature',CR,LF
+				DB	' /fl         Use Fast Load EXE file DOS extender feature',CR,LF
 IFDEF CLIPPER
-				DB	' /fx         use alternate FiXup logic (req. for CA Clipper Tools)',CR,LF
+				DB	' /fx         Use alternate FiXup logic (req. for CA Clipper Tools)',CR,LF
 ENDIF
-				DB	' /i          display link process Information',CR,LF
-				DB	' /il         display link process Information, Limit information displayed',CR,LF
-				DB	' /lc:<name>  Link options Configuration file name',CR,LF
+				DB	' /i          Display link process Information',CR,LF
+				DB	' /il         Display link process Information, Limit information displayed',CR,LF
+				DB	' /lc:<name>  Set Link options Configuration file name',CR,LF
 IFNDEF CLARION
-				DB	' /ls         use alternate Library Search logic',CR,LF
+				DB	' /ls         Use alternate Library Search logic',CR,LF
 ENDIF
-				DB	' /m          create MAP file',CR,LF
-				DB	' /nd         do Not use Default library names in object modules',CR,LF
-				DB	' /non        do Not add 16 NUL bytes to _TEXT if dosseg segorder active',CR,LF
-				DB	' /nwd        do Not Warn on Duplicate symbols',CR,LF
-				DB	' /nwld       do Not Warn on Library only Duplicate symbols',CR,LF
-				DB	' /q          no logo display',CR,LF
-				DB	' /qq         no logo and - if no warnings occured - no success display',CR,LF
+				DB	' /m          Create MAP file',CR,LF
+				DB	' /nd         Do Not use Default library names in object modules',CR,LF
+				DB	' /non        Do Not add 16 NUL bytes to _TEXT if dosseg segorder active',CR,LF
+				DB	' /nwd        Do Not Warn on Duplicate symbols',CR,LF
+				DB	' /nwld       Do Not Warn on Library only Duplicate symbols',CR,LF
+				DB	' /q          No logo display',CR,LF
+				DB	' /qq         No logo and - if no warnings occured - no success display',CR,LF
 ;@@@				DB	' /s          Symbol names are case sensitive when linking',CR,LF
 ;@@@				DB	' /sp         Symbol table Pack of Clipper-compiled routines',CR,LF
-				DB	' /st:<size>  set program STack size in bytes',CR,LF
-				DB	' /sy         create SYM file for CWD debugger',CR,LF
+				DB	' /st:<size>  Set program STack size in bytes',CR,LF
+				DB	' /sy         Create SYm file for CWD debugger',CR,LF
 ;@@@				DB	' /ud:<setting>  User Defined link option setting',CR,LF
 				DB	' /w1         Warnings generate exit code of 1, not zero',CR,LF
 ;@@@				DB	' /wn         Warnings are Not displayed by linker',CR,LF
-				DB	' /wu         issue Warning on Unknown linker options or commands',CR,LF
+				DB	' /wu         Issue Warning on Unknown linker options or commands',CR,LF
 IFDEF WATCOM_ASM
 				DB	' /zu         Zero fill Uninitialized segments',CR,LF
 ENDIF
@@ -392,7 +392,7 @@ DisplayFinalFeedback	PROC
 	call	DisplayTextStringNoCRLF
 	mov	di,OFFSET NumberBuffer
 	movzx	eax, WarningsCount
-	call	DwordtoDecimalString
+	call	DwordToDecimalString
 	mov	bx,OFFSET NumberBuffer ;  ds:bx -> string to write
 	call	DisplayVarStringCRLF
     jmp dff1
@@ -694,7 +694,7 @@ DisplaySegmentName	PROC
 	call	DisplayTextStringNoCRLF
 	pop	bx				; restore bx, save back to stack
 	push	bx
-	lgs	bx,gs:[bx+MasterSegDefRecStruc.mssNamePtr]	; gs:bx -> segment name
+	lgs	bx,gs:[bx].MasterSegDefRecStruc.mssNamePtr	; gs:bx -> segment name
 	call	NormalGSBXSource	; make sure name is normalized
 	push	ds			; save ds -> wl32 data
 	push	gs

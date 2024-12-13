@@ -20,7 +20,7 @@
  To link the binary, either WL32, (J)Wlink, MS link or WL itself
  may be used.
 
- Finally, a naming note.  WarpLink was originally called Machlink
+ Finally, a naming note. WarpLink was originally called Machlink
  when it was in development before initial release.  That's why you
  see all those MACHLINK and ML*.ASM files.
 
@@ -40,10 +40,7 @@
 
  3. Distribution Files
 
- Following is the full directory file list with a brief
- description on what the file is for.
-
- Files for WarpLink (WL.EXE):
+ Source files for WarpLink (WL.EXE):
 
  MACHLINK ASM
  MLCLEAN  ASM
@@ -90,22 +87,35 @@
  Linker response files, used to link WarpLink OBJ files to
  final executable:
 
- WARPLINK RSP       for Tlink
  WL       RSP       for WL(32) or MS Link
+ WLT      RSP       for Tlink
  WLJ      RSP       for (J)Wlink
 
  ---
 
  Batch files:
 
- MAKE.BAT           create WL.EXE with JWasm and WL32, (J)Wlink or MS link
- MAKEM.BAT          create WL.EXE with Masm v6+ and WL32, (J)Wlink or MS link
+ MAKE.BAT           create WL.EXE with JWasm
+ MAKEM.BAT          create WL.EXE with Masm v6+
 
- The assembler ( JWasm or Masm ) is launched with the "Masm v5 compatibility"
- option -Zm. Masm v6 seems to have a small problem then: uninitialized data
- defined in the _BSS segment may trigger the creation of OMF LEDATA records.
- This in turn causes the linker to add the contents of this section to the
- binary, thus bloating it with trailing 0x00 bytes.
+ ---
+
+ Directory Helper
+ 
+ Contains overlay and DDL manager source, in Masm assembly language:
+ 
+ OVLMGR   ASM     Standard Overlay manager
+ C5OVLMGR ASM     Clipper 5 Overlay manager
+ CNOVLMGR ASM     Clarion Overlay manager
+ C5DDLMG1 ASM     Clipper 5 DDL manager
+ C5DDLMG2 ASM
+ CNDDLMG1 ASM     Clarion DDL manager
+ CNDDLMG2 ASM
+ DDLMGR1  ASM     Standard DDL manager
+ DDLMGR2  ASM
+
+ Files MAKEJ.BAT, MAKEM.BAT and MAKET.BAT may be used to assemble
+ the sources with JWasm, Masm or Tasm, respectively.
 
 
  4. Legal Notes

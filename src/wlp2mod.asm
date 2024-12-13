@@ -144,7 +144,7 @@ IMPDEFFramePtr	DD	?	; pointer to IMPDEF frame symbol entry
 IMPDEFFunctionNumber	DD	?	; function number of impdef
 IMPDEFModuleNumber	DD	?	; module number of IMPDEF
 IMPDEFTargetPtr	DD	?	; pointer to IMPDEF target symbol entry
-MAXIMPDEFFixupAlloc	DD	?	; current maximum IMPDEF fixup allocation
+MaxIMPDEFFixupAlloc	DD	?	; current maximum IMPDEF fixup allocation
 TotalIMPDEFFixupSize	DD	?	; total size of IMPDEF fixup table
 ENDIF
 
@@ -158,7 +158,7 @@ CONST	SEGMENT WORD PUBLIC USE16 'DATA'
 
 ; MUST be in sync with OBJRecTable
 ; routine vectors for object record types
-Pass2OBJRecVector	=	$
+Pass2OBJRecVector label word
 	DW	Pass2LEDATAProc
 	DW	Pass2LEDATA32Proc
 	DW	Pass2FIXUPPProc
@@ -206,14 +206,14 @@ Pass2OBJRecVector	=	$
 	DW	Pass2MSLIBRProc
 
 ; jump table for handling code on target methods 0-3 (highest bit of 3 masked off)
-TargetJumpTable	=	$
+TargetJumpTable	label word
 	DW	gtasegment
 	DW	gtagroup
 	DW	gtaexternal
 	DW	poor10
 
 ; jump table for handling code on frame methods 0-7
-FrameJumpTable	=	$
+FrameJumpTable	label word
 	DW	gfasegment
 	DW	gfagroup
 	DW	gfaexternal
@@ -524,24 +524,24 @@ ssdsave:
 	mov	IsDebugSeg,OFF	; init debug segment flag
 
 ; see if data flag previously set
-	test	gs:[bx+IndSegDefRecStruc.isdrFlags],ASSOCIATEDDATAFLAG
+	test	gs:[bx].IndSegDefRecStruc.isdrFlags,ASSOCIATEDDATAFLAG
 	je	ssdset			; flag not previously set
 	ret					; flag previously set, ignore
 
 ; set flag to show data associated with segdef in module, keep pointer to first data block
 ; fs:si -> data block
 ssdset:
-	or	gs:[bx+IndSegDefRecStruc.isdrFlags],ASSOCIATEDDATAFLAG
+	or	gs:[bx].IndSegDefRecStruc.isdrFlags,ASSOCIATEDDATAFLAG
 	mov	eax,OBJRecPtr
-	mov	gs:[bx+IndSegDefRecStruc.isdrDataPtr],eax
-	lgs	bx,gs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; gs:bx -> master segdef
+	mov	gs:[bx].IndSegDefRecStruc.isdrDataPtr,eax
+	lgs	bx,gs:[bx].IndSegDefRecStruc.isdrMasterPtr	; gs:bx -> master segdef
 
 	test	gs:[bx].MasterSegDefRecStruc.mssFlags,(DEBUGTYPESSEGMENTFLAG OR DEBUGSYMBOLSSEGMENTFLAG)
 	je	ssdchk32		; not a debug segment
 
 ; debug segment, so flag, and reset associated data so debug keeps getting flagged
 	lgs	bx,LDATAIndSegPtr	; gs:bx -> individual segdef
-	and	gs:[bx+IndSegDefRecStruc.isdrFlags],NOT ASSOCIATEDDATAFLAG
+	and	gs:[bx].IndSegDefRecStruc.isdrFlags,NOT ASSOCIATEDDATAFLAG
 	mov	IsDebugSeg,ON
 	ret					; don't worry about 32-bit segments if they are debug
 
@@ -598,15 +598,15 @@ p2ffixloop:
 	mov	[bx+ThreadTARGETMethod],al
 	call	ReadIndexDecCX	; get thread index
 	add	bx,bx			; convert to word offset
-	mov	[bx+OFFSET ThreadTARGETDatum],ax
+	mov	[bx+ThreadTARGETDatum],ax
 	push	fs			; save fs -> record to stack
 	jmp	p2ffixloop
 
 p2fcomdat:
 	lgs	di,LastCOMDATPtr	; gs:di -> last COMDAT pointer
-	test	gs:[di+PubSymRecStruc.pssFlags],COMDATCOMPLETEFLAG
+	test	gs:[di].PubSymRecStruc.pssFlags,COMDATCOMPLETEFLAG
 	jne	p2fret			; processing on this comdat is complete
-;	or	gs:[di+PubSymRecStruc.pssFlags],COMDATFIXUPFLAG
+;	or	gs:[di].PubSymRecStruc.pssFlags,COMDATFIXUPFLAG
 	jmp	p2fchkadj	; keep processing
 
 p2fframe:
@@ -615,7 +615,7 @@ p2fframe:
 	mov	[bx+ThreadFRAMEMethod],al
 	call	ReadIndexDecCX	; get thread datum index
 	add	bx,bx			; convert to word offset
-	mov	[bx+OFFSET ThreadFRAMEDatum],ax
+	mov	[bx+ThreadFRAMEDatum],ax
 	push	fs			; save fs -> record to stack
 	jmp	p2ffixloop
 
@@ -671,7 +671,7 @@ p2f2:
 	mov	al,[bx+ThreadFRAMEMethod]
 	mov	FrameMethod,al	; save frame method as current
 	add	bx,bx			; convert to word offset
-	mov	ax,[bx+OFFSET ThreadFRAMEDatum]
+	mov	ax,[bx+ThreadFRAMEDatum]
 	mov	FrameDatum,ax	; save frame datum index as current
 	jmp	p2f3
 
@@ -691,7 +691,7 @@ p2f3:
 	mov	al,[bx+ThreadTARGETMethod]
 	mov	TargetMethod,al	; save target method as current
 	add	bx,bx			; convert to word offset
-	mov	ax,[bx+OFFSET ThreadTARGETDatum]
+	mov	ax,[bx+ThreadTARGETDatum]
 	mov	TargetDatum,ax	; save target datum index as current
 	jmp	p2f4
 
@@ -903,9 +903,9 @@ poor13:
 ; self-relative fixup
 p2fselfrel:
 	lfs	bx,LDATAIndSegPtr	; fs:bx -> individual segdef entry
-	mov	eax,fs:[bx+IndSegDefRecStruc.isdrSegOffset]	; get individual segment offset
-	lfs	bx,fs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; fs:bx -> master segdef entry
-	add	eax,fs:[bx+MasterSegDefRecStruc.mssSegOffset]	; add in master segment offset for absolute segment offset
+	mov	eax,fs:[bx].IndSegDefRecStruc.isdrSegOffset	; get individual segment offset
+	lfs	bx,fs:[bx].IndSegDefRecStruc.isdrMasterPtr	; fs:bx -> master segdef entry
+	add	eax,fs:[bx].MasterSegDefRecStruc.mssSegOffset	; add in master segment offset for absolute segment offset
 
 	mov	edx,TargetProgOffset	; get absolute program offset
 	sub	edx,eax			; subtract off individual segment offset (make relative to segment)
@@ -1007,11 +1007,11 @@ ENDIF
 	lgs	bx,LDATAIndSegPtr	; gs:bx -> individual segdef entry
 
 ; converted to 32-bit register 01/26/94
-	mov	edx,gs:[bx+IndSegDefRecStruc.isdrSegOffset]	; dx==individual segment offset
+	mov	edx,gs:[bx].IndSegDefRecStruc.isdrSegOffset	; dx==individual segment offset
 	add	edx,LogicalDataRecOff	; add enumerated data record offset
 
-	lgs	bx,gs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; gs:bx -> master segdef entry
-	mov	eax,gs:[bx+MasterSegDefRecStruc.mssSegOffset]	; get in master segment offset
+	lgs	bx,gs:[bx].IndSegDefRecStruc.isdrMasterPtr	; gs:bx -> master segdef entry
+	mov	eax,gs:[bx].MasterSegDefRecStruc.mssSegOffset	; get in master segment offset
 	mov	ebx,eax			; save seg offset
 
 ; converted to 32-bit 01/26/94
@@ -1133,9 +1133,9 @@ Pass2FIXUPPProc	ENDP
 ; destroys eax
 
 RelocRecurseLIDATA  PROC
-	call	ReadWordDecCx	; get repeat count
+	call	ReadWordDecCX	; get repeat count
 	mov	RepeatCount,ax	; save it
-	call	ReadWordDecCx	; get block count
+	call	ReadWordDecCX	; get block count
 	mov	BlockCount,ax	; save it
 	add	CurrentRelocOffset,4	; update lidata record relocation offset
 	push	CurrentRelocOffset
@@ -1177,7 +1177,7 @@ rrlidnextrep:
 
 ; block size is zero, data follows
 rrliddata:
-	call	ReadByteDecCx	; get length of data to write
+	call	ReadByteDecCX	; get length of data to write
 	inc	CurrentRelocOffset
 
 ; write the data bytes
@@ -1301,7 +1301,7 @@ GetTargetAddress	PROC
 	mov	bl,TargetMethod
 	xor	bh,bh
 	add	bx,bx			; convert to word offset
-	jmp	[bx+OFFSET TargetJumpTable]	; transfer to proper handling code for method
+	jmp	[bx+TargetJumpTable]	; transfer to proper handling code for method
 
 ; invalid target method (3,7)
 poor10::
@@ -1320,21 +1320,21 @@ gtasegment::
 
 ; fs:bx -> individual segdef entry
 gtaseg2:
-	test	fs:[bx+IndSegDefRecStruc.isdrFlags],ABSOLUTESEGMENTFLAG
+	test	fs:[bx].IndSegDefRecStruc.isdrFlags,ABSOLUTESEGMENTFLAG
 	jne	gtaabsseg		; absolute segment
 	mov	eax,TargetDisplacement	; get target displacement
-	add	eax,fs:[bx+IndSegDefRecStruc.isdrSegOffset]	; add in individual segment offset
+	add	eax,fs:[bx].IndSegDefRecStruc.isdrSegOffset	; add in individual segment offset
 
-	lfs	bx,fs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; fs:bx -> master segdef entry
+	lfs	bx,fs:[bx].IndSegDefRecStruc.isdrMasterPtr	; fs:bx -> master segdef entry
 	mov	Is32BitSeg,OFF	; init 32-bit segment flag
-	test	fs:[bx+MasterSegDefRecStruc.mssFlags],SEGMENT32BITFLAG
+	test	fs:[bx].MasterSegDefRecStruc.mssFlags,SEGMENT32BITFLAG
 	je	gtaseg3			; is not 32-bit target segment
 	mov	Is32BitSeg,ON	; flag 32-bit segment in case of pointer fixup
 
 gtaseg3:
 	mov	dx,fs:[bx].MasterSegDefRecStruc.mssSegmentID	; get segment ID
 	mov	FixupSegmentID,dx	; save segment ID
-	mov	edx,fs:[bx+MasterSegDefRecStruc.mssSegOffset]	; get master segment offset
+	mov	edx,fs:[bx].MasterSegDefRecStruc.mssSegOffset	; get master segment offset
 	mov	CanonicFrame,edx	; save as canonic frame in case of LOC type fixup
 	add	eax,edx
 	mov	TargetProgOffset,eax	; save target program offset
@@ -1351,8 +1351,8 @@ gtaabsseg:
 	mov	al,ON
 	mov	IsNotRelocatable,al	; flag nonrelocatable segment
 	mov	IsAbsoluteSeg,al	; flag absolute segment
-	lfs	bx,fs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; fs:bx -> master segdef entry
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssSegOffset]	; get frame number
+	lfs	bx,fs:[bx].IndSegDefRecStruc.isdrMasterPtr	; fs:bx -> master segdef entry
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssSegOffset	; get frame number
 	mov	TargetSegment,eax	; save as target segment
 	shl	eax,4			; convert to bytes from segment address (x16)
 	add	eax,TargetDisplacement	; add in original target displacement
@@ -1371,11 +1371,11 @@ gtagroup::
 ; fs:bs -> group entry
 gtagrp2:
 	lfs	bx,fs:[bx]		; fs:bx -> group entry
-	mov	eax,fs:[bx+GrpDefRecStruc.gdrGrpOffset]	; get group offset
+	mov	eax,fs:[bx].GrpDefRecStruc.gdrGrpOffset	; get group offset
 	mov	CanonicFrame,eax	; save canonic frame
 	add	eax,TargetDisplacement	; add in original target displacement
 	mov	TargetProgOffset,eax	; update target program offset
-	lfs	bx,fs:[bx+GrpDefRecStruc.gdrFirstSegPtr]	; fs:bx -> first segment of group
+	lfs	bx,fs:[bx].GrpDefRecStruc.gdrFirstSegPtr	; fs:bx -> first segment of group
 	mov	ax,fs:[bx].MasterSegDefRecStruc.mssSegmentID	; get segment ID
 	mov	FixupSegmentID,ax	; save segment ID
 	ret
@@ -1383,7 +1383,7 @@ gtagrp2:
 ; group entry has wrapped to next buffer
 gtanormgrp:
 	sub	bx,(SIZEGRPPTRTABLEBLK-GRPPTRTABLESYSVARSIZE)
-	mov	fs,fs:[GrpPtrTableBlkStruc.isdbNextPtr]	; get pointer to next block
+	mov	fs,fs:[GrpPtrTableBlkStruc.gptbNextPtr]	; get pointer to next block
 	jmp	gtagrp2
 
 ; target specified by external index, method 2,6
@@ -1401,25 +1401,25 @@ gtaext2:
 	lfs	bx,fs:[bx]		; fs:bx -> symbol entry
 
 gtaext3:
-	test	fs:[bx+PubSymRecStruc.pssFlags],(WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; see if weak/lazy extern
+	test	fs:[bx].PubSymRecStruc.pssFlags,(WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; see if weak/lazy extern
 	jne	gtaweak			; yes
-	test	fs:[bx+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	fs:[bx].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	je	gtaunres		; unresolved external
-	mov	eax,fs:[bx+PubSymRecStruc.pssOffset]	; get public symbol offset
-	test	fs:[bx+PubSymRecStruc.pssFlags],ABSOLUTESYMBOLFLAG
+	mov	eax,fs:[bx].PubSymRecStruc.pssOffset	; get public symbol offset
+	test	fs:[bx].PubSymRecStruc.pssFlags,ABSOLUTESYMBOLFLAG
 	jne	gtaabssym		; absolute symbol
 	add	TargetDisplacement,eax	; add public offset to target displacement
-	lfs	bx,fs:[bx+PubSymRecStruc.pssIndSegDefPtr]	; fs:bx -> owning segdef
+	lfs	bx,fs:[bx].PubSymRecStruc.pssIndSegDefPtr	; fs:bx -> owning segdef
 	jmp	gtaseg2	; jump to code shared with segment index
 
 gtaweak:
-	lfs	bx,fs:[bx+PubSymRecStruc.pssIndSegDefPtr]	; fs:bx -> default resolution symbol
+	lfs	bx,fs:[bx].PubSymRecStruc.pssIndSegDefPtr	; fs:bx -> default resolution symbol
 	jmp	gtaext3
 
 ; symbol entry has wrapped to next buffer
 gtanormsym:
 	sub	bx,(SIZESYMPTRTABLEBLK-SYMPTRTABLESYSVARSIZE)
-	mov	fs,fs:[SymPtrTableBlkStruc.isdbNextPtr]	; get pointer to next block
+	mov	fs,fs:[SymPtrTableBlkStruc.sptbNextPtr]	; get pointer to next block
 	jmp	gtaext2
 
 gtaabssym:
@@ -1427,7 +1427,7 @@ gtaabssym:
 	mov	al,ON
 	mov	IsNotRelocatable,al	; flag not relocatable
 	mov	IsAbsoluteSym,al	; flag absolute symbol
-	mov	eax,fs:[bx+PubSymRecStruc.pssIndSegDefPtr]	; get frame number
+	mov	eax,fs:[bx].PubSymRecStruc.pssIndSegDefPtr	; get frame number
 	mov	TargetSegment,eax	; save as target segment
 	ret
 
@@ -1435,19 +1435,19 @@ gtaabssym:
 gtaunres:
 
 IFDEF DLLSUPPORT
-	test	fs:[bx+PubSymRecStruc.pssFlags],IMPORTSYMBOLFLAG
+	test	fs:[bx].PubSymRecStruc.pssFlags,IMPORTSYMBOLFLAG
 	je	gtaunres2			; not an import symbol
 	mov	IsIMPDEFSymbol,ON	; flag an import symbol
 	mov	WORD PTR IMPDEFTargetPtr,bx	; save pointer to frame symbol
 	mov	WORD PTR IMPDEFTargetPtr+2,fs
 	push	fs			; save critical register
 	push	bx
-	lfs	bx,fs:[bx+PubSymRecStruc.pssIndSegDefPtr]	; fs:bx -> IMPDEF entry
-	mov	al,fs:[bx+IMPDEFRecStruc.idsOrdinalFlag]
+	lfs	bx,fs:[bx].PubSymRecStruc.pssIndSegDefPtr	; fs:bx -> IMPDEF entry
+	mov	al,fs:[bx].IMPDEFRecStruc.idsOrdinalFlag
 	mov	IsOrdinalFlag,al
-	mov	eax,fs:[bx+IMPDEFRecStruc.idsModuleNumber]
+	mov	eax,fs:[bx].IMPDEFRecStruc.idsModuleNumber
 	mov	IMPDEFModuleNumber,eax
-	mov	eax,fs:[bx+IMPDEFRecStruc.idsFunctionNumber]
+	mov	eax,fs:[bx].IMPDEFRecStruc.idsFunctionNumber
 	mov	IMPDEFFunctionNumber,eax
 	pop	bx				; restore critical register
 	pop	fs
@@ -1480,7 +1480,7 @@ gfa2:
 	dec	ax
 	xor	bh,bh
 	add	bx,bx			; convert to frame method word offset
-	jmp	[bx+OFFSET FrameJumpTable]	; transfer to proper handling code for method
+	jmp	[bx+FrameJumpTable]	; transfer to proper handling code for method
 
 ; invalid frame method (3,6,7)
 poor11::
@@ -1512,22 +1512,22 @@ gfasegment::
 
 ; fs:bx -> individual segdef entry
 gfaseg2:
-	test	fs:[bx+IndSegDefRecStruc.isdrFlags],ABSOLUTESEGMENTFLAG
+	test	fs:[bx].IndSegDefRecStruc.isdrFlags,ABSOLUTESEGMENTFLAG
 	jne	gfaabsseg		; absolute segment
-	lfs	bx,fs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; fs:bx -> master segdef entry
+	lfs	bx,fs:[bx].IndSegDefRecStruc.isdrMasterPtr	; fs:bx -> master segdef entry
 
 IFDEF CLIPPER
 	cmp	IsSpecialFixupOption,OFF
 	je	gfaseg3
-	test	fs:[bx+MasterSegDefRecStruc.mssFlags],GROUPMEMBERFLAG
+	test	fs:[bx].MasterSegDefRecStruc.mssFlags,GROUPMEMBERFLAG
 	je	gfaseg3			; not a member of a group
-	lfs	bx,fs:[bx+MasterSegDefRecStruc.mssGroupPtr]	; fs:bx -> owning group
+	lfs	bx,fs:[bx].MasterSegDefRecStruc.mssGroupPtr	; fs:bx -> owning group
 	jmp	gfagrp3
 
 gfaseg3:
 ENDIF
 
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssSegOffset]	; get segment offset
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssSegOffset	; get segment offset
 	shr	eax,4			; convert to paras
 	mov	TargetSegment,eax	; save as target segment
 	mov	ax,fs:[bx].MasterSegDefRecStruc.mssSegmentID	; get segment ID
@@ -1544,8 +1544,8 @@ gfaabsseg:
 	mov	al,ON
 	mov	IsNotRelocatable,al	; flag nonrelocatable segment
 	mov	IsAbsoluteSeg,al	; flag absolute segment
-	lfs	bx,fs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; fs:bx -> master segdef entry
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssSegOffset]	; get frame number
+	lfs	bx,fs:[bx].IndSegDefRecStruc.isdrMasterPtr	; fs:bx -> master segdef entry
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssSegOffset	; get frame number
 	mov	TargetSegment,eax	; save as target segment
 	ret
 
@@ -1562,10 +1562,10 @@ gfagrp2:
 	lfs	bx,fs:[bx]		; fs:bx -> group entry
 
 gfagrp3:
-	mov	eax,fs:[bx+GrpDefRecStruc.gdrGrpOffset]	; get group offset
+	mov	eax,fs:[bx].GrpDefRecStruc.gdrGrpOffset	; get group offset
 	shr	eax,4			; convert to paras
 	mov	TargetSegment,eax	; save as target segment
-	lfs	bx,fs:[bx+GrpDefRecStruc.gdrFirstSegPtr]	; fs:bx -> first segment of group
+	lfs	bx,fs:[bx].GrpDefRecStruc.gdrFirstSegPtr	; fs:bx -> first segment of group
 	mov	ax,fs:[bx].MasterSegDefRecStruc.mssSegmentID	; get segment ID
 	mov	FixupSegmentID,ax	; save segment ID
 	ret
@@ -1573,7 +1573,7 @@ gfagrp3:
 ; group entry has wrapped to next buffer
 gfanormgrp:
 	sub	bx,(SIZEGRPPTRTABLEBLK-GRPPTRTABLESYSVARSIZE)
-	mov	fs,fs:[GrpPtrTableBlkStruc.isdbNextPtr]	; get pointer to next block
+	mov	fs,fs:[GrpPtrTableBlkStruc.gptbNextPtr]	; get pointer to next block
 	jmp	gfagrp2
 
 ; frame specified by external index, method 2
@@ -1590,43 +1590,43 @@ gfaext2:
 	lfs	bx,fs:[bx]		; fs:bx -> symbol entry
 
 gfaext4:
-	test	fs:[bx+PubSymRecStruc.pssFlags],(WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; see if weak/lazy extern
+	test	fs:[bx].PubSymRecStruc.pssFlags,(WEAKEXTERNFLAG OR LAZYEXTERNFLAG)	; see if weak/lazy extern
 	jne	gfaweak			; yes
 
-	test	fs:[bx+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	fs:[bx].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	je	gfaunres		; unresolved external
-	test	fs:[bx+PubSymRecStruc.pssFlags],ABSOLUTESYMBOLFLAG
+	test	fs:[bx].PubSymRecStruc.pssFlags,ABSOLUTESYMBOLFLAG
 	jne	gfaabssym		; absolute symbol
-	test	fs:[bx+PubSymRecStruc.pssFlags],GROUPRELSYMBOLFLAG
+	test	fs:[bx].PubSymRecStruc.pssFlags,GROUPRELSYMBOLFLAG
 	je	gfaext3			; not a member of a group
-	lfs	bx,fs:[bx+PubSymRecStruc.pssGrpDefPtr]	; fs:bx -> owning group
+	lfs	bx,fs:[bx].PubSymRecStruc.pssGrpDefPtr	; fs:bx -> owning group
 	jmp	gfagrp3
 
 gfaext3:
-	lfs	bx,fs:[bx+PubSymRecStruc.pssIndSegDefPtr]	; fs:bx -> owning segdef
+	lfs	bx,fs:[bx].PubSymRecStruc.pssIndSegDefPtr	; fs:bx -> owning segdef
 	jmp	gfaseg2
 
 gfaweak:
-	lfs	bx,fs:[bx+PubSymRecStruc.pssIndSegDefPtr]	; fs:bx -> default resolution symbol
+	lfs	bx,fs:[bx].PubSymRecStruc.pssIndSegDefPtr	; fs:bx -> default resolution symbol
 	jmp	gfaext4
 
 ; symbol entry has wrapped to next buffer
 gfanormsym:
 	sub	bx,(SIZESYMPTRTABLEBLK-SYMPTRTABLESYSVARSIZE)
-	mov	fs,fs:[SymPtrTableBlkStruc.isdbNextPtr]	; get pointer to next block
+	mov	fs,fs:[SymPtrTableBlkStruc.sptbNextPtr]	; get pointer to next block
 	jmp	gfaext2
 
 gfaabssym:
 	mov	al,ON
 	mov	IsNotRelocatable,al	; flag not relocatable
 	mov	IsAbsoluteSym,al	; flag absolute symbol
-	mov	eax,fs:[bx+PubSymRecStruc.pssIndSegDefPtr]	; get frame number
+	mov	eax,fs:[bx].PubSymRecStruc.pssIndSegDefPtr	; get frame number
 	mov	TargetSegment,eax	; save as target segment
 	ret
 
 gfaunres:
 IFDEF DLLSUPPORT
-	test	fs:[bx+PubSymRecStruc.pssFlags],IMPORTSYMBOLFLAG
+	test	fs:[bx].PubSymRecStruc.pssFlags,IMPORTSYMBOLFLAG
 	je	gfaunres2			; not an import symbol
 	mov	IsFrameIMPDEF,ON	; flag frame is import
 	mov	WORD PTR IMPDEFFramePtr,bx	; save pointer to frame symbol
@@ -1681,15 +1681,15 @@ p2f3fixloop:
 	mov	[bx+ThreadTARGETMethod],al
 	call	ReadIndexDecCX	; get thread index
 	add	bx,bx			; convert to word offset
-	mov	[bx+OFFSET ThreadTARGETDatum],ax
+	mov	[bx+ThreadTARGETDatum],ax
 	push	fs			; save fs -> record to stack
 	jmp	p2f3fixloop
 
 p2f3comdat:
 	lgs	di,LastCOMDATPtr	; gs:di -> last COMDAT pointer
-	test	gs:[di+PubSymRecStruc.pssFlags],COMDATCOMPLETEFLAG
+	test	gs:[di].PubSymRecStruc.pssFlags,COMDATCOMPLETEFLAG
 	jne	p2f3ret			; processing on this comdat is complete
-;	or	gs:[di+PubSymRecStruc.pssFlags],COMDATFIXUPFLAG
+;	or	gs:[di].PubSymRecStruc.pssFlags,COMDATFIXUPFLAG
 	jmp	p2f3chkadj	; keep processing
 
 p2f3frame:
@@ -1698,7 +1698,7 @@ p2f3frame:
 	mov	[bx+ThreadFRAMEMethod],al
 	call	ReadIndexDecCX	; get thread datum index
 	add	bx,bx			; convert to word offset
-	mov	[bx+OFFSET ThreadFRAMEDatum],ax
+	mov	[bx+ThreadFRAMEDatum],ax
 	push	fs			; save fs -> record to stack
 	jmp	p2f3fixloop
 
@@ -1748,7 +1748,7 @@ p2f32:
 	mov	al,[bx+ThreadFRAMEMethod]
 	mov	FrameMethod,al	; save frame method as current
 	add	bx,bx			; convert to word offset
-	mov	ax,[bx+OFFSET ThreadFRAMEDatum]
+	mov	ax,[bx+ThreadFRAMEDatum]
 	mov	FrameDatum,ax	; save frame datum index as current
 	jmp	p2f33
 
@@ -1768,7 +1768,7 @@ p2f33:
 	mov	al,[bx+ThreadTARGETMethod]
 	mov	TargetMethod,al	; save target method as current
 	add	bx,bx			; convert to word offset
-	mov	ax,[bx+OFFSET ThreadTARGETDatum]
+	mov	ax,[bx+ThreadTARGETDatum]
 	mov	TargetDatum,ax	; save target datum index as current
 	jmp	p2f34
 
@@ -2174,9 +2174,9 @@ COMMENT !
 p2f3self2:
 END COMMENT !
 
-	mov	eax,fs:[bx+IndSegDefRecStruc.isdrSegOffset]	; get individual segment offset
-	lfs	bx,fs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; fs:bx -> master segdef entry
-	add	eax,fs:[bx+MasterSegDefRecStruc.mssSegOffset]	; add in master segment offset for absolute segment offset
+	mov	eax,fs:[bx].IndSegDefRecStruc.isdrSegOffset	; get individual segment offset
+	lfs	bx,fs:[bx].IndSegDefRecStruc.isdrMasterPtr	; fs:bx -> master segdef entry
+	add	eax,fs:[bx].MasterSegDefRecStruc.mssSegOffset	; add in master segment offset for absolute segment offset
 
 	mov	edx,TargetProgOffset	; get absolute program offset
 	sub	edx,eax			; subtract off individual segment offset (make relative to segment)
@@ -2254,11 +2254,11 @@ COMMENT !
 p2f3rel2:
 END COMMENT !
 
-	mov	edx,gs:[bx+IndSegDefRecStruc.isdrSegOffset]	; edx==individual segment offset
+	mov	edx,gs:[bx].IndSegDefRecStruc.isdrSegOffset	; edx==individual segment offset
 	add	edx,LogicalDataRecOff	; add enumerated data record offset
 
-	lgs	bx,gs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; gs:bx -> master segdef entry
-	mov	eax,gs:[bx+MasterSegDefRecStruc.mssSegOffset]	; get in master segment offset
+	lgs	bx,gs:[bx].IndSegDefRecStruc.isdrMasterPtr	; gs:bx -> master segdef entry
+	mov	eax,gs:[bx].MasterSegDefRecStruc.mssSegOffset	; get in master segment offset
 	mov	ebx,eax			; save seg offset
 	and	eax,0fh			; get offset remainder of seg address
 	add	edx,eax			; add to offset adjustment
@@ -2416,11 +2416,11 @@ RelocRecurseLIDATA32  PROC
 	jne	rrlid3phar		; yes, repeat count is only 16-bit
 
 rrlid3rep:
-	call	ReadDwordDecCx	; get repeat count
+	call	ReadDwordDecCX	; get repeat count
 
 rrlid3scount:
 	mov	RepeatCount32,eax	; save it
-	call	ReadWordDecCx	; get block count
+	call	ReadWordDecCX	; get block count
 	mov	BlockCount,ax	; save it
 	add	CurrentRelocOffset,6	; update lidata record relocation offset
 	push	CurrentRelocOffset
@@ -2462,7 +2462,7 @@ rrlid3nextrep:
 
 ; block size is zero, data follows
 rrlid3data:
-	call	ReadByteDecCx	; get length of data to write
+	call	ReadByteDecCX	; get length of data to write
 	inc	CurrentRelocOffset
 
 ; write the data bytes
@@ -2533,7 +2533,7 @@ rrlid3scan:
 
 ; phar lap module, 16-bit repeat count
 rrlid3phar:
-	call	ReadWordDecCx	; get repeat count
+	call	ReadWordDecCX	; get repeat count
 	movzx	eax,ax		; extend to 32-bit for normal processing
 	jmp	rrlid3scount
 
@@ -2759,45 +2759,45 @@ Pass2COMDATProc	PROC
 	mov	WORD PTR LastCOMDATPtr,di	; save -> last comdat for fixup
 	mov	WORD PTR LastCOMDATPtr+2,gs
 
-	les	bx,gs:[di+PubSymRecStruc.pssIndSegDefPtr]	; es:bx -> segdef entry
+	les	bx,gs:[di].PubSymRecStruc.pssIndSegDefPtr	; es:bx -> segdef entry
 	mov	WORD PTR LDATAIndSegPtr,bx	; save -> owning individual segdef entry
 	mov	WORD PTR LDATAIndSegPtr+2,es
 
 	mov	IsDebugSeg,OFF	; init debug segment flag
 
 ; see if data flag previously set
-	test	es:[bx+IndSegDefRecStruc.isdrFlags],ASSOCIATEDDATAFLAG
+	test	es:[bx].IndSegDefRecStruc.isdrFlags,ASSOCIATEDDATAFLAG
 	jne	p2cchkdone		; flag previously set, ignore
 
 ; set flag to show data associated with segdef in module, keep pointer to first data block
 ; fs:si -> data block
-	or	es:[bx+IndSegDefRecStruc.isdrFlags],ASSOCIATEDDATAFLAG
+	or	es:[bx].IndSegDefRecStruc.isdrFlags,ASSOCIATEDDATAFLAG
 	mov	eax,OBJRecPtr
-	mov	es:[bx+IndSegDefRecStruc.isdrDataPtr],eax
-	les	bx,es:[bx+IndSegDefRecStruc.isdrMasterPtr]	; es:bx -> master segdef
+	mov	es:[bx].IndSegDefRecStruc.isdrDataPtr,eax
+	les	bx,es:[bx].IndSegDefRecStruc.isdrMasterPtr	; es:bx -> master segdef
 
-	test	es:[bx+MasterSegDefRecStruc.mssFlags],(DEBUGTYPESSEGMENTFLAG OR DEBUGSYMBOLSSEGMENTFLAG)
+	test	es:[bx].MasterSegDefRecStruc.mssFlags,(DEBUGTYPESSEGMENTFLAG OR DEBUGSYMBOLSSEGMENTFLAG)
 	je	p2cchk32		; not a debug segment
 
 ; debug segment, so flag, and reset associated data so debug keeps getting flagged
 	les	bx,LDATAIndSegPtr	; es:bx -> individual segdef
-	and	es:[bx+IndSegDefRecStruc.isdrFlags],NOT ASSOCIATEDDATAFLAG
+	and	es:[bx].IndSegDefRecStruc.isdrFlags,NOT ASSOCIATEDDATAFLAG
 	mov	IsDebugSeg,ON
 	jmp	p2cchkdone		; don't worry about 32-bit segments if they are debug
 
 p2cchk32:
-	or	es:[bx+MasterSegDefRecStruc.mssFlags],ASSOCIATEDDATAFLAG
+	or	es:[bx].MasterSegDefRecStruc.mssFlags,ASSOCIATEDDATAFLAG
 	mov	Is32BitSeg,OFF	; init 32-bit segment flag
-	test	es:[bx+MasterSegDefRecStruc.mssFlags],SEGMENT32BITFLAG	; flag if 32-bit segment
+	test	es:[bx].MasterSegDefRecStruc.mssFlags,SEGMENT32BITFLAG	; flag if 32-bit segment
 	je	p2cchkdone		; not 32-bit segment
 	mov	Is32BitSeg,ON	; flag 32-bit segment
 
 ; see if comdat has completed all process (first module processing done)
 p2cchkdone:
-	test	gs:[di+PubSymRecStruc.pssFlags],COMDATCOMPLETEFLAG
+	test	gs:[di].PubSymRecStruc.pssFlags,COMDATCOMPLETEFLAG
 	jne	p2cret			; comdat complete
 
-	test	gs:[di+PubSymRecStruc.pssFlags],PASS2COMDATFLAG
+	test	gs:[di].PubSymRecStruc.pssFlags,PASS2COMDATFLAG
 	je	p2cret			; no previous comdat
 
 	test	COMDATFlags,COMDATCONTINUEFLAG
@@ -2805,10 +2805,10 @@ p2cchkdone:
 
 ; process not flagged complete, previous comdat occurred, no current continuation
 ; turn on process complete flag
-	or	gs:[di+PubSymRecStruc.pssFlags],COMDATCOMPLETEFLAG
+	or	gs:[di].PubSymRecStruc.pssFlags,COMDATCOMPLETEFLAG
 
 p2cret:
-	or	gs:[di+PubSymRecStruc.pssFlags],PASS2COMDATFLAG	; flag previous comdat
+	or	gs:[di].PubSymRecStruc.pssFlags,PASS2COMDATFLAG	; flag previous comdat
 	pop	es
 	ret
 
@@ -2865,45 +2865,45 @@ p2c32pubind:
 	mov	WORD PTR LastCOMDATPtr,di	; save -> last comdat for fixup
 	mov	WORD PTR LastCOMDATPtr+2,gs
 
-	les	bx,gs:[di+PubSymRecStruc.pssIndSegDefPtr]	; es:bx -> segdef entry
+	les	bx,gs:[di].PubSymRecStruc.pssIndSegDefPtr	; es:bx -> segdef entry
 	mov	WORD PTR LDATAIndSegPtr,bx	; save -> owning individual segdef entry
 	mov	WORD PTR LDATAIndSegPtr+2,es
 
 	mov	IsDebugSeg,OFF	; init debug segment flag
 
 ; see if data flag previously set
-	test	es:[bx+IndSegDefRecStruc.isdrFlags],ASSOCIATEDDATAFLAG
+	test	es:[bx].IndSegDefRecStruc.isdrFlags,ASSOCIATEDDATAFLAG
 	jne	p2c32chkdone	; flag previously set, ignore
 
 ; set flag to show data associated with segdef in module, keep pointer to first data block
 ; fs:si -> data block
-	or	es:[bx+IndSegDefRecStruc.isdrFlags],ASSOCIATEDDATAFLAG
+	or	es:[bx].IndSegDefRecStruc.isdrFlags,ASSOCIATEDDATAFLAG
 	mov	eax,OBJRecPtr
-	mov	es:[bx+IndSegDefRecStruc.isdrDataPtr],eax
-	les	bx,es:[bx+IndSegDefRecStruc.isdrMasterPtr]	; es:bx -> master segdef
+	mov	es:[bx].IndSegDefRecStruc.isdrDataPtr,eax
+	les	bx,es:[bx].IndSegDefRecStruc.isdrMasterPtr	; es:bx -> master segdef
 
-	test	es:[bx+MasterSegDefRecStruc.mssFlags],(DEBUGTYPESSEGMENTFLAG OR DEBUGSYMBOLSSEGMENTFLAG)
+	test	es:[bx].MasterSegDefRecStruc.mssFlags,(DEBUGTYPESSEGMENTFLAG OR DEBUGSYMBOLSSEGMENTFLAG)
 	je	p2c32chk32		; not a debug segment
 
 ; debug segment, so flag, and reset associated data so debug keeps getting flagged
 	les	bx,LDATAIndSegPtr	; es:bx -> individual segdef
-	and	es:[bx+IndSegDefRecStruc.isdrFlags],NOT ASSOCIATEDDATAFLAG
+	and	es:[bx].IndSegDefRecStruc.isdrFlags,NOT ASSOCIATEDDATAFLAG
 	mov	IsDebugSeg,ON
 	jmp	p2c32chkdone	; don't worry about 32-bit segments if they are debug
 
 p2c32chk32:
-	or	es:[bx+MasterSegDefRecStruc.mssFlags],ASSOCIATEDDATAFLAG
+	or	es:[bx].MasterSegDefRecStruc.mssFlags,ASSOCIATEDDATAFLAG
 	mov	Is32BitSeg,OFF	; init 32-bit segment flag
-	test	es:[bx+MasterSegDefRecStruc.mssFlags],SEGMENT32BITFLAG	; flag if 32-bit segment
+	test	es:[bx].MasterSegDefRecStruc.mssFlags,SEGMENT32BITFLAG	; flag if 32-bit segment
 	je	p2c32chkdone	; not 32-bit segment
 	mov	Is32BitSeg,ON	; flag 32-bit segment
 
 ; see if comdat has completed all process (first module processing done)
 p2c32chkdone:
-	test	gs:[di+PubSymRecStruc.pssFlags],COMDATCOMPLETEFLAG
+	test	gs:[di].PubSymRecStruc.pssFlags,COMDATCOMPLETEFLAG
 	jne	p2c32ret			; comdat complete
 
-	test	gs:[di+PubSymRecStruc.pssFlags],PASS2COMDATFLAG
+	test	gs:[di].PubSymRecStruc.pssFlags,PASS2COMDATFLAG
 	je	p2c32ret			; no previous comdat
 
 	test	COMDATFlags,COMDATCONTINUEFLAG
@@ -2911,10 +2911,10 @@ p2c32chkdone:
 
 ; process not flagged complete, previous comdat occurred, no current continuation
 ; turn on process complete flag
-	or	gs:[di+PubSymRecStruc.pssFlags],COMDATCOMPLETEFLAG
+	or	gs:[di].PubSymRecStruc.pssFlags,COMDATCOMPLETEFLAG
 
 p2c32ret:
-	or	gs:[di+PubSymRecStruc.pssFlags],PASS2COMDATFLAG	; flag previous comdat
+	or	gs:[di].PubSymRecStruc.pssFlags,PASS2COMDATFLAG	; flag previous comdat
 	pop	es
 	ret
 
@@ -3035,7 +3035,7 @@ p2m2:
 	mov	al,[bx+ThreadFRAMEMethod]
 	mov	FrameMethod,al	; save frame method as current
 	add	bx,bx			; convert to word offset
-	mov	ax,[bx+OFFSET ThreadFRAMEDatum]
+	mov	ax,[bx+ThreadFRAMEDatum]
 	mov	FrameDatum,ax	; save frame datum index as current
 	jmp	p2m3
 
@@ -3055,7 +3055,7 @@ p2m3:
 	mov	al,[bx+ThreadTARGETMethod]
 	mov	TargetMethod,al	; save target method as current
 	add	bx,bx			; convert to word offset
-	mov	ax,[bx+OFFSET ThreadTARGETDatum]
+	mov	ax,[bx+ThreadTARGETDatum]
 	mov	TargetDatum,ax	; save target datum index as current
 	jmp	p2m4
 
@@ -3150,7 +3150,7 @@ p2m32:
 	mov	al,[bx+ThreadFRAMEMethod]
 	mov	FrameMethod,al	; save frame method as current
 	add	bx,bx			; convert to word offset
-	mov	ax,[bx+OFFSET ThreadFRAMEDatum]
+	mov	ax,[bx+ThreadFRAMEDatum]
 	mov	FrameDatum,ax	; save frame datum index as current
 	jmp	p2m33
 
@@ -3170,7 +3170,7 @@ p2m33:
 	mov	al,[bx+ThreadTARGETMethod]
 	mov	TargetMethod,al	; save target method as current
 	add	bx,bx			; convert to word offset
-	mov	ax,[bx+OFFSET ThreadTARGETDatum]
+	mov	ax,[bx+ThreadTARGETDatum]
 	mov	TargetDatum,ax	; save target datum index as current
 	jmp	p2m34
 
@@ -3270,8 +3270,8 @@ Pass2LINNUMProc	PROC
 
 ; gs:bx -> individual segdef entry
 pnmgetoff:
-	mov	edx,gs:[bx+IndSegDefRecStruc.isdrSegOffset]	; get offset from base segment address
-	les	di,gs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; es:di => master segdef
+	mov	edx,gs:[bx].IndSegDefRecStruc.isdrSegOffset	; get offset from base segment address
+	les	di,gs:[bx].IndSegDefRecStruc.isdrMasterPtr	; es:di => master segdef
 	mov	ax,es:[di].MasterSegDefRecStruc.mssSegmentID	; get segment ID
 	mov	LineSegmentID,ax	; save line number segment
 	mov	ebx,edx			; segment offset to ebx register
@@ -3368,8 +3368,8 @@ Pass2LINNUM32Proc	PROC
 
 ; gs:bx -> individual segdef entry
 pnm3getoff:
-	mov	edx,gs:[bx+IndSegDefRecStruc.isdrSegOffset]	; get offset from base segment address
-	les	di,gs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; es:di => master segdef
+	mov	edx,gs:[bx].IndSegDefRecStruc.isdrSegOffset	; get offset from base segment address
+	les	di,gs:[bx].IndSegDefRecStruc.isdrMasterPtr	; es:di => master segdef
 	mov	ax,es:[di].MasterSegDefRecStruc.mssSegmentID	; get segment ID
 	mov	LineSegmentID,ax	; save line number segment
 	mov	ebx,edx			; segment offset to ebx register
@@ -3425,7 +3425,7 @@ pnm3store:
 	call	ReadWordDecCX
 	movzx	eax,ax		; zero extend to dword
 	stosd				; store the line number
-	call	ReadDWordDecCX
+	call	ReadDwordDecCX
 	add	eax,ebx			; add in segment offset
 	stosd				; store the line offset
 	jmp	pnm3lineloop	; scan through all line entries
@@ -3551,11 +3551,11 @@ PerformIMPDEFFixup	PROC
 	push	cx
 	push	si
 	lgs	bx,LDATAIndSegPtr	; gs:bx -> individual segdef
-	mov	edx,gs:[bx+IndSegDefRecStruc.isdrSegOffset]	; edx==individual segment offset
+	mov	edx,gs:[bx].IndSegDefRecStruc.isdrSegOffset	; edx==individual segment offset
 	add	edx,LogicalDataRecOff	; add enumerated data record offset
 
-	lgs	bx,gs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; gs:bx -> master segdef entry
-	mov	eax,gs:[bx+MasterSegDefRecStruc.mssSegOffset]	; get in master segment offset
+	lgs	bx,gs:[bx].IndSegDefRecStruc.isdrMasterPtr	; gs:bx -> master segdef entry
+	mov	eax,gs:[bx].MasterSegDefRecStruc.mssSegOffset	; get in master segment offset
 ;	and	eax,0fh			; get offset remainder of seg address
 	add	edx,eax			; add to offset adjustment
 
@@ -3605,9 +3605,9 @@ PerformIMPDEFFixup	ENDP
 ; destroys eax,dx
 
 IMPDEFRecurseLIDATA  PROC
-	call	ReadWordDecCx	; get repeat count
+	call	ReadWordDecCX	; get repeat count
 	mov	RepeatCount,ax	; save it
-	call	ReadWordDecCx	; get block count
+	call	ReadWordDecCX	; get block count
 	mov	BlockCount,ax	; save it
 	add	CurrentRelocOffset,4	; update lidata record relocation offset
 	push	CurrentRelocOffset
@@ -3649,7 +3649,7 @@ irlidnextrep:
 
 ; block size is zero, data follows
 irliddata:
-	call	ReadByteDecCx	; get length of data to write
+	call	ReadByteDecCX	; get length of data to write
 	inc	CurrentRelocOffset
 
 ; write the data bytes
@@ -3713,11 +3713,11 @@ PerformIMPDEFFixup32	PROC
 	push	cx
 	push	si
 	lgs	bx,LDATAIndSegPtr	; gs:bx -> individual segdef
-	mov	edx,gs:[bx+IndSegDefRecStruc.isdrSegOffset]	; edx==individual segment offset
+	mov	edx,gs:[bx].IndSegDefRecStruc.isdrSegOffset	; edx==individual segment offset
 	add	edx,LogicalDataRecOff	; add enumerated data record offset
 
-	lgs	bx,gs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; gs:bx -> master segdef entry
-	mov	eax,gs:[bx+MasterSegDefRecStruc.mssSegOffset]	; get in master segment offset
+	lgs	bx,gs:[bx].IndSegDefRecStruc.isdrMasterPtr	; gs:bx -> master segdef entry
+	mov	eax,gs:[bx].MasterSegDefRecStruc.mssSegOffset	; get in master segment offset
 ;	and	eax,0fh			; get offset remainder of seg address
 	add	edx,eax			; add to offset adjustment
 
@@ -3771,11 +3771,11 @@ IMPDEFRecurseLIDATA32  PROC
 	jne	irlid3phar		; yes, repeat count is only 16-bit
 
 irlid3rep:
-	call	ReadDwordDecCx	; get repeat count
+	call	ReadDwordDecCX	; get repeat count
 
 irlid3scount:
 	mov	RepeatCount32,eax	; save it
-	call	ReadWordDecCx	; get block count
+	call	ReadWordDecCX	; get block count
 	mov	BlockCount,ax	; save it
 	add	CurrentRelocOffset,6	; update lidata record relocation offset
 	push	CurrentRelocOffset
@@ -3817,7 +3817,7 @@ irlid3nextrep:
 
 ; block size is zero, data follows
 irlid3data:
-	call	ReadByteDecCx	; get length of data to write
+	call	ReadByteDecCX	; get length of data to write
 	inc	CurrentRelocOffset
 
 ; write the data bytes
@@ -3868,9 +3868,9 @@ irlid3scan:
 
 ; phar lap module, 16-bit repeat count
 irlid3phar:
-	call	ReadWordDecCx	; get repeat count
+	call	ReadWordDecCX	; get repeat count
 	movzx	eax,ax		; extend to 32-bit for normal processing
-	JMP	Irlid3scount
+	JMP	irlid3scount
 
 IMPDEFRecurseLIDATA32  ENDP
 

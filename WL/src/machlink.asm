@@ -213,7 +213,6 @@ _end_segaddr    DW  0       ; address of STACK segment's segdef entry that _end 
 .DATA?
 
 ; zero init'ed character or byte strings
-EVEN
 exe_name    DB  128 DUP (?) ; executable file name, including any path
 EVEN
 map_name    DB  128 DUP (?) ; map file name, including any path
@@ -638,7 +637,7 @@ exit_1:
     jne exit_link           ; yes
     inc al                  ; return exit code of 1 for warnings
 
-exit_link:
+exit_link::
     mov ah,4ch              ; terminate
     push    ax              ; save terminate and return code
     call    cleanup         ; clean up any interim system changes made

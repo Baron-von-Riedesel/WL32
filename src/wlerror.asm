@@ -134,7 +134,7 @@ DOSErrorTable label byte
 	DB	4				; too many open files, no handles left
 	DB	5				; access denied
 	DB	8				; insufficient memory
-NUMDOSERROR equ $ - DosErrorTable
+NUMDOSERROR equ $ - DOSErrorTable
 
 ; MUST be in sync with DOSErrorTable
 
@@ -671,7 +671,7 @@ mss2:
 	mov	bx,OFFSET SymDefText
 	call	DisplayTextStringNoCRLF
 	push	gs			; save -> public symbol info
-	lgs	bx,gs:[di+PubSymRecStruc.pssNamePtr]	; gs:bx -> symbol name
+	lgs	bx,gs:[di].PubSymRecStruc.pssNamePtr	; gs:bx -> symbol name
 	call	NormalizeWarnString	; make sure name doesn't straddle i/o buffer, put into DGROUP
 	mov	bx,OFFSET CompBuffSource
 	call	DisplayVarStringNoCRLF	; display symbol name
@@ -679,7 +679,7 @@ mss2:
 
 	mov	bx,OFFSET DefinedInText
 	call	DisplayTextStringNoCRLF
-	mov	eax,gs:[di+PubSymRecStruc.pssModuleCount]
+	mov	eax,gs:[di].PubSymRecStruc.pssModuleCount
 	cmp	eax,FirstLIBModCount	; see if module is in library
 	jb	mssobj			; no
 	mov	gs,LIBDictTablePtr
@@ -796,7 +796,7 @@ UnresExternalWarn	PROC
 	push	gs
 
 	lgs	bx,UnresSymPtr	; gs:bx -> symbol info
-	test	gs:[bx+PubSymRecStruc.pssFlags],UNRESFEEDSYMBOLFLAG
+	test	gs:[bx].PubSymRecStruc.pssFlags,UNRESFEEDSYMBOLFLAG
 	jne	uewret			; feedback already given
 
 ; write string terminating CR/LF
@@ -807,8 +807,8 @@ UnresExternalWarn	PROC
 	call	DisplayTextStringNoCRLF
 
 	lgs	bx,UnresSymPtr	; gs:bx -> symbol info
-	or		gs:[bx+PubSymRecStruc.pssFlags],UNRESFEEDSYMBOLFLAG	; flag feedback given
-	lgs	bx,gs:[bx+PubSymRecStruc.pssNamePtr]	; gs:bx -> symbol name
+	or		gs:[bx].PubSymRecStruc.pssFlags,UNRESFEEDSYMBOLFLAG	; flag feedback given
+	lgs	bx,gs:[bx].PubSymRecStruc.pssNamePtr	; gs:bx -> symbol name
 	call	NormalizeWarnString	; make sure name doesn't straddle i/o buffer, put into DGROUP
 	mov	bx,OFFSET CompBuffSource
 	call	DisplayVarStringNoCRLF	; display symbol name

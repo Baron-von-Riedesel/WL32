@@ -52,7 +52,6 @@ EXTRN   temp_file_pages:BYTE,temp_page_ptr:WORD
 ; initialized local variables
 
 ; byte values
-EVEN
 rollout_flag    DB  0       ; nonzero if memory image rolled out to disk during pass 2
 
 .DATA?
@@ -60,7 +59,6 @@ rollout_flag    DB  0       ; nonzero if memory image rolled out to disk during 
 ; uninitialized local variables
 
 ; word values
-EVEN
 free_start      DW  ?       ; start of memory to free in free_memory routine if pass 2 roll-out occurred
 ems_trans_block DW  ?       ; segment of EMS transfer block
 mod_alloc_base  DW  ?       ; base of memory allocation made for module
@@ -634,7 +632,7 @@ map_ems_page    PROC
     ret
 
 ; EMS error occurred
-mep_error:
+mep_error::
     mov cl,ah               ; get 8 bit error code in cl
     mov ax,EMS_EMM_ERR
     jmp NEAR PTR link_error ; transfer control to error handler

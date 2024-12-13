@@ -456,14 +456,14 @@ ridentloop:
 	push	fs
 	push	bx
 
-	mov	al,fs:[bx+IMPDEFRecStruc.idsOrdinalFlag]
+	mov	al,fs:[bx].IMPDEFRecStruc.idsOrdinalFlag
 	mov	OrdinalFlag,al	; save it
 
 ridnotord:
-	lfs	si,fs:[bx+IMPDEFRecStruc.idsInternalNamePtr]
+	lfs	si,fs:[bx].IMPDEFRecStruc.idsInternalNamePtr
 	call	GetPubSymEntry	; find the internal symbol name, return gs:di -> entry
 	jc	ridnextent		; not a pre-existing symbol
-	test	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	je	ridimpok		; import not resolved
 
 ; this import is no longer valid, mark for flushing
@@ -472,14 +472,14 @@ ridflush:
 	pop	fs				; fs:bx -> current impdef entry
 	push	fs
 	push	bx
-	or	fs:[bx+IMPDEFRecStruc.idsGeneralFlags],FLUSHIMPDEFFLAG
+	or	fs:[bx].IMPDEFRecStruc.idsGeneralFlags,FLUSHIMPDEFFLAG
 	jmp	ridnextent
 
 ridimpok:
-	or	gs:[di+PubSymRecStruc.pssFlags],IMPORTSYMBOLFLAG	; flag as import
+	or	gs:[di].PubSymRecStruc.pssFlags,IMPORTSYMBOLFLAG	; flag as import
 	pop	eax				; get impdef entry pointer
 	push	eax			; restore to stack
-	mov	gs:[di+PubSymRecStruc.pssIndSegDefPtr],eax
+	mov	gs:[di].PubSymRecStruc.pssIndSegDefPtr,eax
 
 ; now compute module and function name for impdef
 	pop	bx
@@ -488,7 +488,7 @@ ridimpok:
 	push	bx
 	cmp	LastIMPDEFEntryPtr,0	; see if first entry
 	jne	ridchkmod		; no
-	or	gs:[bx+IMPDEFRecStruc.idsGeneralFlags],NEWMODULENAMEFLAG
+	or	gs:[bx].IMPDEFRecStruc.idsGeneralFlags,NEWMODULENAMEFLAG
 	mov	LastIMPDEFFunction,-1	; pre-adjust for function increment
 	jmp	ridupd		; save function number in case is an ordinal
 
@@ -496,9 +496,9 @@ ridimpok:
 ; if same, keep module number, if not same, module number==old number+1
 ; function number always increment from previous, use ordinal if flagged
 ridchkmod:
-	lgs	bx,gs:[bx+IMPDEFRecStruc.idsModuleNamePtr]
+	lgs	bx,gs:[bx].IMPDEFRecStruc.idsModuleNamePtr
 	les	di,LastIMPDEFEntryPtr	; es:di -> previous impdef entry
-	les	di,es:[di+IMPDEFRecStruc.idsModuleNamePtr]
+	les	di,es:[di].IMPDEFRecStruc.idsModuleNamePtr
 	call	NormalGSBXSource
 	call	NormalESDIDest
 	mov	cl,gs:[bx]		; get name length of current
@@ -521,7 +521,7 @@ ridnewmod:
 	pop	gs				; gs:bx -> current impdef entry
 	push	gs
 	push	bx
-	or	gs:[bx+IMPDEFRecStruc.idsGeneralFlags],NEWMODULENAMEFLAG
+	or	gs:[bx].IMPDEFRecStruc.idsGeneralFlags,NEWMODULENAMEFLAG
 	inc	LastIMPDEFModule
 
 ridupd:
@@ -530,20 +530,20 @@ ridupd:
 	push	gs
 	push	bx
 	mov	eax,LastIMPDEFModule
-	mov	gs:[bx+IMPDEFRecStruc.idsModuleNumber],eax
+	mov	gs:[bx].IMPDEFRecStruc.idsModuleNumber,eax
 	cmp	OrdinalFlag,0	; see if ordinal instead of function number
 	jne	ridsaveord		; yes
 	inc	LastIMPDEFFunction	; increment function number
 	mov	eax,LastIMPDEFFunction
-	mov	gs:[bx+IMPDEFRecStruc.idsFunctionNumber],eax
+	mov	gs:[bx].IMPDEFRecStruc.idsFunctionNumber,eax
 	inc	TotalIMPDEFFuncCount	; track total functions for 3P header setup
 	jmp	ridsavelast
 
 ridsaveord:
-	lfs	si,gs:[bx+IMPDEFRecStruc.idsEntryIdentPtr]	; fs:si -> entry ident/ordinal
+	lfs	si,gs:[bx].IMPDEFRecStruc.idsEntryIdentPtr	; fs:si -> entry ident/ordinal
 	call	ReadWord	; get/save ordinal value
 	movzx	eax,ax
-	mov	gs:[bx+IMPDEFrecStruc.idsFunctionNumber],eax
+	mov	gs:[bx].IMPDEFRecStruc.idsFunctionNumber,eax
 	inc	TotalIMPDEFOrdCount	; track total ordinals for 3P header setup
 
 ridsavelast:
@@ -597,7 +597,7 @@ sdsmainloop:
 	mov	bx,GRPDEFSYSVARSIZE	; gs:bx -> first entry
 
 sdsentloop:
-	les	di,gs:[bx+GrpDefRecStruc.gdrGrpNamePtr]
+	les	di,gs:[bx].GrpDefRecStruc.gdrGrpNamePtr
 	mov	si,OFFSET DGROUPText
 
 ; ds:si -> current grpdef name
@@ -667,23 +667,23 @@ sds4:
 
 ; gs:di -> public entry
 sds_edataex:
-	test	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	jne	sds__edata		; symbol already exists and is defined
 	xor	eax,eax			; set variables and pointers in entry
-	mov	gs:[di+PubSymRecStruc.pssOffset],eax
+	mov	gs:[di].PubSymRecStruc.pssOffset,eax
 
 	mov	eax,DGROUPPtr
-	mov	gs:[di+PubSymRecStruc.pssGrpDefPtr],eax
+	mov	gs:[di].PubSymRecStruc.pssGrpDefPtr,eax
 	or	eax,eax			; see if DGROUP
 	je	sdsmod1			; no
-	or	gs:[di+PubSymRecStruc.pssFlags],GROUPRELSYMBOLFLAG
+	or	gs:[di].PubSymRecStruc.pssFlags,GROUPRELSYMBOLFLAG
 
 sdsmod1:
-	mov	gs:[di+PubSymRecStruc.pssModuleCount],-1
+	mov	gs:[di].PubSymRecStruc.pssModuleCount,-1
 	lfs	bx,_EDATASegDefPtr	; fs:bx -> master segdef of _edata symbol
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssFirstIndSegPtr]	; eax -> individual segdef entry
-	mov	gs:[di+PubSymRecStruc.pssIndSegDefPtr],eax
-	or	gs:[di+PubSymRecStruc.pssFlags],PUBLICSYMBOLFLAG
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssFirstIndSegPtr	; eax -> individual segdef entry
+	mov	gs:[di].PubSymRecStruc.pssIndSegDefPtr,eax
+	or	gs:[di].PubSymRecStruc.pssFlags,PUBLICSYMBOLFLAG
 
 ; check if __edata or __EDATA symbol already exists and is public or common
 sds__edata:
@@ -702,23 +702,23 @@ sds__edata:
 	call	GetPubSymEntry
 
 sds__edataex:
-	test	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	jne	sds_end			; symbol already exists and is defined
 	xor	eax,eax			; set variables and pointers in entry
-	mov	gs:[di+PubSymRecStruc.pssOffset],eax
+	mov	gs:[di].PubSymRecStruc.pssOffset,eax
 
 	mov	eax,DGROUPPtr
-	mov	gs:[di+PubSymRecStruc.pssGrpDefPtr],eax
+	mov	gs:[di].PubSymRecStruc.pssGrpDefPtr,eax
 	or	eax,eax			; see if DGROUP
 	je	sdsmod1_		; no
-	or	gs:[di+PubSymRecStruc.pssFlags],GROUPRELSYMBOLFLAG
+	or	gs:[di].PubSymRecStruc.pssFlags,GROUPRELSYMBOLFLAG
 
 sdsmod1_:
-	mov	gs:[di+PubSymRecStruc.pssModuleCount],-1
+	mov	gs:[di].PubSymRecStruc.pssModuleCount,-1
 	lfs	bx,_EDATASegDefPtr	; fs:bx -> master segdef of __edata symbol
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssFirstIndSegPtr]	; eax -> individual segdef entry
-	mov	gs:[di+PubSymRecStruc.pssIndSegDefPtr],eax
-	or	gs:[di+PubSymRecStruc.pssFlags],PUBLICSYMBOLFLAG
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssFirstIndSegPtr	; eax -> individual segdef entry
+	mov	gs:[di].PubSymRecStruc.pssIndSegDefPtr,eax
+	or	gs:[di].PubSymRecStruc.pssFlags,PUBLICSYMBOLFLAG
 
 sds_end:
 	cmp	WORD PTR _ENDSegDefPtr+2,0	; see if STACK segment exists
@@ -741,23 +741,23 @@ sds_end:
 
 ; gs:di -> public entry
 sds_endex:
-	test	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	jne	sds__end		; symbol already exists and is defined
 	xor	eax,eax			; set variables and pointers in entry
-	mov	gs:[di+PubSymRecStruc.pssOffset],eax
+	mov	gs:[di].PubSymRecStruc.pssOffset,eax
 
 	mov	eax,DGROUPPtr
-	mov	gs:[di+PubSymRecStruc.pssGrpDefPtr],eax
+	mov	gs:[di].PubSymRecStruc.pssGrpDefPtr,eax
 	or	eax,eax			; see if DGROUP
 	je	sdsmod2			; no
-	or	gs:[di+PubSymRecStruc.pssFlags],GROUPRELSYMBOLFLAG
+	or	gs:[di].PubSymRecStruc.pssFlags,GROUPRELSYMBOLFLAG
 
 sdsmod2:
-	mov	gs:[di+PubSymRecStruc.pssModuleCount],-1
+	mov	gs:[di].PubSymRecStruc.pssModuleCount,-1
 	lfs	bx,_ENDSegDefPtr	; fs:bx -> master segdef of _end symbol
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssFirstIndSegPtr]	; eax -> individual segdef entry
-	mov	gs:[di+PubSymRecStruc.pssIndSegDefPtr],eax
-	or	gs:[di+PubSymRecStruc.pssFlags],PUBLICSYMBOLFLAG
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssFirstIndSegPtr	; eax -> individual segdef entry
+	mov	gs:[di].PubSymRecStruc.pssIndSegDefPtr,eax
+	or	gs:[di].PubSymRecStruc.pssFlags,PUBLICSYMBOLFLAG
 
 ; check if __end or __END symbol already exists and is public or common
 sds__end:
@@ -776,23 +776,23 @@ sds__end:
 	call	GetPubSymEntry
 
 sds__endex:
-	test	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	jne	sdsret			; symbol already exists and is defined
 	xor	eax,eax			; set variables and pointers in entry
-	mov	gs:[di+PubSymRecStruc.pssOffset],eax
+	mov	gs:[di].PubSymRecStruc.pssOffset,eax
 
 	mov	eax,DGROUPPtr
-	mov	gs:[di+PubSymRecStruc.pssGrpDefPtr],eax
+	mov	gs:[di].PubSymRecStruc.pssGrpDefPtr,eax
 	or	eax,eax			; see if DGROUP
 	je	sdsmod2_		; no
-	or	gs:[di+PubSymRecStruc.pssFlags],GROUPRELSYMBOLFLAG
+	or	gs:[di].PubSymRecStruc.pssFlags,GROUPRELSYMBOLFLAG
 
 sdsmod2_:
-	mov	gs:[di+PubSymRecStruc.pssModuleCount],-1
+	mov	gs:[di].PubSymRecStruc.pssModuleCount,-1
 	lfs	bx,_ENDSegDefPtr	; fs:bx -> master segdef of __end symbol
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssFirstIndSegPtr]	; eax -> individual segdef entry
-	mov	gs:[di+PubSymRecStruc.pssIndSegDefPtr],eax
-	or	gs:[di+PubSymRecStruc.pssFlags],PUBLICSYMBOLFLAG
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssFirstIndSegPtr	; eax -> individual segdef entry
+	mov	gs:[di].PubSymRecStruc.pssIndSegDefPtr,eax
+	or	gs:[di].PubSymRecStruc.pssFlags,PUBLICSYMBOLFLAG
 
 sdsret:
 	ret
@@ -818,7 +818,7 @@ dtsentloop:
 	je	dtsnextblk		; no match found, try next block, if any
 
 	mov	si,OFFSET _TEXTText	; ds:si -> source string
-	les	di,fs:[bx+MasterSegDefRecStruc.mssNamePtr]	; es:di -> segment on record
+	les	di,fs:[bx].MasterSegDefRecStruc.mssNamePtr	; es:di -> segment on record
 	cmp	di,SIZEIOBUFFBLK-MAXOBJRECNAME	; see if normalization might be needed
 	jb	dtslencmp		; no
 	call	NormalESDIDest	; normalize es:di to destination name buffer
@@ -866,32 +866,32 @@ dtsret:
 ; found _TEXT segment, add 16 to total segment length, 16 to each individual segdef offset
 ; fs:bx -> master segdef entry
 dtsmatch:
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssSegLength]
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssSegLength
 	mov	ecx,16			; use as constant 16 dword value
 	add	eax,ecx
-	test	fs:[bx+MasterSegDefRecStruc.mssFlags],SEGMENT32BITFLAG
+	test	fs:[bx].MasterSegDefRecStruc.mssFlags,SEGMENT32BITFLAG
 	jne	dtsnochk		; no check on overflow with 32-bit segments
 	cmp	eax,65536		; see if overflow on _TEXT segment
 	ja	dtsof			; yes
 
 dtsnochk:
-	mov	fs:[bx+MasterSegDefRecStruc.mssSegLength],eax
+	mov	fs:[bx].MasterSegDefRecStruc.mssSegLength,eax
 	mov	eax,16
-	lfs	bx,fs:[bx+MasterSegDefRecStruc.mssFirstIndSegPtr]	; init fs:bx -> first individual segment entry
+	lfs	bx,fs:[bx].MasterSegDefRecStruc.mssFirstIndSegPtr	; init fs:bx -> first individual segment entry
 
 ; ecx == 16
 ; fs:bx -> individual segment entry
 ; add 16 to the offset of each individual segment
 dtsdosloop:
-	add	fs:[bx+IndSegDefRecStruc.isdrSegOffset],ecx
-	cmp	WORD PTR fs:[bx+IndSegDefRecStruc.isdrNextIndSegPtr+2],0	; see if another entry
+	add	fs:[bx].IndSegDefRecStruc.isdrSegOffset,ecx
+	cmp	WORD PTR fs:[bx].IndSegDefRecStruc.isdrNextIndSegPtr+2,0	; see if another entry
 	je	dtsret			; no, all updated
-	lfs	bx,fs:[bx+IndSegDefRecStruc.isdrNextIndSegPtr]	; fs:bx -> next entry
+	lfs	bx,fs:[bx].IndSegDefRecStruc.isdrNextIndSegPtr	; fs:bx -> next entry
 	jmp	SHORT dtsdosloop
 
 ; overflow of 64K on 16-bit segment
 dtsof:
-	lgs	bx,fs:[bx+MasterSegDefRecStruc.mssNamePtr]	; gs:bx -> nonnormalized text string
+	lgs	bx,fs:[bx].MasterSegDefRecStruc.mssNamePtr	; gs:bx -> nonnormalized text string
 	mov	al,SEGLEN64KERRORCODE	; flag segment length >64K
 	call	NormalizeErrorExit	; normalize text string, do linker error exit
 
@@ -925,13 +925,13 @@ rcdentloop:
 	push	fs
 	push	bx
 
-	test	fs:[bx+ComDatRecStruc.cdsFlags],SEGRELCOMDATFLAG
+	test	fs:[bx].ComDatRecStruc.cdsFlags,SEGRELCOMDATFLAG
 	jne	rcdsegrel		; COMDAT is explicit, segment-based
 
 ; init variables for segdef procedure calls
 	mov	Is32BitSeg,OFF
 	mov	IsAbsoluteSeg,OFF
-	mov	al,fs:[bx+ComDatRecStruc.cdsAlign]
+	mov	al,fs:[bx].ComDatRecStruc.cdsAlign
 	shl	al,5			; get align type in proper bits
 	mov	ACBPByte,al
 
@@ -947,7 +947,7 @@ rcdentloop:
 	mov	ax,ss
 	mov	WORD PTR gs:[2],ax
 	mov	WORD PTR gs:[6],ax
-	mov	eax,fs:[bx+ComDatRecStruc.cdsLength]	; get comdat length
+	mov	eax,fs:[bx].ComDatRecStruc.cdsLength	; get comdat length
 	mov	SegmentLength,eax
 
 	add	eax,PrevFarCodeComDatLen	; add in previous communal lengths
@@ -967,22 +967,22 @@ rcdnewseg:
 	call	GetMasterSegDefEntry	; return -> master segment definition entry in gs:di
 	mov	WORD PTR FarCodeComDatSegDefPtr,di
 	mov	WORD PTR FarCodeComDatSegDefPtr+2,gs
-	or	gs:[di+MasterSegDefRecStruc.mssFlags],ASSOCIATEDDATAFLAG	; flag associated data
+	or	gs:[di].MasterSegDefRecStruc.mssFlags,ASSOCIATEDDATAFLAG	; flag associated data
 
 ; create segment partition entry
 rcd2:
 	lgs	di,FarCodeComDatSegDefPtr	; gs:di -> master segdef
 	call	MakeIndSegDefEntry	; make the individual segdef record entry
 
-	lfs	bx,gs:[di+MasterSegDefRecStruc.mssLastIndSegPtr]	; get created entry
-	or	fs:[bx+IndSegDefRecStruc.isdrFlags],(CREATEDSEGMENTFLAG OR COMDATSEGMENTFLAG)
+	lfs	bx,gs:[di].MasterSegDefRecStruc.mssLastIndSegPtr	; get created entry
+	or	fs:[bx].IndSegDefRecStruc.isdrFlags,(CREATEDSEGMENTFLAG OR COMDATSEGMENTFLAG)
 	pop	eax				; eax -> comdat entry
 	push	eax
-	mov	fs:[bx+IndSegDefRecStruc.isdrModulePtr],eax	; save pointer to owning comdat
+	mov	fs:[bx].IndSegDefRecStruc.isdrModulePtr,eax	; save pointer to owning comdat
 
 	pop	bx				; fs:bx -> comdat entry
 	pop	fs
-	mov	edx,fs:[bx+ComDatRecStruc.cdsLength]	; get comdat length
+	mov	edx,fs:[bx].ComDatRecStruc.cdsLength	; get comdat length
 	mov	eax,PrevFarCodeComDatLen
 	add	eax,edx				; compute new previous far code comdat length
 	mov	PrevFarCodeComDatLen,eax	; save it
@@ -990,11 +990,11 @@ rcd2:
 rcdgetcptr:
 	push	fs
 	push	bx			; save -> comdat entry
-	mov	eax,gs:[di+MasterSegDefRecStruc.mssLastIndSegPtr]	; save pointer to created segdef entry
-	mov	fs:[bx+ComDatRecStruc.cdsCreatedSegDefPtr],eax
-	lfs	bx,fs:[bx+ComDatRecStruc.cdsPubSymPtr]	; fs:bx -> comdat symbol
-	mov	fs:[bx+PubSymRecStruc.pssIndSegDefPtr],eax
-	mov	DWORD PTR fs:[bx+PubSymRecStruc.pssOffset],0	;init public offset
+	mov	eax,gs:[di].MasterSegDefRecStruc.mssLastIndSegPtr	; save pointer to created segdef entry
+	mov	fs:[bx].ComDatRecStruc.cdsCreatedSegDefPtr,eax
+	lfs	bx,fs:[bx].ComDatRecStruc.cdsPubSymPtr	; fs:bx -> comdat symbol
+	mov	fs:[bx].PubSymRecStruc.pssIndSegDefPtr,eax
+	mov	DWORD PTR fs:[bx].PubSymRecStruc.pssOffset,0	;init public offset
 
 	pop	bx				; restore fs:bx -> comdat entry
 	pop	fs
@@ -1014,27 +1014,27 @@ rcdsegrel:
 	mov	eax,-1
 	mov	ModuleCount,eax
 	mov	CurrentBaseOBJBuff,ax
-	mov	eax,fs:[bx+ComDatRecStruc.cdsLength]	; get comdat length
+	mov	eax,fs:[bx].ComDatRecStruc.cdsLength	; get comdat length
 	mov	SegmentLength,eax
 	mov	IsAbsoluteSeg,OFF
 
-	mov	al,fs:[bx+ComDatRecStruc.cdsAlign]
-	lfs	bx,fs:[bx+ComDatRecStruc.cdsIndSegDefPtr]	; fs:bx -> owning segdef
+	mov	al,fs:[bx].ComDatRecStruc.cdsAlign
+	lfs	bx,fs:[bx].ComDatRecStruc.cdsIndSegDefPtr	; fs:bx -> owning segdef
 	shl	al,5			; get align type in proper bits
 	jne	rcdsegacbp		; alignment not from segment (nonzero)
-	mov	al,fs:[bx+IndSegDefRecStruc.isdrACBPByte]	; get align from segdef
+	mov	al,fs:[bx].IndSegDefRecStruc.isdrACBPByte	; get align from segdef
 
 ; fs:bx -> owning segment partition entry
 rcdsegacbp:
 	mov	ACBPByte,al		; save ACBP
-	lgs	di,fs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; gs:di -> master segdef entry
+	lgs	di,fs:[bx].IndSegDefRecStruc.isdrMasterPtr	; gs:di -> master segdef entry
 	call	MakeIndSegDefEntry	; make the individual segdef record entry corresponding to COMDAT
 
-	lfs	bx,gs:[di+MasterSegDefRecStruc.mssLastIndSegPtr]	; get created entry
-	or	fs:[bx+IndSegDefRecStruc.isdrFlags],(CREATEDSEGMENTFLAG OR COMDATSEGMENTFLAG)
+	lfs	bx,gs:[di].MasterSegDefRecStruc.mssLastIndSegPtr	; get created entry
+	or	fs:[bx].IndSegDefRecStruc.isdrFlags,(CREATEDSEGMENTFLAG OR COMDATSEGMENTFLAG)
 	pop	eax				; eax -> comdat entry
 	push	eax
-	mov	fs:[bx+IndSegDefRecStruc.isdrModulePtr],eax	; save pointer to owning comdat
+	mov	fs:[bx].IndSegDefRecStruc.isdrModulePtr,eax	; save pointer to owning comdat
 
 	pop	bx				; fs:bx -> comdat entry
 	pop	fs
@@ -1074,11 +1074,11 @@ rcentloop:
 	jae	rcnextblk		; no
 	cmp	dx,fs:[PubSymBlkStruc.psbCount]	; see if end entry in block
 	jae	rcnextblk		; yes, try next block, if any (shouldn't be)
-	test	fs:[bx+PubSymRecStruc.pssFlags],(NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	fs:[bx].PubSymRecStruc.pssFlags,(NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	je	rcnextent		; not a communal variable
 
 ; communal variable
-	test	fs:[bx+PubSymRecStruc.pssFlags],FARCOMSYMBOLFLAG	; see if far
+	test	fs:[bx].PubSymRecStruc.pssFlags,FARCOMSYMBOLFLAG	; see if far
 	jne	rcfar			; far communal
 	call	ResolveNearCommunal	; near communal
 	dec	RunningCommunalCount	; drop count of communals, allow testing short-circuit
@@ -1132,9 +1132,9 @@ ResolveNearCommunal	PROC
 	mov	WORD PTR gs:[2],ax
 	mov	WORD PTR gs:[6],ax
 	mov	WORD PTR gs:[10],ax
-	mov	eax,fs:[bx+PubSymRecStruc.pssOffset]	; get communal length
+	mov	eax,fs:[bx].PubSymRecStruc.pssOffset	; get communal length
 	mov	SegmentLength,eax
-	mov	fs:[bx+PubSymRecStruc.pssOffset],0	; zero public offset
+	mov	fs:[bx].PubSymRecStruc.pssOffset,0	; zero public offset
 
 	cmp	WORD PTR NearCommSegDefPtr+2,0	; see if segdef entry allocated yet for near communals
 	jne	rnc2			; yes
@@ -1152,25 +1152,25 @@ ResolveNearCommunal	PROC
 	mov	WORD PTR NearCommSegDefPtr,di
 	mov	WORD PTR NearCommSegDefPtr+2,gs
 	pop	eax				; eax -> group
-	mov	gs:[di+MasterSegDefRecStruc.mssGroupPtr],eax	; update group pointer
-	or	gs:[di+MasterSegDefRecStruc.mssFlags],GROUPMEMBERFLAG	; flag member of group
+	mov	gs:[di].MasterSegDefRecStruc.mssGroupPtr,eax	; update group pointer
+	or	gs:[di].MasterSegDefRecStruc.mssFlags,GROUPMEMBERFLAG	; flag member of group
 
 ; create segment partition entry
 rnc2:
 	lgs	di,NearCommSegDefPtr	; gs:di -> master segdef
 	call	MakeIndSegDefEntry	; make the individual segdef record entry
 	push	fs
-	lfs	bx,gs:[di+MasterSegDefRecStruc.mssLastIndSegPtr]	; get created entry
-	or	fs:[bx+IndSegDefRecStruc.isdrFlags],CREATEDSEGMENTFLAG	; flag created segment
+	lfs	bx,gs:[di].MasterSegDefRecStruc.mssLastIndSegPtr	; get created entry
+	or	fs:[bx].IndSegDefRecStruc.isdrFlags,CREATEDSEGMENTFLAG	; flag created segment
 	pop	fs
 
 ; set individual segdef and group pointers for symbol entry, so flag
 	pop	bx				; fs:bx -> symbol entry
-	mov	eax,gs:[di+MasterSegDefRecStruc.mssLastIndSegPtr]
-	mov	fs:[bx+PubSymRecStruc.pssIndSegDefPtr],eax
-	mov	eax,gs:[di+MasterSegDefRecStruc.mssGroupPtr]
-	mov	fs:[bx+PubSymRecStruc.pssGrpDefPtr],eax
-	or	fs:[bx+PubSymRecStruc.pssFlags],GROUPRELSYMBOLFLAG
+	mov	eax,gs:[di].MasterSegDefRecStruc.mssLastIndSegPtr
+	mov	fs:[bx].PubSymRecStruc.pssIndSegDefPtr,eax
+	mov	eax,gs:[di].MasterSegDefRecStruc.mssGroupPtr
+	mov	fs:[bx].PubSymRecStruc.pssGrpDefPtr,eax
+	or	fs:[bx].PubSymRecStruc.pssFlags,GROUPRELSYMBOLFLAG
 
 	pop	dx				; restore critical register
 	ret
@@ -1204,7 +1204,7 @@ ResolveFarCommunal	PROC
 	mov	ax,ss
 	mov	WORD PTR gs:[2],ax
 	mov	WORD PTR gs:[6],ax
-	mov	eax,fs:[bx+PubSymRecStruc.pssOffset]	; get communal length
+	mov	eax,fs:[bx].PubSymRecStruc.pssOffset	; get communal length
 	mov	SegmentLength,eax
 
 	cmp	eax,65536		; see if huge (>64K) segment
@@ -1234,20 +1234,20 @@ rfc2:
 	lgs	di,FarCommSegDefPtr	; gs:di -> master segdef
 	call	MakeIndSegDefEntry	; make the individual segdef record entry
 	push	fs
-	lfs	bx,gs:[di+MasterSegDefRecStruc.mssLastIndSegPtr]	; get created entry
-	or	fs:[bx+IndSegDefRecStruc.isdrFlags],CREATEDSEGMENTFLAG	; flag created segment
+	lfs	bx,gs:[di].MasterSegDefRecStruc.mssLastIndSegPtr	; get created entry
+	or	fs:[bx].IndSegDefRecStruc.isdrFlags,CREATEDSEGMENTFLAG	; flag created segment
 	pop	fs
 
 	pop	bx				; fs:bx -> symbol entry
 	push	bx			; save back to stack
-	mov	eax,gs:[di+MasterSegDefRecStruc.mssLastIndSegPtr]	; save pointer to individual segdef entry
-	mov	fs:[bx+PubSymRecStruc.pssIndSegDefPtr],eax
-	mov	edx,fs:[bx+PubSymRecStruc.pssOffset]	; get communal length
+	mov	eax,gs:[di].MasterSegDefRecStruc.mssLastIndSegPtr	; save pointer to individual segdef entry
+	mov	fs:[bx].PubSymRecStruc.pssIndSegDefPtr,eax
+	mov	edx,fs:[bx].PubSymRecStruc.pssOffset	; get communal length
 	mov	eax,PrevFarCommunalLen
 
 ; set to zero because segment partition adjusts??? MED 02/14/94
-;	mov	fs:[bx+PubSymRecStruc.pssOffset],eax	;init public offset
-	mov	DWORD PTR fs:[bx+PubSymRecStruc.pssOffset],0	;init public offset
+;	mov	fs:[bx].PubSymRecStruc.pssOffset,eax	;init public offset
+	mov	DWORD PTR fs:[bx].PubSymRecStruc.pssOffset,0	;init public offset
 
 	add	eax,edx				; compute new previous far communal length
 	mov	PrevFarCommunalLen,eax	; save it
@@ -1277,8 +1277,8 @@ rfchuge:
 	mov	WORD PTR gs:[6],ax
 	mov	SegmentLength,65536	; init segment length
 	xor	eax,eax
-	mov	fs:[bx+PubSymRecStruc.pssOffset],eax	; init public offset
-	mov	fs:[bx+PubSymRecStruc.pssIndSegDefPtr],eax	; init individual segdef pointer
+	mov	fs:[bx].PubSymRecStruc.pssOffset,eax	; init public offset
+	mov	fs:[bx].PubSymRecStruc.pssIndSegDefPtr,eax	; init individual segdef pointer
 
 rfchugeloop:
 	cmp	cx,1			; see if last segment creating loop
@@ -1298,17 +1298,17 @@ rfccreate:
 ; create individual segment entry
 	call	MakeIndSegDefEntry	; make the individual segdef record entry
 	push	fs
-	lfs	bx,gs:[di+MasterSegDefRecStruc.mssLastIndSegPtr]	; get created entry
-	or	fs:[bx+IndSegDefRecStruc.isdrFlags],CREATEDSEGMENTFLAG	; flag created segment
+	lfs	bx,gs:[di].MasterSegDefRecStruc.mssLastIndSegPtr	; get created entry
+	or	fs:[bx].IndSegDefRecStruc.isdrFlags,CREATEDSEGMENTFLAG	; flag created segment
 	pop	fs
 	pop	cx				; restore critical registers
 	pop	dx
 	pop	bx				; fs:bx -> symbol entry
 	push	bx			; save back to stack
-	cmp	fs:[bx+PubSymRecStruc.pssIndSegDefPtr],0	; see if pointer already assigned
+	cmp	fs:[bx].PubSymRecStruc.pssIndSegDefPtr,0	; see if pointer already assigned
 	jne	rfcnext			; yes, don't reassign
-	mov	eax,gs:[di+MasterSegDefRecStruc.mssLastIndSegPtr]	; save pointer to individual segdef entry
-	mov	fs:[bx+PubSymRecStruc.pssIndSegDefPtr],eax
+	mov	eax,gs:[di].MasterSegDefRecStruc.mssLastIndSegPtr	; save pointer to individual segdef entry
+	mov	fs:[bx].PubSymRecStruc.pssIndSegDefPtr,eax
 
 rfcnext:
 	loop	rfchugeloop	; create 64K segments+remainder for size of communal
@@ -1361,9 +1361,9 @@ csomastentloop:
 	jae	csonextblk		; no
 	cmp	ax,fs:[MasterSegDefBlkStruc.msdbCount]	; see if end entry in block
 	jae	csonextblk		; yes, try next block, if any (shouldn't be)
-	test	fs:[bx+MasterSegDefRecStruc.mssFlags],ABSOLUTESEGMENTFLAG	; see if absolute segment
+	test	fs:[bx].MasterSegDefRecStruc.mssFlags,ABSOLUTESEGMENTFLAG	; see if absolute segment
 	jne	csonextent		; don't resolve absolute segments
-	test	fs:[bx+MasterSegDefRecStruc.mssFlags],RESOLVEDSEGFLAG	; see if segment already resolved
+	test	fs:[bx].MasterSegDefRecStruc.mssFlags,RESOLVEDSEGFLAG	; see if segment already resolved
 	je	csonotres		; not resolved yet
 
 csonextent:
@@ -1376,7 +1376,7 @@ csonotres:
 	cmp	ClassSelectedFlag,OFF	; see if class selected
 	jne	csoclasssel		; class has been selected
 
-	les	di,fs:[bx+MasterSegDefRecStruc.mssClassPtr]	; es:di -> current class name
+	les	di,fs:[bx].MasterSegDefRecStruc.mssClassPtr	; es:di -> current class name
 	cmp	di,SIZEIOBUFFBLK-MAXOBJRECNAME	; see if name might overflow
 	jb	cso2			; no
 	call	NormalESDIDest	; normalize es:di to destination name buffer
@@ -1385,7 +1385,7 @@ csonotres:
 cso2:
 	cmp	IsDOSSEG,0		; see if DOSSEG segment ordering
 	je	csosetclass		; no
-	test	fs:[bx+MasterSegDefRecStruc.mssFlags],DOSSEGFLAGBITS	; see if DOSSEG flag bits set
+	test	fs:[bx].MasterSegDefRecStruc.mssFlags,DOSSEGFLAGBITS	; see if DOSSEG flag bits set
 	jne	csophcmp		; yes, check phases for match
 
 	call	GetDOSSEGType	; get class DOSSEG type, return in al
@@ -1423,10 +1423,10 @@ cso7:
 
 ; set the appropriate DOSSEG flag bits, ax holds value
 csosetflag:
-	or	fs:[bx+MasterSegDefRecStruc.mssFlags],ax
+	or	fs:[bx].MasterSegDefRecStruc.mssFlags,ax
 
 csophcmp:
-	mov	ax,fs:[bx+MasterSegDefRecStruc.mssFlags]	; get flag values
+	mov	ax,fs:[bx].MasterSegDefRecStruc.mssFlags	; get flag values
 	and	ax,DOSSEGFLAGBITS	; mask off all but DOSSEG bits (DOSSEG phase*256)
 	cmp	ah,DOSSEGPhase	; see if phase matches type (ah compare does 256 x value)
 	jne	csonextent		; no, try next entry
@@ -1436,7 +1436,7 @@ csosetclass:
 	mov	ClassSelectedFlag,ON	; set class selected flag
 	mov	WORD PTR CurrentResClassPtr,di	; keep pointer to current resolution class name
 	mov	WORD PTR CurrentResClassPtr+2,es
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssGroupPtr]
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssGroupPtr
 	mov	CurrentResGrpPtr,eax	; save -> current group pointer
 
 ; resolve segment
@@ -1445,7 +1445,7 @@ csosetclass:
 csodores:
 	mov	ResOccurredFlag,1	; flag resolution occurred this pass
 	dec	UnresolvedSegCount	; drop count of unresolved segments
-	or	fs:[bx+MasterSegDefRecStruc.mssFlags],RESOLVEDSEGFLAG	; flag segment resolved
+	or	fs:[bx].MasterSegDefRecStruc.mssFlags,RESOLVEDSEGFLAG	; flag segment resolved
 	mov	ax,SegmentID	; set, update segment identifier
 	mov	fs:[bx].MasterSegDefRecStruc.mssSegmentID,ax
 	inc	SegmentID
@@ -1458,21 +1458,21 @@ csodores:
 ; update previously last segdef pointer
 csouplast:
 	lgs	di,LastSegDefPtr	; gs:di -> previously last segdef
-	mov	WORD PTR gs:[di+MasterSegDefRecStruc.mssNextSegPtr+0],bx
-	mov	WORD PTR gs:[di+MasterSegDefRecStruc.mssNextSegPtr+2],fs
+	mov	WORD PTR gs:[di].MasterSegDefRecStruc.mssNextSegPtr+0,bx
+	mov	WORD PTR gs:[di].MasterSegDefRecStruc.mssNextSegPtr+2,fs
 
 csosetlast:
 	mov	WORD PTR LastSegDefPtr,bx	; keep pointer to last segdef in program
 	mov	WORD PTR LastSegDefPtr+2,fs
 
 ; see if first stack segment, if so, set StackSegFoundFlag and save pointer in _ENDSegDefPtr
-	test	fs:[bx+MasterSegDefRecStruc.mssFlags],STACKSEGMENTFLAG
+	test	fs:[bx].MasterSegDefRecStruc.mssFlags,STACKSEGMENTFLAG
 	je	csosegaddr		; not a stack segment
 	cmp	StackSegFoundFlag,0	; see if stack segment already found
 	jne	csosegaddr		; yes
 	mov	StackSegFoundFlag,1	; flag stack segment found
-	mov	WORD PTR _ENDSegDefPtr,bx	; save pointer to segdef of beginning STACK address
-	mov	WORD PTR _ENDSegDefPTr+2,fs
+	mov	WORD PTR _ENDSegDefPtr+0,bx	; save pointer to segdef of beginning STACK address
+	mov	WORD PTR _ENDSegDefPtr+2,fs
 
 	cmp	IsStackOption,OFF	; see if stack size set by user
 	je	csosegaddr		; no
@@ -1480,11 +1480,11 @@ csosetlast:
 IFDEF CLIPPER
 	cmp	eax,2048		; let boneheads have down to a 2K stack with Clipper
 ELSE
-	cmp	eax,fs:[bx+MasterSegDefRecStruc.mssSegLength]	; see if option stack > program stack
+	cmp	eax,fs:[bx].MasterSegDefRecStruc.mssSegLength	; see if option stack > program stack
 ENDIF
 
 	jbe	csosegaddr		; no, use program set stack
-	mov	fs:[bx+MasterSegDefRecStruc.mssSegLength],eax	; use user option set stack length
+	mov	fs:[bx].MasterSegDefRecStruc.mssSegLength,eax	; use user option set stack length
 
 ; resolve segment address
 ; fs:bx -> master segdef entry
@@ -1493,7 +1493,7 @@ csosegaddr::
 ; check if debug information segment:
 ;   name $$SYMBOLS, class DEBSYM, combine PRIVATE or
 ;   name $$TYPES, class DEBTYP, combine PRIVATE
-	mov	al,fs:[bx+MasterSegDefRecStruc.mssACBPByte]	; get acbp byte
+	mov	al,fs:[bx].MasterSegDefRecStruc.mssACBPByte	; get acbp byte
 	and	al,CFIELDOFACBP	; get combine field of current segment
 	jne	csonotdebug		; public, not debug
 
@@ -1508,7 +1508,7 @@ csosegaddr::
 	cmp	al,es:[di+6]
 	jne	csochktyp		; not DEBSYM
 
-	les	di,fs:[bx+MasterSegDefRecStruc.mssNamePtr]	; es:di -> segment name
+	les	di,fs:[bx].MasterSegDefRecStruc.mssNamePtr	; es:di -> segment name
 	cmp	di,SIZEIOBUFFBLK-MAXOBJRECNAME	; see if name might overflow
 	jb	csodebug2		; no
 	call	NormalESDIDest	; normalize es:di to destination name buffer
@@ -1525,7 +1525,7 @@ csodebug2:
 	jne	csonotdebug		; not $$SYMBOLS, not $$TYPES
 
 ; is $$SYMBOLS debug segment
-	or	fs:[bx+MasterSegDefRecStruc.mssFlags],DEBUGSYMBOLSSEGMENTFLAG	; flag debug
+	or	fs:[bx].MasterSegDefRecStruc.mssFlags,DEBUGSYMBOLSSEGMENTFLAG	; flag debug
 	jmp	SHORT csoisdebug
 
 csochktyp:
@@ -1540,7 +1540,7 @@ csochktyp:
 	cmp	al,es:[di+6]
 	jne	csonotdebug		; not DEBTYP
 
-	les	di,fs:[bx+MasterSegDefRecStruc.mssNamePtr]	; es:di -> segment name
+	les	di,fs:[bx].MasterSegDefRecStruc.mssNamePtr	; es:di -> segment name
 	cmp	di,SIZEIOBUFFBLK-MAXOBJRECNAME	; see if name might overflow
 	jb	csodebug3		; no
 	call	NormalESDIDest	; normalize es:di to destination name buffer
@@ -1554,7 +1554,7 @@ csodebug3:
 	jne	csonotdebug		; not $$TYPES
 
 ; is $$TYPES debug segment
-	or	fs:[bx+MasterSegDefRecStruc.mssFlags],DEBUGTYPESSEGMENTFLAG	; flag debug
+	or	fs:[bx].MasterSegDefRecStruc.mssFlags,DEBUGTYPESSEGMENTFLAG	; flag debug
 
 ; debug info segment
 csoisdebug:
@@ -1563,14 +1563,14 @@ csoisdebug:
 	mov	fs:[bx].MasterSegDefRecStruc.mssSegmentID,-1
 
 	mov	eax,SegStartOffset
-	mov	fs:[bx+MasterSegDefRecStruc.mssSegOffset],eax	; set offset to current
+	mov	fs:[bx].MasterSegDefRecStruc.mssSegOffset,eax	; set offset to current
 	xor	eax,eax
-	mov	fs:[bx+MasterSegDefRecStruc.mssSegLength],eax	; zero segment size
+	mov	fs:[bx].MasterSegDefRecStruc.mssSegLength,eax	; zero segment size
 	jmp	csonextent	; move to next segdef entry
 
 csonotdebug:
 	xor	ax,ax			; init segment align adjustment
-	mov	dh,fs:[bx+MasterSegDefRecStruc.mssACBPByte]	; get acbp byte
+	mov	dh,fs:[bx].MasterSegDefRecStruc.mssACBPByte	; get acbp byte
 	and	dh,AFIELDOFACBP
 	cmp	dh,BYTEALIGNSEGMENT	; see if byte aligned segment
 	je	csoaladj		; yes, no adjustment needed
@@ -1602,13 +1602,13 @@ csoaladj:
 	movzx	eax,ax
 	add	eax,SegStartOffset
 	mov	SegStartOffset,eax	; update segment start offset
-	mov	fs:[bx+MasterSegDefRecStruc.mssSegOffset],eax
-	test	fs:[bx+MasterSegDefRecStruc.mssFlags],GROUPMEMBERFLAG
+	mov	fs:[bx].MasterSegDefRecStruc.mssSegOffset,eax
+	test	fs:[bx].MasterSegDefRecStruc.mssFlags,GROUPMEMBERFLAG
 	je	csoupoff		; not a member of a group
 
 ; update group offset, if necessary
-	lgs	si,fs:[bx+MasterSegDefRecStruc.mssGroupPtr]	; gs:si -> group
-	test	gs:[si+GrpDefRecStruc.gdrGrpFlags],GRPOFFSETSETFLAG	; see if offset set for group
+	lgs	si,fs:[bx].MasterSegDefRecStruc.mssGroupPtr	; gs:si -> group
+	test	gs:[si].GrpDefRecStruc.gdrGrpFlags,GRPOFFSETSETFLAG	; see if offset set for group
 	jne	csogrplen		; yes
 
 ; If creating 3P file, make sure that first segment of group is PARA aligned
@@ -1624,29 +1624,29 @@ csoaladj:
 	sub	dl,dh			; dl holds amount needed to pad segdef to next para
 	movzx	edx,dl
 	add	SegStartOffset,edx	; update segment start offset to next para
-	add	fs:[bx+MasterSegDefRecStruc.mssSegOffset],edx
+	add	fs:[bx].MasterSegDefRecStruc.mssSegOffset,edx
 	add	eax,edx
-	mov	dl,fs:[bx+MasterSegDefRecStruc.mssACBPByte]	; get master ACBP byte
+	mov	dl,fs:[bx].MasterSegDefRecStruc.mssACBPByte	; get master ACBP byte
 	and	dl,NOT AFIELDOFACBP	; mask off alignment field of master segdef
 	or	dl,PARAALIGNSEGMENT	; merge in new para alignment field
 
 csosgo:
-	mov	gs:[si+GrpDefRecStruc.gdrGrpOffset],eax	; set group offset
-	or	gs:[si+GrpDefRecStruc.gdrGrpFlags],GRPOFFSETSETFLAG	; flag offset set
-	mov	WORD PTR gs:[si+GrpDefRecStruc.gdrFirstSegPtr],bx	; save pointer to first segment
-	mov	WORD PTR gs:[si+GrpDefRecStruc.gdrFirstSegPtr+2],fs
+	mov	gs:[si].GrpDefRecStruc.gdrGrpOffset,eax	; set group offset
+	or	gs:[si].GrpDefRecStruc.gdrGrpFlags,GRPOFFSETSETFLAG	; flag offset set
+	mov	WORD PTR gs:[si].GrpDefRecStruc.gdrFirstSegPtr+0,bx	; save pointer to first segment
+	mov	WORD PTR gs:[si].GrpDefRecStruc.gdrFirstSegPtr+2,fs
 
 ; update group length, if necessary
 csogrplen:
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssSegOffset]
-	sub	eax,gs:[si+GrpDefRecStruc.gdrGrpOffset]	; compute group and segment start delta
-	add	eax,fs:[bx+MasterSegDefRecStruc.mssSegLength]	; add in current segment length
-	cmp	eax,gs:[si+GrpDefRecStruc.gdrGrpLen]	; see if group length extended
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssSegOffset
+	sub	eax,gs:[si].GrpDefRecStruc.gdrGrpOffset	; compute group and segment start delta
+	add	eax,fs:[bx].MasterSegDefRecStruc.mssSegLength	; add in current segment length
+	cmp	eax,gs:[si].GrpDefRecStruc.gdrGrpLen	; see if group length extended
 	jb	csoupoff		; no new group length
-	mov	gs:[si+GrpDefRecStruc.gdrGrpLen],eax	; extend group length
+	mov	gs:[si].GrpDefRecStruc.gdrGrpLen,eax	; extend group length
 
 csoupoff:
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssSegLength]	; get segment size
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssSegLength	; get segment size
 	add	SegStartOffset,eax	; add to segment start offset for next segment
 	jmp	csonextent	; move to next segdef entry
 
@@ -1664,7 +1664,7 @@ csoret:
 ; fs:bx -> master segdef entry
 csoclasssel:
 	les	di,CurrentResClassPtr	; es:di -> previously selected class name
-	lds	si,fs:[bx+MasterSegDefRecStruc.mssClassPtr]	; ds:si -> current class name
+	lds	si,fs:[bx].MasterSegDefRecStruc.mssClassPtr	; ds:si -> current class name
 	cmp	si,SIZEIOBUFFBLK-MAXOBJRECNAME	; see if name might overflow
 	jb	csoclcmp		; no
 	call	NormalDSSISource	; normalize ds:si to source name buffer
@@ -1690,12 +1690,12 @@ csoclmatch:
 
 ; check if both have group pointers, group pointers must match
 ; fs:bx -> current master
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssGroupPtr]
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssGroupPtr
 	cmp	eax,CurrentResGrpPtr	; see if pointers match
 	jne	csonextent		; no
 
 csocl2:
-	les	di,fs:[bx+MasterSegDefRecStruc.mssClassPtr]	; es:di -> current class name
+	les	di,fs:[bx].MasterSegDefRecStruc.mssClassPtr	; es:di -> current class name
 	cmp	di,SIZEIOBUFFBLK-MAXOBJRECNAME	; see if name might overflow
 	jb	csodores		; no
 	call	NormalESDIDest	; normalize es:di to destination name buffer
@@ -1715,8 +1715,8 @@ csonextblk:
 csobss:
 	cmp	WORD PTR _EDATASegDefPtr+2,0	; see if first BSS segment selected
 	jne	csosetflag		; yes
-	mov	WORD PTR _EDATASegDefPtr,bx	; save pointer to segdef of beginning BSS address
-	mov	WORD PTR _EDATASegDefPTr+2,fs
+	mov	WORD PTR _EDATASegDefPtr+0,bx	; save pointer to segdef of beginning BSS address
+	mov	WORD PTR _EDATASegDefPtr+2,fs
 	jmp	csosetflag
 
 ; internal error
@@ -1764,10 +1764,10 @@ gdtret:
 ; check if not DGROUP segment
 gdt2:
 	push	bx			; save critical register
-	test	fs:[bx+MasterSegDefRecStruc.mssFlags],GROUPMEMBERFLAG	; see if member of group
+	test	fs:[bx].MasterSegDefRecStruc.mssFlags,GROUPMEMBERFLAG	; see if member of group
 	je	gdtnodg			; no, not a dgroup member by definition
-	lgs	bx,fs:[bx+MasterSegDefRecStruc.mssGroupPtr]	; gs:bx -> group entry
-	lgs	bx,gs:[bx+GrpDefRecStruc.gdrGrpNamePtr]	; gs:bx -> group name, not normalized
+	lgs	bx,fs:[bx].MasterSegDefRecStruc.mssGroupPtr	; gs:bx -> group entry
+	lgs	bx,gs:[bx].GrpDefRecStruc.gdrGrpNamePtr	; gs:bx -> group name, not normalized
 	call	NormalGSBXSource	; safe to normalize to source buffer, destination buffer used by ComputeSegOrder
 
 ; gs:bx -> group name, normalized

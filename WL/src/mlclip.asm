@@ -398,7 +398,7 @@ do_incremental  PROC
 	call	file_not_found	; check for file not found errors
 
 ; no (or invalid) ILF file was found, create one
-di_new_ilf:
+di_new_ilf::
     mov ax,lib_count
     mov start_lib_count,ax  ; save starting library count (don't track default libs)
     mov dx,OFFSET DGROUP:ilf_name   ; ds:dx -> filespec

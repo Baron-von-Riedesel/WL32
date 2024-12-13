@@ -55,7 +55,6 @@ EXTRN	is_local:BYTE
 ; initialized local variables
 
 ; byte values
-EVEN                        ; maximize speed on 8086 and better
 _textflag   DB  0           ; nonzero if DOSSEG and segment _TEXT has 16 bytes inserted
 first_lnamesblk_ptr DW  0   ; segment of first allocated lnames logical names block
 
@@ -64,7 +63,6 @@ first_lnamesblk_ptr DW  0   ; segment of first allocated lnames logical names bl
 ; uninitialized local variables
 
 ; byte values
-EVEN
 hash_used   DB  ?           ; nonzero if lnames hash code previously used
 EVEN
 acbp_byte   DB  ?           ; ACBP byte in segdef record

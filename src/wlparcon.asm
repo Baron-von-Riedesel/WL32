@@ -369,7 +369,7 @@ lineerr:
 ; read to end of response file
 ShortRead:
 	mov	bx,ax			; offset into buffer
-	mov	BYTE PTR [bx+OFFSET ConfigFileString],0	; null terminate after final character read
+	mov	[bx+ConfigFileString],0	; null terminate after final character read
 	jmp	SHORT rcfret
 
 ReadConfigFile	ENDP

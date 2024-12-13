@@ -53,15 +53,6 @@ FILEADDOBJFLAG	EQU	20000h
 FILEADDLIBFLAG	EQU	40000h
 PARAMETERFLAG	EQU	80000h
 
-; option list equates
-;OPTLISTOFFTEXTPTR	EQU	0
-;OPTLISTOFFOPTPTR	EQU	2
-;OPTLISTOFFARGPTR	EQU	4
-;OPTLISTOFFARGFLAGS	EQU	6
-;OPTLISTOFFPARAMLOW	EQU	8
-;OPTLISTOFFPARAMHIGH	EQU	12
-;OPTLISTOFFEXTRAFLAG	EQU	16
-
 ;--- wArgFlgs values
 OPTFLG_NOPARAM    equ 0
 OPTFLG_STRINGPARAM equ 2
@@ -70,15 +61,14 @@ OPTFLG_GOBBLESPACE equ 4000h
 OPTFLG_IGNOREIFON  equ 8000h
 
 OPTITEM struct
-wOptText dw ?	; offset option text
-wOptVal  dw ?	; offset option value
-wArgPtr  dw ?	; offset argument storage
-wArgFlgs dw ?	; argument flags
-dwParamLow dd ?	; low boundary
+wOptText    dw ?; offset option text
+wOptVal     dw ?; offset option value
+wArgPtr     dw ?; offset argument storage
+wArgFlgs    dw ?; argument flags
+dwParamLow  dd ?; low boundary
 dwParamHigh dd ?; high boundary
 dwExtraFlgs dd ?; extra processing flags
 OPTITEM ends
-
 
 ; object record type names
 BLKDEF	EQU	 7ah		; non-Microsoft, ignore
@@ -270,6 +260,14 @@ LIBDictHeaderStruc	STRUC
 						; bit 0 set if one more modules used
 LIBDictHeaderStruc	ENDS
 
+LIBHeaderStruc	STRUC
+	lhsType		DB	?	; should always be 0F0h or MSLHED
+	lhsRecLen	DW	?	; record length
+	lhsDictOff	DD	?	; dictionary offset in file
+	lhsDictSize	DW	?	; dictionary size in 512-byte blocks
+	lhsFlags	DB	?	; library flags
+LIBHeaderStruc	ENDS
+
 MASTERSEGDEFSYSVARSIZE	EQU	10h
 MAXCOUNTMASTERSEGDEFBLK	EQU	(4000h-MASTERSEGDEFSYSVARSIZE)/(SIZE MasterSegDefRecStruc)
 SIZEMASTERSEGDEFBLK	EQU	(MAXCOUNTMASTERSEGDEFBLK*SIZE MasterSegDefRecStruc)+MASTERSEGDEFSYSVARSIZE
@@ -340,10 +338,7 @@ SIZEINDSEGDEFBLK	EQU	(MAXCOUNTINDSEGDEFBLK*SIZE IndSegDefRecStruc)+INDSEGDEFSYSV
 
 ; structure of individual segdef block
 IndSegDefBlkStruc	STRUC
-union
 	isdbCount	DW	?	; count of entries in block
-	msdbCount	DW	?	; count of entries in block
-ends
 	isdbNextPtr	DW	?	; pointer to next block, selector value
 IndSegDefBlkStruc	ENDS
 
@@ -378,10 +373,7 @@ SIZEGRPPTRTABLEBLK	EQU	(MAXCOUNTGRPPTRTABLEBLK*4)+GRPPTRTABLESYSVARSIZE
 ; structure of group pointer table block
 GrpPtrTableBlkStruc	STRUC
 	gptbCount	DW	?	; count of entries in block
- union
 	gptbNextPtr	DW	?	; pointer to next block, selector value
-	isdbNextPtr	DW	?	; pointer to next block, selector value
- ends
 GrpPtrTableBlkStruc	ENDS
 
 GRPDEFSYSVARSIZE	EQU	10h
@@ -413,10 +405,7 @@ SIZESYMPTRTABLEBLK	EQU	(MAXCOUNTSYMPTRTABLEBLK*4)+SYMPTRTABLESYSVARSIZE
 ; structure of symbol pointer table block
 SymPtrTableBlkStruc	STRUC
 	sptbCount	DW	?	; count of entries in block
- union
 	sptbNextPtr	DW	?	; pointer to next block, selector value
-	isdbNextPtr	DW	?	; pointer to next block, selector value
- ends
 SymPtrTableBlkStruc	ENDS
 
 RELOCENTRYSYSVARSIZE	EQU	10h

@@ -167,7 +167,7 @@ EXTRN	ScanAhead:PROC
 
 CreateClipperModEntry	PROC
 	les	di,CurrentSymbolSegPtr
-	mov	ax,WORD PTR es:[di+MasterSegDefRecStruc.mssSegLength]	; get length (symbol count*16)
+	mov	ax,WORD PTR es:[di].MasterSegDefRecStruc.mssSegLength	; get length (symbol count*16)
 	shr	ax,2			; 4 bytes/symbol
 	mov	cx,ax
 	shr	cx,2			; cx==symbol count
@@ -320,7 +320,7 @@ pcschklast:
 	mov	ax,CurrentModSymCount
 	shl	ax,4				; *16
 	movzx	eax,ax
-	cmp	eax,gs:[di+MasterSegDefRecStruc.mssSegLength]
+	cmp	eax,gs:[di].MasterSegDefRecStruc.mssSegLength
 	jb	pcsdone				; not last LEDATA
 
 	mov	NeedCompSymProcess,ON	; flag further compression parsing needed for MODEND check
@@ -372,14 +372,14 @@ gcstrynext:
 	jc	gcslow
 
 gcshigh:
-	mov	di,WORD PTR es:[bx+ClipSymRecStruc.cssHighPtr]	; get high pointer in ax:di
-	mov	ax,WORD PTR es:[bx+ClipSymRecStruc.cssHighPtr+2]
+	mov	di,WORD PTR es:[bx].ClipSymRecStruc.cssHighPtr+0	; get high pointer in ax:di
+	mov	ax,WORD PTR es:[bx].ClipSymRecStruc.cssHighPtr+2
 	mov	dl,ClipSymRecStruc.cssHighPtr	; flag previous lower
 	jmp	SHORT gcscomploop
 
 gcslow:
-	mov	di,WORD PTR es:[bx+ClipSymRecStruc.cssLowPtr]	; get low pointer in ax:di
-	mov	ax,WORD PTR es:[bx+ClipSymRecStruc.cssLowPtr+2]
+	mov	di,WORD PTR es:[bx].ClipSymRecStruc.cssLowPtr+0	; get low pointer in ax:di
+	mov	ax,WORD PTR es:[bx].ClipSymRecStruc.cssLowPtr+2
 	mov	dl,ClipSymRecStruc.cssLowPtr	; flag previous higher
 	jmp	SHORT gcscomploop
 
@@ -537,9 +537,9 @@ csfdofix:
 	mov	cx,es				; save -> current entry
 	les	di,es:[bx]			; es:di -> symbol table name entry
 
-	test	es:[di+ClipSymRecStruc.cssFlags],al	; see if already flagged as procedure
+	test	es:[di].ClipSymRecStruc.cssFlags,al	; see if already flagged as procedure
 	jne	csfret				; yes
-	or	es:[di+ClipSymRecStruc.cssFlags],al	; flag as procedure
+	or	es:[di].ClipSymRecStruc.cssFlags,al	; flag as procedure
 	mov	es,cx				; es -> current entry
 	or	BYTE PTR es:[bx+4],10h	; flag as new (not previously flagged as procedure)
 
@@ -589,21 +589,21 @@ cfcchkloop:
 cfcnonproc:
 	test	al,10h			; see if new variable
 	jne	cfcnewvar			; yes
-	test	BYTE PTR es:[di+ClipSymRecStruc.cssFlags],40h	; see if flagged as variable/nonprocedure
+	test	BYTE PTR es:[di].ClipSymRecStruc.cssFlags,40h	; see if flagged as variable/nonprocedure
 	jne	cfcoldvar			; yes
 
 cfcnewvar:
-	or	BYTE PTR es:[di+ClipSymRecStruc.cssFlags],40h	; flag used as variable, possibly redundant
+	or	BYTE PTR es:[di].ClipSymRecStruc.cssFlags,40h	; flag used as variable, possibly redundant
 	mov	ax,UniqueSymbolCount	; get unique symbol offset
-	mov	es:[di+ClipSymRecStruc.cssNonProcValue],ax	; update variable unique symbol for this entry
+	mov	es:[di].ClipSymRecStruc.cssNonProcValue,ax	; update variable unique symbol for this entry
 	jmp	SHORT cfcbumpcount
 
 cfcoldvar:
-	mov	ax,es:[di+ClipSymRecStruc.cssNonProcValue]	; get symbol number of variable
+	mov	ax,es:[di].ClipSymRecStruc.cssNonProcValue	; get symbol number of variable
 	jmp	SHORT cfcflagcomp	; flag compression of old symbol
 
 cfcoldproc:
-	mov	ax,es:[di+ClipSymRecStruc.cssProcValue]	; get symbol number of procedure
+	mov	ax,es:[di].ClipSymRecStruc.cssProcValue	; get symbol number of procedure
 
 cfcflagcomp:
 	mov	es,dx				; es -> current clipper module
@@ -613,7 +613,7 @@ cfcflagcomp:
 ; es -> symbol table name entry
 cfcnewproc:
 	mov	ax,UniqueSymbolCount	; get unique symbol offset
-	mov	es:[di+ClipSymRecStruc.cssProcValue],ax	; update procedure unique symbol for this entry
+	mov	es:[di].ClipSymRecStruc.cssProcValue,ax	; update procedure unique symbol for this entry
 ; fall through to redundant load, faster than jumping around
 
 cfcstatic:
@@ -639,9 +639,9 @@ cfcnext:
 	shl	ax,4
 	movzx	eax,ax
 	les	di,CurrentSymbolSegPtr
-	mov	es:[di+MasterSegDefRecStruc.mssSegLength],eax
-	les	di,es:[di+MasterSegDefRecStruc.mssFirstIndSegPtr]	; es:di -> individual segdef
-	mov	es:[di+IndSegDefRecStruc.isdrSegLength],eax
+	mov	es:[di].MasterSegDefRecStruc.mssSegLength,eax
+	les	di,es:[di].MasterSegDefRecStruc.mssFirstIndSegPtr	; es:di -> individual segdef
+	mov	es:[di].IndSegDefRecStruc.isdrSegLength,eax
 	mov	es,CurrentClipperModPtr
 	mov	es:[ClipperModEntStruc.cmsPriorUnique],dx	; save unique symbols previous to this module
 
@@ -697,7 +697,7 @@ FixupClipperTokens	PROC
 	push	gs
 	push	di
 
-	mov	gs,WORD PTR es:[di+IndSegDefRecStruc.isdrModulePtr]	; gs -> current buffer base
+	mov	gs,WORD PTR es:[di].IndSegDefRecStruc.isdrModulePtr	; gs -> current buffer base
 	mov	ax,gs:[IOBuffHeaderStruc.ibhsClipModPtr]
 	mov	CurrentClipperModPtr,ax	; update current clipper module pointer
 
@@ -742,7 +742,7 @@ fctscanloop:
 	xor	ch,ch
 	mov	cl,ah			; bad value in cx
 	pop	di				; es:di -> segdef entry
-	mov	gs,WORD PTR es:[di+IndSegDefRecStruc.isdrModulePtr]	; gs -> current buffer base
+	mov	gs,WORD PTR es:[di].IndSegDefRecStruc.isdrModulePtr	; gs -> current buffer base
 	lgs	si,gs:[IOBuffHeaderStruc.ibhsFileNamePtr]	; gs:si -> file name
 	mov	dx,OFFSET CompBuffSource	; string to printer after transfer
 	push	ds
@@ -922,7 +922,7 @@ ProcessSymbolTable	PROC
 	add	bx,SIZE ClipperModEntStruc	; adjust past system bytes
 	mov	dx,cx			; dx holds count of bytes after compression removal
 
-	mov	gs,WORD PTR es:[di+IndSegDefRecStruc.isdrModulePtr]	; gs -> current buffer base
+	mov	gs,WORD PTR es:[di].IndSegDefRecStruc.isdrModulePtr	; gs -> current buffer base
 	mov	ax,gs:[IOBuffHeaderStruc.ibhsClipModPtr]
 	mov	CurrentClipperModPtr,ax	; update current clipper module pointer
 

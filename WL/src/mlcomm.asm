@@ -52,8 +52,6 @@ EXTRN   dgrouptext:BYTE
 
 ; initialized local variables
 
-EVEN                        ; maximize speed on 8086 and better
-
 ; word values
 near_comm_segptr    DW  0   ; pointer to segdef entry of segment used for near communals
 far_comm_segptr     DW  0   ; pointer to segdef entry of segment currently used for far communals
@@ -67,8 +65,6 @@ far_comm_len    DD  0       ; running length of far communal variables
 
 ; uninitialized local variables
 
-EVEN
-
 ; doubleword values
 temp_com_val    DD  ?       ; temporary storage for computing communal variable length
 
@@ -78,10 +74,9 @@ temp_com_val    DD  ?       ; temporary storage for computing communal variable 
 
 .CONST
 
-EVEN
 c_commontext    DB  'c_common',0    ; segment name to check against for near communal use
-bsstext DB  'BSS',0         ; class name to check against for near communal use
-far_bsstext DB  'FAR_BSS',0 ; segment/class name for far communal variables
+bsstext         DB  'BSS',0         ; class name to check against for near communal use
+far_bsstext     DB  'FAR_BSS',0     ; segment/class name for far communal variables
 huge_bsstext    DB  'HUGE_BSS',0    ; segment/class name for huge communal variables
 
 ;*****************************

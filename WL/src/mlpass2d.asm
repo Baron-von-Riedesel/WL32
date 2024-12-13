@@ -64,10 +64,7 @@ EXTRN	ignore_fixupp_flag:BYTE
 
 ; initialized local variables
 
-EVEN                        ; maximize speed on 8086 and better
-
 ; byte values
-EVEN
 is_entry_point  DB  0       ; nonzero if have an entry point from modend record
 clipper_fixflag	DB	0		; nonzero if previous clipper procedure fixed up
 bounds_check    DW  SEGDEF_MAX,GRPDEF_MAX,EXTDEF_MAX
@@ -83,7 +80,6 @@ targ_jmp_table  DW  OFFSET _TEXT:gta_seg,OFFSET _TEXT:gta_grp
 ; uninitialized local variables
 
 ; byte values
-EVEN                        ; maximize speed on 8086 and better
 loc     DB  ?               ; loc field
 EVEN
 frame_method    DB  ?       ; frame method for fixup
@@ -942,7 +938,7 @@ check_index PROC
     ja  ci_oob              ; yes
     ret                     ; no
 
-ci_oob:
+ci_oob::
     or  bl,bl               ; check if segment index
     jne ci_grpchk           ; no
 
@@ -988,7 +984,7 @@ get_target_addr PROC
     jmp WORD PTR [bx]
 
 ; segment index, method 0 or 4
-gta_seg:
+gta_seg::
     mov bx,OFFSET DGROUP:seg_partent_indptr  ; set bx to base of segment partition address array
     add bx,ax               ; bx -> array element holding segment partition entry address
     mov es,[bx]             ; es -> segment partition entry
@@ -1078,7 +1074,7 @@ gta_is_abs:
     ret
 
 ; group index, method 1 or 5
-gta_grp:
+gta_grp::
     mov bx,OFFSET DGROUP:grp_ent_indptr ; set bx to base of group entry array address
     add bx,ax               ; bx -> array element holding group entry address 
     mov es,[bx]             ; es -> group entry
@@ -1098,7 +1094,7 @@ gta_grp:
     ret
 
 ; external index, method 2 or 6
-gta_ext:
+gta_ext::
     mov bx,OFFSET DGROUP:ext_defent_indptr  ; set bx to base of pubdef declarations entry address array
     add bx,ax               ; bx -> array element holding pubdef declarations entry address
     mov es,[bx]             ; es -> pubdef declarations entry

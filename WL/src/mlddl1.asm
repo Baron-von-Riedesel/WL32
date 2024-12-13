@@ -32,6 +32,7 @@ BIN_HEADER_SIZE EQU 20      ; size of segment binary header
 INCLUDE MLEQUATE.INC
 INCLUDE MLDATA.INC
 INCLUDE MLERRMES.INC
+INCLUDE MLDDL.INC
      
 ;*****************************
 ;* Public declarations       *
@@ -72,92 +73,9 @@ extcount    DW  0           ; count of externals in module
 modend_ptr  DW  0           ; pointer to block that holds MODEND info
 
 ; structures
-DDL_HEADER_STRUC    STRUC
-    dh_sig1 DB  ?           ; DDL file signature bytes
-    dh_sig2 DB  ?
-    dh_sig3 DB  ?
-    dh_sig4 DB  ?
-    dh_majorver DB  ?       ; major version number
-    dh_minor1   DB  ?       ; minor version number 1
-    dh_minor2   DB  ?       ; minor version number 2
-    dh_minor3   DB  ?       ; minor version alpha
-    dh_hdrsize  DW  ?       ; size of module header
-    dh_loadsize DW  ?       ; size of DDL loader
-    dh_loadstart    DD  ?   ; file position of start of loader
-    dh_flags    DD  ?       ; DDL flags
-                            ; bit 0==main module flag
-                            ; bit 1==required root modules flag
-                            ; bit 2==required overlay modules flag
-                            ; bit 3==elective root modules flag
-                            ; bit 4==elective overlay modules flag
-                            ; bit 5==DOSSEG flag
-                            ; bit 6==contains pre-loading routine
-    dh_op       DD  ?       ; /op option value
-    dh_st       DW  ?       ; /st option value
-    dh_as       DW  ?       ; /as option value
-    dh_os       DW  ?       ; /os option value
-    dh_ol       DW  ?       ; /ol option value
-    dh_mem      DB  ?       ; 0==free mem op, nonzero==alloc mem op
-    dh_minop    DB  ?       ; 0==normal /op, 1==/op:m
-    dh_ox       DB  ?       ; 0==regular memory for op, nonzero==EMS page frame for op
-    dh_r        DB  ?       ; /r option setting
-    dh_cla      DB  ?       ; /cla option setting
-    dh_ou       DB  ?       ; /ou option setting
-    dh_ort      DB  ?       ; /ort setting
-    dh_orp      DB  ?       ; /orp setting
-    dh_modcount DW  ?       ; module count in DDL
-    dh_ddlcount DW  ?       ; count of DDL's in dependency list (for main module)
-    dh_reqroot  DW  ?       ; count of required root modules in DDL
-    dh_reqovl   DW  ?       ; count of required overlay modules in DDL
-    dh_elecroot DW  ?       ; count of elective root modules in DDL
-    dh_elecovl  DW  ?       ; count of elective overlay modules in DDL
-    dh_ddlstart DD  ?       ; file position of start of DDL dependency list
-    dh_preload  DD  ?       ; file position of pre-load module
-    dh_modstart DD  ?       ; file position of start of DDL module file position dword entries
-    dh_dictstart    DD  ?   ; file position of start of DDL dictionary
-
-	dh_ohp3		DB	?		; flag ohp3 use
-	dh_ohp_flag	DB	?		; nonzero if /ohp allocate to amount flag set
-	dh_oht_flag	DB	?		; nonzero if /oht allocate to amount flag set
-	dh_pad		DB	?		; pad value
-	dh_ohp		DW	?		; /ohp size in K
-	dh_oht		DW	?		; /oht size in K
-
-    dh_reser3   DD  ?       ; reserved for future
-    dh_reser4   DD  ?       ; reserved for future
-    dh_oxevar   DB  32 DUP (?)  ; specified /ox environment variable
-DDL_HEADER_STRUC    ENDS
 
 ddl_header  DDL_HEADER_STRUC    <'M','D','D','L','2','0','0','a',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0>
 
-MOD_HEADER_STRUC    STRUC
-    mh_flags    DD  ?       ; module flags
-                            ; bit 0==main module flag
-                            ; bit 1==required root module flag
-                            ; bit 2==required overlay module flag
-                            ; bit 3==elective root module flag
-                            ; bit 4==elective overlay module flag
-                            ; bit 6==pre-load module
-                            ; bit 7==contains communal variables (COMDEFs)
-    mh_id       DW  ?       ; module identifier
-    mh_segcount DW  ?       ; count of segments in module
-    mh_grpcount DW  ?       ; count of groups in module
-    mh_pubcount DW  ?       ; count of publics
-    mh_comcount DW  ?       ; count of communals
-    mh_extcount DW  ?       ; count of externals
-    mh_lnames   DD  ?       ; file position of start of lnames name block
-    mh_segdef   DD  ?       ; file position of start of segment entries
-    mh_grpdef   DD  ?       ; file position of start of group entries
-    mh_symbols  DD  ?       ; file position of start of symbols (pub/ext/comdef) name block
-    mh_pubdef   DD  ?       ; file position of start of pubdef entries
-    mh_comdef   DD  ?       ; file position of start of comdef entries
-    mh_extdef   DD  ?       ; file position of start of extdef entries
-    mh_binary   DD  ?       ; file position of start of binary data
-    mh_startup  DB  7 DUP (?)   ; start address if main module in fixup notation
-    mh_pad      DB  ?       ; pad to keep at dword boundary
-    mh_binfpos  DD  ?       ; file position of each binary entry file position table
-    mh_reser2   DD  ?       ; reserved for future
-MOD_HEADER_STRUC    ENDS
 
 mod_header  MOD_HEADER_STRUC    <>
 
@@ -363,7 +281,7 @@ wdd_listdone:
 wdd_ret:
     ret
 
-wdd_error:
+wdd_error::
     jmp NEAR PTR dos_error  ; error opening file
 
 write_ddl_depend    ENDP
@@ -667,7 +585,7 @@ wdl_transloop:
     jc  wdl_error           ; error occurred
     ret
 
-wdl_error:
+wdl_error::
     jmp NEAR PTR dos_error  ; error opening file
 
 write_ddl_loader    ENDP
@@ -1062,7 +980,7 @@ wsb_3:
 
 ; translate segment name seg:off to file position
 wsb_transloop:
-    mov ax,ds:[si+seg_namblk_ptr]   ; get segment of segment name
+    mov ax,[si].SEG_DEFENT_STRUC.seg_namblk_ptr   ; get segment of segment name
     mov di,OFFSET DGROUP:ddl_symbol_lookup  ; di -> start of lookup table
     mov dx,DGROUP
     mov es,dx               ; es -> warplink data
@@ -1078,7 +996,7 @@ wsb_found:
     mov di,es:[di+2]        ; get high word
 
 ; file position corresponding to segment name in di:ax
-    add ax,ds:[si+seg_nament_ptr]   ; add in segment name offset
+    add ax,[si].SEG_DEFENT_STRUC.seg_nament_ptr   ; add in segment name offset
     adc di,0                ; carry to high word
     sub ax,4                ; adjust for 2 system info words not written
     sbb di,0                ; borrow to high word
@@ -1086,11 +1004,11 @@ wsb_found:
     sub ax,WORD PTR es:mod_header.mh_lnames ; make relative to start of lnames block
     sbb di,WORD PTR es:mod_header.mh_lnames+2
 
-    mov [si+seg_nament_ptr],ax  ; save low file position
-    mov [si+seg_namblk_ptr],di  ; save high file position
+    mov [si].SEG_DEFENT_STRUC.seg_nament_ptr,ax  ; save low file position
+    mov [si].SEG_DEFENT_STRUC.seg_namblk_ptr,di  ; save high file position
 
 ; translate class name seg:off to file position
-    mov ax,ds:[si+class_namblk_ptr] ; get segment of segment name
+    mov ax,[si].SEG_DEFENT_STRUC.class_namblk_ptr ; get segment of segment name
     mov di,OFFSET DGROUP:ddl_symbol_lookup  ; di -> start of lookup table
 
 wsb_search2:
@@ -1104,7 +1022,7 @@ wsb_found2:
     mov di,es:[di+2]        ; get high word
 
 ; file position corresponding to segment name in di:ax
-    add ax,ds:[si+class_nament_ptr] ; add in segment name offset
+    add ax,[si].SEG_DEFENT_STRUC.class_nament_ptr ; add in segment name offset
     adc di,0                ; carry to high word
     sub ax,4                ; adjust for 2 system info words not written
     sbb di,0                ; borrow to high word
@@ -1112,8 +1030,8 @@ wsb_found2:
     sub ax,WORD PTR es:mod_header.mh_lnames ; make relative to start of lnames block
     sbb di,WORD PTR es:mod_header.mh_lnames+2
 
-    mov [si+class_nament_ptr],ax    ; save low file position
-    mov [si+class_namblk_ptr],di    ; save high file position
+    mov [si].SEG_DEFENT_STRUC.class_nament_ptr,ax    ; save low file position
+    mov [si].SEG_DEFENT_STRUC.class_namblk_ptr,di    ; save high file position
 
 wsb_nextent:
     add si,32               ; move to next entry
@@ -1135,7 +1053,7 @@ wsb_nextblk:
     mov ax,ds:[2]           ; get pointer to next block, if any
     jmp NEAR PTR wsb_loop   ; loop back and write it
 
-wsb_error:
+wsb_error::
     jmp NEAR PTR dos_error  ; error opening file
 
 write_segdef_block  ENDP
@@ -1175,7 +1093,7 @@ wgb_2:
 
 ; translate group name seg:off to file position
 wgb_transloop:
-    mov ax,ds:[si+ges_grp_namblk_ptr]   ; get segment of group name
+    mov ax,[si].GRP_ENT_STRUC.ges_grp_namblk_ptr   ; get segment of group name
     mov di,OFFSET DGROUP:ddl_symbol_lookup  ; di -> start of lookup table
     mov dx,DGROUP
     mov es,dx               ; es -> warplink data
@@ -1191,7 +1109,7 @@ wgb_found:
     mov di,es:[di+2]        ; get high word
 
 ; file position corresponding to segment name in di:ax
-    add ax,ds:[si+ges_grp_nament_ptr]   ; add in group name offset
+    add ax,[si].GRP_ENT_STRUC.ges_grp_nament_ptr   ; add in group name offset
     adc di,0                ; carry to high word
     sub ax,4                ; adjust for 2 system info words not written
     sbb di,0                ; borrow to high word
@@ -1199,8 +1117,8 @@ wgb_found:
     sub ax,WORD PTR es:mod_header.mh_lnames ; make relative to start of lnames block
     sbb di,WORD PTR es:mod_header.mh_lnames+2
 
-    mov [si+ges_grp_nament_ptr],ax  ; save low file position
-    mov [si+ges_grp_namblk_ptr],di  ; save high file position
+    mov [si].GRP_ENT_STRUC.ges_grp_nament_ptr,ax  ; save low file position
+    mov [si].GRP_ENT_STRUC.ges_grp_namblk_ptr,di  ; save high file position
 
 wgb_nextent:
     add si,16               ; move to next entry
@@ -1304,13 +1222,13 @@ wbb_entloop:
     mov es,ax               ; es -> entry in segdef block
     mov curr_segdefent_ptr,ax   ; save -> to current segdef entry
     push    es              ; save es -> segdef entry
-    mov al,es:[sdes_acbp_byte]  ; get acbp byte
+    mov al,es:[SEG_DEFENT_STRUC.sdes_acbp_byte]  ; get acbp byte
     and al,0e0h             ; get align field
     je  to_wbb_zeroseg      ; absolute segment, no bytes to save
-    mov es,es:[seg_partent_firstptr]    ; es -> first segment partition entry
-    mov al,es:[spes_acbp_byte]  ; get acbp byte
+    mov es,es:[SEG_DEFENT_STRUC.seg_partent_firstptr]    ; es -> first segment partition entry
+    mov al,es:[SEG_PARTENT_STRUC.spes_acbp_byte]         ; get acbp byte
     and ax,2                ; get Big bit (zero high byte)
-    or  ax,es:[spes_part_len]   ; merge in length of segment
+    or  ax,es:[SEG_PARTENT_STRUC.spes_part_len]   ; merge in length of segment
     jne wbb_nonzero         ; nonzero length segment
 
 to_wbb_zeroseg:
@@ -1319,7 +1237,7 @@ to_wbb_zeroseg:
 ; segment has nonzero length, check the binary blocks and see if any data was
 ; specified for the segment
 wbb_nonzero:
-    mov ax,es:[spes_part_len]
+    mov ax,es:[SEG_PARTENT_STRUC.spes_part_len]
     mov seg_truelen,ax      ; save length of overlaid segment
     mov ax,buffer_base      ; ax -> i/o buffer
     sub ax,0fffh            ; ax -> 64K-16 area below i/o buffer (work i/o buffer)
@@ -1370,7 +1288,7 @@ wbb_3:
     mov ds:[8],si           ; save start of iterated or enumerated data block-2
     add WORD PTR ds:[8],2   ; adjust for data offset
     mov ds:[10],cx          ; save record length not counting segment index
-    cmp al,BYTE PTR es:[bhs_segind] ; see if segment indices match
+    cmp al,BYTE PTR es:[BIN_HEADER_STRUC.bhs_segind] ; see if segment indices match
     jne wbb_nextblk         ; no
 
 ; this block of binary data belongs to this segment
@@ -1404,12 +1322,12 @@ wbb_nextblk:
     or  ax,ax               ; see if exists
     jne wbb_searchloop      ; yes
 
-    mov cx,es:[bhs_length]  ; get length of init'ed binary data
+    mov cx,es:[BIN_HEADER_STRUC.bhs_length]  ; get length of init'ed binary data
     jcxz    wbb_zeroseg     ; zero, ignore
 
     mov ax,DGROUP
     mov ds,ax
-    mov si,es:[bhs_offset]
+    mov si,es:[BIN_HEADER_STRUC.bhs_offset]
     mov ds:[bin_header.bhs_offset],si   ; save offset of binary data
     mov ds:[bin_header.bhs_length],cx ; save length of binary data
 
@@ -1468,7 +1386,7 @@ wbb_ret:
     pop bp                  ; restore critical register
     ret
 
-wbb_error:
+wbb_error::
     jmp NEAR PTR dos_error  ; error opening file
 
 write_binary_block  ENDP
@@ -1542,23 +1460,23 @@ dpf_2:
 
 ; init fixup file position info to start of fixup block
     mov ax,WORD PTR bin_header.bhs_fixptr
-    mov WORD PTR es:[fhs_lowinfo],ax
-    mov WORD PTR es:[fhs_lowloc],ax
-    mov WORD PTR es:[fhs_nearinfo],ax
-    mov WORD PTR es:[fhs_nearloc],ax
-    mov WORD PTR es:[fhs_farinfo],ax
-    mov WORD PTR es:[fhs_farloc],ax
+    mov WORD PTR es:[FIXUP_HEADER_STRUC.fhs_lowinfo],ax
+    mov WORD PTR es:[FIXUP_HEADER_STRUC.fhs_lowloc],ax
+    mov WORD PTR es:[FIXUP_HEADER_STRUC.fhs_nearinfo],ax
+    mov WORD PTR es:[FIXUP_HEADER_STRUC.fhs_nearloc],ax
+    mov WORD PTR es:[FIXUP_HEADER_STRUC.fhs_farinfo],ax
+    mov WORD PTR es:[FIXUP_HEADER_STRUC.fhs_farloc],ax
     mov ax,WORD PTR bin_header.bhs_fixptr+2
-    mov WORD PTR es:[fhs_lowinfo+2],ax
-    mov WORD PTR es:[fhs_lowloc+2],ax
-    mov WORD PTR es:[fhs_nearinfo+2],ax
-    mov WORD PTR es:[fhs_nearloc+2],ax
-    mov WORD PTR es:[fhs_farinfo+2],ax
-    mov WORD PTR es:[fhs_farloc+2],ax
+    mov WORD PTR es:[FIXUP_HEADER_STRUC.fhs_lowinfo+2],ax
+    mov WORD PTR es:[FIXUP_HEADER_STRUC.fhs_lowloc+2],ax
+    mov WORD PTR es:[FIXUP_HEADER_STRUC.fhs_nearinfo+2],ax
+    mov WORD PTR es:[FIXUP_HEADER_STRUC.fhs_nearloc+2],ax
+    mov WORD PTR es:[FIXUP_HEADER_STRUC.fhs_farinfo+2],ax
+    mov WORD PTR es:[FIXUP_HEADER_STRUC.fhs_farloc+2],ax
     xor ax,ax               ; zero init counts
-    mov es:[fhs_lowcount],ax
-    mov es:[fhs_nearcount],ax
-    mov es:[fhs_farcount],ax
+    mov es:[FIXUP_HEADER_STRUC.fhs_lowcount],ax
+    mov es:[FIXUP_HEADER_STRUC.fhs_nearcount],ax
+    mov es:[FIXUP_HEADER_STRUC.fhs_farcount],ax
 
     mov di,30               ; 3 sets of word/dword/dword
     mov ch,6                ; six fixup passes needed; info for low-byte, near, far
@@ -1607,43 +1525,43 @@ dpf_nextblk:
     cmp ch,6                ; see if low-byte info
     jne dpf_ni              ; no
     mov ax,lobyte_count     ; update low-byte fixup info
-    mov es:[fhs_lowcount],ax
-    add WORD PTR es:[fhs_lowinfo],30    ; update low-byte location
-    adc WORD PTR es:[fhs_lowinfo+2],0   ; carry to high word
-    add WORD PTR es:[fhs_nearinfo],di   ; update next (near fixup) info
-    adc WORD PTR es:[fhs_nearinfo+2],0  ; carry to high word
+    mov es:[FIXUP_HEADER_STRUC.fhs_lowcount],ax
+    add WORD PTR es:[FIXUP_HEADER_STRUC.fhs_lowinfo],30    ; update low-byte location
+    adc WORD PTR es:[FIXUP_HEADER_STRUC.fhs_lowinfo+2],0   ; carry to high word
+    add WORD PTR es:[FIXUP_HEADER_STRUC.fhs_nearinfo],di   ; update next (near fixup) info
+    adc WORD PTR es:[FIXUP_HEADER_STRUC.fhs_nearinfo+2],0  ; carry to high word
     jmp SHORT dpf_passchk
 
 dpf_ni:
     cmp ch,5                ; see if near info
     jne dpf_fi              ; no
     mov ax,near_count       ; update near fixup info
-    mov es:[fhs_nearcount],ax
-    add WORD PTR es:[fhs_farinfo],di    ; update start of next field
-    adc WORD PTR es:[fhs_farinfo+2],0   ; carry to high word
+    mov es:[FIXUP_HEADER_STRUC.fhs_nearcount],ax
+    add WORD PTR es:[FIXUP_HEADER_STRUC.fhs_farinfo],di    ; update start of next field
+    adc WORD PTR es:[FIXUP_HEADER_STRUC.fhs_farinfo+2],0   ; carry to high word
     jmp SHORT dpf_passchk
 
 dpf_fi:
     cmp ch,4                ; see if far info
     jne dpf_ll              ; no
     mov ax,far_count        ; update far fixup info
-    mov es:[fhs_farcount],ax
-    add WORD PTR es:[fhs_lowloc],di ; update start of next field
-    adc WORD PTR es:[fhs_lowloc+2],0    ; carry to high word
+    mov es:[FIXUP_HEADER_STRUC.fhs_farcount],ax
+    add WORD PTR es:[FIXUP_HEADER_STRUC.fhs_lowloc],di ; update start of next field
+    adc WORD PTR es:[FIXUP_HEADER_STRUC.fhs_lowloc+2],0    ; carry to high word
     jmp SHORT dpf_passchk
 
 dpf_ll:
     cmp ch,3                ; see if low-byte location
     jne dpf_nl              ; no
-    add WORD PTR es:[fhs_nearloc],di    ; update start of next field
-    adc WORD PTR es:[fhs_nearloc+2],0   ; carry to high word
+    add WORD PTR es:[FIXUP_HEADER_STRUC.fhs_nearloc],di    ; update start of next field
+    adc WORD PTR es:[FIXUP_HEADER_STRUC.fhs_nearloc+2],0   ; carry to high word
     jmp SHORT dpf_passchk
 
 dpf_nl:
     cmp ch,2                ; see if near location
     jne dpf_passchk         ; no
-    add WORD PTR es:[fhs_farloc],di ; update start of next field
-    adc WORD PTR es:[fhs_farloc+2],0    ; carry to high word
+    add WORD PTR es:[FIXUP_HEADER_STRUC.fhs_farloc],di ; update start of next field
+    adc WORD PTR es:[FIXUP_HEADER_STRUC.fhs_farloc+2],0    ; carry to high word
 
 dpf_passchk:
     mov ax,first_fixblk_ptr ; reset pointer to start of fixup block
@@ -2392,22 +2310,22 @@ ddl_proc_ledata PROC
     lodsw                   ; get enumerated data offset
     dec cx
     dec cx                  ; adjust for enumerated data offset bytes
-    push    es:[bhs_length] ; save old length
+    push    es:[BIN_HEADER_STRUC.bhs_length] ; save old length
 
-    cmp ax,es:[bhs_length]  ; see if matches current length of segment
+    cmp ax,es:[BIN_HEADER_STRUC.bhs_length]  ; see if matches current length of segment
     je  dple_2              ; yes
     ja  dple_fill           ; no, fill
 
 ; offset is LESS than current segment length, reduce current segment length
-    mov dx,es:[bhs_length]
+    mov dx,es:[BIN_HEADER_STRUC.bhs_length]
     sub dx,ax
     sub di,dx               ; back up i/o buffer position
-    mov es:[bhs_length],ax
+    mov es:[BIN_HEADER_STRUC.bhs_length],ax
     jmp SHORT dple_2
 
 ; must zero fill to current offset
 dple_fill:
-    mov es:[bhs_offset],ax  ; save starting offset
+    mov es:[BIN_HEADER_STRUC.bhs_offset],ax  ; save starting offset
     call    ddl_zero_fill
 
 ; ax == current length of segment (data offset)
@@ -2417,7 +2335,7 @@ dple_fill:
 dple_2:
     mov ds:[5],ax           ; save data offset for fixups
     add ax,cx               ; add in bytes to add to segment
-    mov es:[bhs_length],ax  ; update segment length
+    mov es:[BIN_HEADER_STRUC.bhs_length],ax  ; update segment length
     jc  dple_memerr         ; overflow, force out of memory error
     cmp ax,0fff0h-20        ; see if buffer will overflow (20 system bytes)
     ja  dple_memerr         ; yes, force out of memory error
@@ -2431,13 +2349,13 @@ dple_2:
     rep movsb               ; transfer leftover byte, if any
 
     pop ax                  ; get old segment length
-    cmp ax,es:[bhs_length]  ; see if <=new length
+    cmp ax,es:[BIN_HEADER_STRUC.bhs_length]  ; see if <=new length
     ja  dple_adjust         ; no, use old length
     ret
 
 dple_adjust:
-    mov bx,es:[bhs_length]  ; get new segment length (less than old)
-    mov es:[bhs_length],ax  ; restore old segment length
+    mov bx,es:[BIN_HEADER_STRUC.bhs_length]  ; get new segment length (less than old)
+    mov es:[BIN_HEADER_STRUC.bhs_length],ax  ; restore old segment length
     sub ax,bx               ; get amount to adjust di
     add di,ax               ; adjust di back to end of old segment
     ret
@@ -2462,24 +2380,24 @@ ddl_proc_lidata PROC
     lodsw                   ; get iterated data offset
     dec cx
     dec cx                  ; adjust for iterated data offset bytes
-    push    es:[bhs_length] ; save old length
+    push    es:[BIN_HEADER_STRUC.bhs_length] ; save old length
 
-    cmp ax,es:[bhs_length]  ; see if matches current length of segment
+    cmp ax,es:[BIN_HEADER_STRUC.bhs_length]  ; see if matches current length of segment
     je  dpli_2              ; yes
     ja  dpli_fill           ; no, fill
 
 ; offset is LESS than current segment length, reduce current segment length
-    mov dx,es:[bhs_length]
+    mov dx,es:[BIN_HEADER_STRUC.bhs_length]
     sub dx,ax
     sub di,dx               ; back up i/o buffer position
-    mov es:[bhs_length],ax
+    mov es:[BIN_HEADER_STRUC.bhs_length],ax
     jmp SHORT dpli_2
 
 ; must zero fill to current offset
 dpli_fill:
-    mov es:[bhs_offset],ax  ; save starting offset
+    mov es:[BIN_HEADER_STRUC.bhs_offset],ax  ; save starting offset
     call    ddl_zero_fill
-    mov es:[bhs_length],ax  ; update segment length
+    mov es:[BIN_HEADER_STRUC.bhs_length],ax  ; update segment length
 
 ; ax == current length of segment (data offset)
 ; cx == size of iterated data block
@@ -2498,13 +2416,13 @@ dpli_3:
 
 dpli_4:
     pop ax                  ; get old segment length
-    cmp ax,es:[bhs_length]  ; see if <=new length
+    cmp ax,es:[BIN_HEADER_STRUC.bhs_length]  ; see if <=new length
     ja  dpli_adjust         ; no, use old length
     ret
 
 dpli_adjust:
-    mov bx,es:[bhs_length]  ; get new segment length (less than old)
-    mov es:[bhs_length],ax  ; restore old segment length
+    mov bx,es:[BIN_HEADER_STRUC.bhs_length]  ; get new segment length (less than old)
+    mov es:[BIN_HEADER_STRUC.bhs_length],ax  ; restore old segment length
     sub ax,bx               ; get amount to adjust di
     add di,ax               ; adjust di back to end of old segment
     ret
@@ -2566,9 +2484,9 @@ drl_data:
     mov cl,al               ; get data bytes to write in cl
     xor ch,ch               ; zap high byte
     push    cx              ; save data bytes written
-    add es:[bhs_length],cx  ; update segment length
+    add es:[BIN_HEADER_STRUC.bhs_length],cx  ; update segment length
     jc  drl_memerr          ; overflow, force out of memory error
-    cmp WORD PTR es:[bhs_length],0fff0h-20  ; see if buffer will overflow (20 system bytes)
+    cmp WORD PTR es:[BIN_HEADER_STRUC.bhs_length],0fff0h-20  ; see if buffer will overflow (20 system bytes)
     ja  drl_memerr          ; yes, force out of memory error
 
 ; write the data bytes to destination (i/o buffer)
@@ -2611,7 +2529,7 @@ ddl_zero_fill   PROC
     push    ax              ; save critical register
     mov dx,cx               ; save cx count
     mov cx,ax
-    sub cx,es:[bhs_length]  ; get difference between data offset and last segment stop
+    sub cx,es:[BIN_HEADER_STRUC.bhs_length]  ; get difference between data offset and last segment stop
     xor ax,ax               ; zero fill
     shr cx,1                ; convert byte count to zero to words
     rep stosw               ; zero the string
@@ -2856,7 +2774,7 @@ write_pubdef_block  PROC
     ret                     ; no entries
 
 ; alternate entry for code shared with write_comdef_block
-wpb_altent:
+wpb_altent::
     mov si,OFFSET DGROUP:ddl_hold_buff  ; si -> holding buffer for pubdefs prior to write
     xor bx,bx               ; bx offsets into sort buffer
 
@@ -3265,7 +3183,7 @@ ddl_pad PROC
 dp_ret:
     ret
 
-dp_error:
+dp_error::
     jmp NEAR PTR dos_error  ; error writing to file
 
 ddl_pad ENDP

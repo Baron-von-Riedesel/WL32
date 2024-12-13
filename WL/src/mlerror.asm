@@ -1438,7 +1438,7 @@ IFNDEF JUNIOR
 ENDIF
 
 ; always give a trailing CR/LF, even if no warnings
-gwc_ret:
+gwc_ret::
     mov cx,2
     mov dx,OFFSET DGROUP:warn_text
     mov bx,STDOUT

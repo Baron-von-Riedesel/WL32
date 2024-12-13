@@ -64,8 +64,6 @@ right_paren DB  ')',CR,LF
 
 .DATA?
 
-EVEN
-
 ; uninitialized local variables
 curseg_ptr  DW  ?           ; pointer to current segment in overlaid public block
 curblk_ptr  DW  ?           ; pointer to block for which curseg_ptr is valid

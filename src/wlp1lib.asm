@@ -55,7 +55,7 @@ LIBOpenFlag	DB	?		; nonzero if library open
 
 CurrentHighLIB	DW	?	; count of current high water library
 CurrentLIB	DW	?		; count of current library
-LIBProcessingFlag	DW	?	; library processing flag
+LibProcessingFlag	DW	?	; library processing flag
 ModToProcCount	DW	?	; count of library modules to process on pass
 PageCount	DW	?		; count of unique module pages in library
 
@@ -82,19 +82,9 @@ _DATA	SEGMENT WORD PUBLIC USE16 'DATA'
 
 FirstLIBModCount	DD	-1	; count of first module used by library
 
-_DATA ENDS
-
 ;*****************************
 ;* External data             *
 ;*****************************
-
-LIBHeaderStruc	STRUC
-	lhsType		DB	?	; should always be 0F0h or MSLHED
-	lhsRecLen	DW	?	; record length
-	lhsDictOff	DD	?	; dictionary offset in file
-	lhsDictSize	DW	?	; dictionary size in 512-byte blocks
-	lhsFlags	DB	?	; library flags
-LIBHeaderStruc	ENDS
 
 EXTRN	LIBHeader:LIBHeaderStruc
 EXTRN	BaseLIBDictBuff:WORD
@@ -127,6 +117,8 @@ EXTRN	NeedCompSymProcess:BYTE
 EXTRN	StartSymbolCount:WORD
 EXTRN	UniqueSymbolCount:WORD
 ENDIF
+
+_DATA ENDS
 
 ;*****************************
 ;* Code begins               *
@@ -210,7 +202,7 @@ lplibloop:
 ; get special library processing flags
 	mov	fs,LIBFlagSelector
 	mov	ax,fs:[bx]
-	mov	LIBProcessingFlag,ax
+	mov	LibProcessingFlag,ax
 
 	mov	IsLocalSymbol,OFF	; searching for nonlocal symbols
 	call	ScanDictForMods	; scan library dictionary for modules containing symbols which resolve externals
@@ -457,7 +449,7 @@ sdfnewpage:
 	pop	ax				; ax == library module
 	pop	si
 	jc	sdfbuckloop		; new symbol don't use
-	test	gs:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	gs:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	je	sdfchkweak		; new resolution
 
 ; symbol already exists and is defined
@@ -467,7 +459,7 @@ sdfzerobuck:
 
 ; extdef resolved by this module, save it if not weak extern
 sdfchkweak:
-	test	gs:[di+PubSymRecStruc.pssFlags],WEAKEXTERNFLAG
+	test	gs:[di].PubSymRecStruc.pssFlags,WEAKEXTERNFLAG
 	jne	sdfbuckloop		; weak external, but might go to strong, don't use and don't zero bucket
 
 ; extdef resolved by this module, save module
@@ -558,7 +550,7 @@ GetModulePages	PROC
 ; set upper limit of dictionary in bp
 	mov	ax,WORD PTR LIBHeader.lhsDictOff
 	mov	dx,WORD PTR LIBHeader.lhsDictOff+2
-	mov	bp,LIBHeader.lhsReclen
+	mov	bp,LIBHeader.lhsRecLen
 	add	bp,3
 	div	bp
 	mov	bp,ax			; bp holds maxium module count

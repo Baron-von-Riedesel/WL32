@@ -240,7 +240,7 @@ GetMasterSegDefEntry	PROC
 ; fs:bp -> master segdef entry on record
 ; gs:bx -> current segment name
 gmmainloop:
-	les	di,fs:[bp+MasterSegDefRecStruc.mssNamePtr]	; es:di -> segment name on record, not normalized
+	les	di,fs:[bp].MasterSegDefRecStruc.mssNamePtr	; es:di -> segment name on record, not normalized
 	cmp	di,SIZEIOBUFFBLK-MAXOBJRECNAME	; check for possible name buffer overflow
 	jae	gmesdi			; possible, normalize name
 
@@ -257,9 +257,9 @@ gmdssi:
 ; new name greater than old name
 gmnewgr:
 	xor	dl,dl			; zero dl to flag new > old
-	cmp	WORD PTR fs:[bp+MasterSegDefRecStruc.mssHigherNamePtr+2],0	; see if next link
+	cmp	WORD PTR fs:[bp].MasterSegDefRecStruc.mssHigherNamePtr+2,0	; see if next link
 	je	gmnewseg		; no more names, this is a new segment
-	lfs	bp,fs:[bp+MasterSegDefRecStruc.mssHigherNamePtr]	; fs:bp -> master segdef entry of higher record name
+	lfs	bp,fs:[bp].MasterSegDefRecStruc.mssHigherNamePtr	; fs:bp -> master segdef entry of higher record name
 	jmp	gmmainloop	; try next
 
 ; normalize gs:bx source name for compare
@@ -275,9 +275,9 @@ gmesdi:
 ; old name greater than new name
 gmoldgr:
 	mov	dl,1			; set dl==1 to flag old>new
-	cmp	WORD PTR fs:[bp+MasterSegDefRecStruc.mssLowerNamePtr+2],0	; see if next link
+	cmp	WORD PTR fs:[bp].MasterSegDefRecStruc.mssLowerNamePtr+2,0	; see if next link
 	je	gmnewseg		; no more names, this is a new segment
-	lfs	bp,fs:[bp+MasterSegDefRecStruc.mssLowerNamePtr]	; fs:bp -> master segdef entry of lower record name
+	lfs	bp,fs:[bp].MasterSegDefRecStruc.mssLowerNamePtr	; fs:bp -> master segdef entry of lower record name
 	jmp	gmmainloop	; try next
 
 gmlenok:
@@ -317,7 +317,7 @@ gmsmatch:
 	jae	gmnorms			; yes
 
 gmclrec:
-	les	di,fs:[bp+MasterSegDefRecStruc.mssClassPtr]	; es:di -> class name on record, not normalized
+	les	di,fs:[bp].MasterSegDefRecStruc.mssClassPtr	; es:di -> class name on record, not normalized
 	cmp	di,SIZEIOBUFFBLK-MAXOBJRECNAME	; see if normalization might be needed
 	jae	gmnormd			; yes
 
@@ -359,7 +359,7 @@ gmcmatch:
 	mov	al,ACBPByte
 	and	al,CFIELDOFACBP	; get combine field of current segment
 	je	gmcno			; private, cannot match
-	mov	al,fs:[bp+MasterSegDefRecStruc.mssACBPByte]
+	mov	al,fs:[bp].MasterSegDefRecStruc.mssACBPByte
 	and	al,CFIELDOFACBP	; get combine field of segment on record
 	je	gmcno			; private, cannot match
 
@@ -392,9 +392,9 @@ gmcno:
 
 gmhimast:
 	xor	dl,dl			; zero dl to flag new > old
-	cmp	WORD PTR fs:[bp+MasterSegDefRecStruc.mssHigherNamePtr+2],0	; see if next link
+	cmp	WORD PTR fs:[bp].MasterSegDefRecStruc.mssHigherNamePtr+2,0	; see if next link
 	je	gmnewseg		; no more names, this is a new segment
-	lfs	bp,fs:[bp+MasterSegDefRecStruc.mssHigherNamePtr]	; fs:bp -> master segdef entry of higher record name, not normalized
+	lfs	bp,fs:[bp].MasterSegDefRecStruc.mssHigherNamePtr	; fs:bp -> master segdef entry of higher record name, not normalized
 	cmp	bp,SIZEIOBUFFBLK-MAXOBJRECNAME		; check normalization
 	jb	gmmainloop		; not needed
 
@@ -441,9 +441,9 @@ gminit:
 	mov	di,ax			; gs:di -> master segdef entry
 
 ; perform initializations
-	mov	gs:[di+MasterSegDefRecStruc.mssFlags],0
+	mov	gs:[di].MasterSegDefRecStruc.mssFlags,0
 	mov	al,ACBPByte
-	mov	gs:[di+MasterSegDefRecStruc.mssACBPByte],al
+	mov	gs:[di].MasterSegDefRecStruc.mssACBPByte,al
 	cmp	Is32BitSeg,OFF	; see if 32-bit segment
 	jne	gm32			; yes
 
@@ -451,13 +451,13 @@ gmchkstk:
 	and	al,CFIELDOFACBP	; get combine field
 	cmp	al,STACKSEGMENT	; see if stack combine
 	jne	gmnotstack		; no
-	or	gs:[di+MasterSegDefRecStruc.mssFlags],STACKSEGMENTFLAG
+	or	gs:[di].MasterSegDefRecStruc.mssFlags,STACKSEGMENTFLAG
 	jmp	gmzero
 
 ; flag a 32-bit segment
 gm32:
 	mov	IsAny32BitSegFlag,ON	; flag 32-bit segment exists
-	or	gs:[di+MasterSegDefRecStruc.mssFlags],SEGMENT32BITFLAG
+	or	gs:[di].MasterSegDefRecStruc.mssFlags,SEGMENT32BITFLAG
 	cmp	IsCreateEXEOption,OFF	; see if creating DOS EXE file
 	je	gmchkstk			; no
 
@@ -486,30 +486,30 @@ endif
 gmnotstack:
 	cmp	al,COMMONSEGMENT	; see if common combine
 	jne	gmzero			; no
-	or	gs:[di+MasterSegDefRecStruc.mssFlags],COMMONSEGMENTFLAG
+	or	gs:[di].MasterSegDefRecStruc.mssFlags,COMMONSEGMENTFLAG
 
 gmzero:	
 	cmp	IsAbsoluteSeg,OFF	; see if absolute segment
 	jne	gmsegname			; yes
 
 ;@@@	mov	ax,TotalRelSegCount	; get count of nonabsolute segments, relative 0
-;@@@	mov	gs:[di+MasterSegDefRecStruc.SegmentID],ax	; init segment id
+;@@@	mov	gs:[di].MasterSegDefRecStruc.SegmentID,ax	; init segment id
 	inc	TotalRelSegCount	; increment total relative (nonabsolute) segment count
 
 gmsegname:
 	mov	eax,SegDefSegNamePtr	; eax -> segdef name
-	mov	gs:[di+MasterSegDefRecStruc.mssNamePtr],eax	; init segment name
+	mov	gs:[di].MasterSegDefRecStruc.mssNamePtr,eax	; init segment name
 	mov	eax,SegDefClassNamePtr	; eax -> class name
-	mov	gs:[di+MasterSegDefRecStruc.mssClassPtr],eax	; init class name
+	mov	gs:[di].MasterSegDefRecStruc.mssClassPtr,eax	; init class name
 
 	xor	eax,eax
-	mov	gs:[di+MasterSegDefRecStruc.mssSegLength],eax	; init segment length
-	mov	gs:[di+MasterSegDefRecStruc.mssGroupPtr],eax	; must init all of this pointer
-	mov	WORD PTR gs:[di+MasterSegDefRecStruc.mssNextSegPtr+2],ax	; init pointer selectors
-	mov	WORD PTR gs:[di+MasterSegDefRecStruc.mssFirstIndSegPtr+2],ax
-	mov	WORD PTR gs:[di+MasterSegDefRecStruc.mssLastIndSegPtr+2],ax
-	mov	WORD PTR gs:[di+MasterSegDefRecStruc.mssHigherNamePtr+2],ax	; init name pointer
-	mov	WORD PTR gs:[di+MasterSegDefRecStruc.mssLowerNamePtr+2],ax
+	mov	gs:[di].MasterSegDefRecStruc.mssSegLength,eax	; init segment length
+	mov	gs:[di].MasterSegDefRecStruc.mssGroupPtr,eax	; must init all of this pointer
+	mov	WORD PTR gs:[di].MasterSegDefRecStruc.mssNextSegPtr+2,ax	; init pointer selectors
+	mov	WORD PTR gs:[di].MasterSegDefRecStruc.mssFirstIndSegPtr+2,ax
+	mov	WORD PTR gs:[di].MasterSegDefRecStruc.mssLastIndSegPtr+2,ax
+	mov	WORD PTR gs:[di].MasterSegDefRecStruc.mssHigherNamePtr+2,ax	; init name pointer
+	mov	WORD PTR gs:[di].MasterSegDefRecStruc.mssLowerNamePtr+2,ax
 
 	cmp	SegDefChainFlag,OFF	; see if chaining segdef entries from previous
 	je	gmabschk		; no
@@ -520,14 +520,14 @@ gmsegname:
 	mov	fs,bx			; fs:si -> old entry
 	cmp	SegDefChainFlag,1	; see if new name is greater than parent
 	jne	gmlower			; no
-	mov	WORD PTR fs:[si+MasterSegDefRecStruc.mssHigherNamePtr+2],gs
-	mov	WORD PTR fs:[si+MasterSegDefRecStruc.mssHigherNamePtr+0],di
+	mov	WORD PTR fs:[si].MasterSegDefRecStruc.mssHigherNamePtr+2,gs
+	mov	WORD PTR fs:[si].MasterSegDefRecStruc.mssHigherNamePtr+0,di
 	jmp	gmret
 
 ; parent (old) name is greater than new name
 gmlower:
-	mov	WORD PTR fs:[si+MasterSegDefRecStruc.mssLowerNamePtr+2],gs
-	mov	WORD PTR fs:[si+MasterSegDefRecStruc.mssLowerNamePtr+0],di
+	mov	WORD PTR fs:[si].MasterSegDefRecStruc.mssLowerNamePtr+2,gs
+	mov	WORD PTR fs:[si].MasterSegDefRecStruc.mssLowerNamePtr+0,di
 
 gmret:
 	pop	es				; restore critical registers
@@ -554,31 +554,31 @@ gmabs:
 	mov	ax,SegFrameNumber	; get new absolute segment's frame number
 
 gmabsloop:
-	cmp	WORD PTR gs:[di+MasterSegDefRecStruc.mssSegOffset],ax	; see if frame numbers match
+	cmp	WORD PTR gs:[di].MasterSegDefRecStruc.mssSegOffset,ax	; see if frame numbers match
 	je	gmret			; yes, gs:di -> master segdef entry
 
 ; use higher name pointer to chain to next absolute segment entry
 	mov	bx,gs
 	mov	si,di			; save old gs:di pointer in bx:si
-	cmp	WORD PTR gs:[di+MasterSegDefRecStruc.mssHigherNamePtr+2],0	; see if next link in chain exists
+	cmp	WORD PTR gs:[di].MasterSegDefRecStruc.mssHigherNamePtr+2,0	; see if next link in chain exists
 	je	gmnouse			; no further links, unique absolute segment, bx:si -> last link
-	lgs	di,gs:[di+MasterSegDefRecStruc.mssHigherNamePtr]	; gs:di -> next link in chain
+	lgs	di,gs:[di].MasterSegDefRecStruc.mssHigherNamePtr	; gs:di -> next link in chain
 	jmp	gmabsloop
 
 ; end processing of absolute segment, ax known zero
 gmabs2:
 	inc	TotalAbsSegCount	; bump total count of discrete absolute segments
-	or	gs:[di+MasterSegDefRecStruc.mssFlags],ABSOLUTESEGMENTFLAG
+	or	gs:[di].MasterSegDefRecStruc.mssFlags,ABSOLUTESEGMENTFLAG
 	mov	ax,SegFrameNumber	; get new absolute segment's frame number
 	movzx	eax,ax
-	mov	gs:[di+MasterSegDefRecStruc.mssSegOffset],eax	; set frame number
+	mov	gs:[di].MasterSegDefRecStruc.mssSegOffset,eax	; set frame number
 	cmp	WORD PTR AbsSegDefPtr+2,0	; see if first absolute segment pointer
 	je	gmfirstabs			; yes
 
 ; not the first absolute segment, add chain link in previous entry (bx:si)
 	mov	fs,bx			; fs:si -> old entry
-	mov	WORD PTR fs:[si+MasterSegDefRecStruc.mssHigherNamePtr+0],di
-	mov	WORD PTR fs:[si+MasterSegDefRecStruc.mssHigherNamePtr+2],gs
+	mov	WORD PTR fs:[si].MasterSegDefRecStruc.mssHigherNamePtr+0,di
+	mov	WORD PTR fs:[si].MasterSegDefRecStruc.mssHigherNamePtr+2,gs
 	jmp	gmret
 
 gmfirstabs:
@@ -639,7 +639,7 @@ MakeIndSegDefEntry	PROC
 
 ; check if allocated individual segdef block is full
 	mov	gs,LastIndSegDefBlkPtr	; gs -> last allocated block
-	cmp	gs:[IndSegDefBlkStruc.msdbCount],MAXCOUNTINDSEGDEFBLK	; see if any free entries in block
+	cmp	gs:[IndSegDefBlkStruc.isdbCount],MAXCOUNTINDSEGDEFBLK	; see if any free entries in block
 	jb	miinit			; free entry exists
 
 ; make a new block
@@ -663,21 +663,21 @@ miinit:
 	je	mi2				; yes, bypass pointer in i/o buffer setup
 
 	mov	fs,CurrentBaseOBJBuff	; fs -> first OBJ buffer
-	mov	fs:[WORD PTR IOBuffHeaderStruc.ibhsSegDefPtr],di
-	mov	fs:[WORD PTR IOBuffHeaderStruc.ibhsSegDefPtr+2],gs
+	mov	WORD PTR fs:[IOBuffHeaderStruc.ibhsSegDefPtr],di
+	mov	WORD PTR fs:[IOBuffHeaderStruc.ibhsSegDefPtr+2],gs
 
 mi2:
 	pop	bx
 	pop	fs				; fs:bx -> master segdef entry
 	push	fs			; restore to stack
 	push	bx
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssLastIndSegPtr]
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssLastIndSegPtr
 	mov	PrevLastIndSegPtr,eax	; keep pointer to previously last individual segdef, if any, for chain update
-	mov	WORD PTR fs:[bx+MasterSegDefRecStruc.mssLastIndSegPtr+0],di	; update master last individual segdef pointer
-	mov	WORD PTR fs:[bx+MasterSegDefRecStruc.mssLastIndSegPtr+2],gs
+	mov	WORD PTR fs:[bx].MasterSegDefRecStruc.mssLastIndSegPtr+0,di	; update master last individual segdef pointer
+	mov	WORD PTR fs:[bx].MasterSegDefRecStruc.mssLastIndSegPtr+2,gs
 	mov	ah,ACBPByte
 	and	ah,AFIELDOFACBP	; get alignment field of individual segdef
-	mov	al,fs:[bx+MasterSegDefRecStruc.mssACBPByte]	; get master ACBP byte
+	mov	al,fs:[bx].MasterSegDefRecStruc.mssACBPByte	; get master ACBP byte
 	and	al,AFIELDOFACBP	; get alignment field of master segdef
 
 ; ah holds align field of individual segdef
@@ -698,7 +698,7 @@ IFDEF CLARION
 	push	fs
 
 	xor	ecx,ecx
-	lfs	bx,fs:[bx+MasterSegDefRecStruc.mssClassPtr]	; fs:bx -> class name
+	lfs	bx,fs:[bx].MasterSegDefRecStruc.mssClassPtr	; fs:bx -> class name
 
 michkgdesc:
 	cmp	bx,SIZEIOBUFFBLK	; see if bx is at wrap point
@@ -720,7 +720,7 @@ mi4:
 	pop	bx				; fs:bx -> master segment
 	push	bx			; restore to stack
 	push	fs
-	or	fs:[bx+MasterSegDefRecStruc.mssFlags],CLARIONGLOBALDATAFLAG
+	or	fs:[bx].MasterSegDefRecStruc.mssFlags,CLARIONGLOBALDATAFLAG
 	cmp	GDESCFlag,1		; see if already segment of this class
 	mov	GDESCFLag,1		; set flag, KEEP FLAG REGISTER STATUS
 	jmp	michkdone	; Z flag indicates whether to do alignment adjustment
@@ -731,7 +731,7 @@ migdatasetup:
 	push	bx			; restore to stack
 	push	fs
 	xor	ecx,ecx
-	lfs	bx,fs:[bx+MasterSegDefRecStruc.mssClassPtr]	; fs:bx -> class name
+	lfs	bx,fs:[bx].MasterSegDefRecStruc.mssClassPtr	; fs:bx -> class name
 
 michkgdata:
 	cmp	bx,SIZEIOBUFFBLK	; see if bx is at wrap point
@@ -753,7 +753,7 @@ mi5:
 	pop	bx				; fs:bx -> master segment
 	push	bx			; restore to stack
 	push	fs
-	or	fs:[bx+MasterSegDefRecStruc.mssFlags],CLARIONGLOBALDATAFLAG
+	or	fs:[bx].MasterSegDefRecStruc.mssFlags,CLARIONGLOBALDATAFLAG
 	cmp	GDATAFlag,1		; see if already segment of this class
 	mov	GDATAFlag,1		; set flag, KEEP FLAG REGISTER STATUS
 
@@ -803,24 +803,24 @@ mialign3:
 
 ; update master segdef with new alignment
 minewalign:
-	mov	al,fs:[bx+MasterSegDefRecStruc.mssACBPByte]	; get master ACBP byte
+	mov	al,fs:[bx].MasterSegDefRecStruc.mssACBPByte	; get master ACBP byte
 	and	al,NOT AFIELDOFACBP	; mask off alignment field of master segdef
 	or	al,ah			; merge in new alignment field
-	mov	fs:[bx+MasterSegDefRecStruc.mssACBPByte],al	; save to master segdef
+	mov	fs:[bx].MasterSegDefRecStruc.mssACBPByte,al	; save to master segdef
 	
 ; do various initializations
 miinit2:
-	mov	WORD PTR gs:[di+IndSegDefRecStruc.isdrMasterPtr+0],bx	; update master back pointer
-	mov	WORD PTR gs:[di+IndSegDefRecStruc.isdrMasterPtr+2],fs
+	mov	WORD PTR gs:[di].IndSegDefRecStruc.isdrMasterPtr+0,bx	; update master back pointer
+	mov	WORD PTR gs:[di].IndSegDefRecStruc.isdrMasterPtr+2,fs
 	mov	ax,CurrentBaseOBJBuff
-	mov	WORD PTR gs:[di+IndSegDefRecStruc.isdrModulePtr],ax
+	mov	WORD PTR gs:[di].IndSegDefRecStruc.isdrModulePtr,ax
 	mov	al,ACBPByte
-	mov	gs:[di+IndSegDefRecStruc.isdrACBPByte],al
+	mov	gs:[di].IndSegDefRecStruc.isdrACBPByte,al
 	mov	eax,SegmentLength
-	mov	gs:[di+IndSegDefRecStruc.isdrSegLength],eax
+	mov	gs:[di].IndSegDefRecStruc.isdrSegLength,eax
 	xor	eax,eax
-	mov	gs:[di+IndSegDefRecStruc.isdrNextIndSegPtr],eax
-	mov	gs:[di+IndSegDefRecStruc.isdrFlags],ax
+	mov	gs:[di].IndSegDefRecStruc.isdrNextIndSegPtr,eax
+	mov	gs:[di].IndSegDefRecStruc.isdrFlags,ax
 
 	cmp	IsAbsoluteSeg,OFF	; see if absolute segment
 	jne	miabs			; yes
@@ -828,7 +828,7 @@ miinit2:
 ; test if stack or common segment, set flags if so
 ; precedence of combine is stack > public > common when conflicting combines
 ; fs:bx -> master segdef entry
-	mov	ax,fs:[bx+MasterSegDefRecStruc.mssFlags]
+	mov	ax,fs:[bx].MasterSegDefRecStruc.mssFlags
 	test	ax,STACKSEGMENTFLAG
 	jne	mistack
 	mov	dl,ACBPByte
@@ -840,11 +840,11 @@ miinit2:
 ; one of combine types is stack, make both stack, clearing common segment flag if existent
 mistack:
 	mov	ax,NOT COMMONSEGMENTFLAG
-	and	gs:[di+IndSegDefRecStruc.isdrFlags],ax
-	and	fs:[bx+MasterSegDefRecStruc.mssFlags],ax
+	and	gs:[di].IndSegDefRecStruc.isdrFlags,ax
+	and	fs:[bx].MasterSegDefRecStruc.mssFlags,ax
 	mov	ax,STACKSEGMENTFLAG
-	or	gs:[di+IndSegDefRecStruc.isdrFlags],ax
-	or	fs:[bx+MasterSegDefRecStruc.mssFlags],ax
+	or	gs:[di].IndSegDefRecStruc.isdrFlags,ax
+	or	fs:[bx].MasterSegDefRecStruc.mssFlags,ax
 	xor	ax,ax			; no segment length adjustment
 	jmp	mioff
 
@@ -858,18 +858,18 @@ mipubchk:
 
 ; both segments are common combine
 	mov	ax,COMMONSEGMENTFLAG
-	or	gs:[di+IndSegDefRecStruc.isdrFlags],ax
-	or	fs:[bx+MasterSegDefRecStruc.mssFlags],ax
+	or	gs:[di].IndSegDefRecStruc.isdrFlags,ax
+	or	fs:[bx].MasterSegDefRecStruc.mssFlags,ax
 
 ; update offset of segment (always zero for common segment)
-	mov	gs:[di+IndSegDefRecStruc.isdrSegOffset],0
+	mov	gs:[di].IndSegDefRecStruc.isdrSegOffset,0
 
 ; update length of common segment if individual length > master length
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssSegLength]	; get master segment length
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssSegLength	; get master segment length
 	cmp	eax,SegmentLength
 	jae	mi3				; no update needed
 	mov	eax,SegmentLength
-	mov	fs:[bx+MasterSegDefRecStruc.mssSegLength],eax	; update master segment length
+	mov	fs:[bx].MasterSegDefRecStruc.mssSegLength,eax	; update master segment length
 	jmp	mi3
 
 ; poorly formed object record
@@ -883,14 +883,14 @@ poor5:
 ; dh holds ACBP byte of individual segment
 mipub:
 	mov	ax,NOT COMMONSEGMENTFLAG
-	and	gs:[di+IndSegDefRecStruc.isdrFlags],ax
-	and	fs:[bx+MasterSegDefRecStruc.mssFlags],ax
+	and	gs:[di].IndSegDefRecStruc.isdrFlags,ax
+	and	fs:[bx].MasterSegDefRecStruc.mssFlags,ax
 
 	xor	ax,ax			; init segment length adjustment
 	and	dh,AFIELDOFACBP
 	cmp	dh,BYTEALIGNSEGMENT	; see if byte aligned segment
 	je	mioff			; yes, no adjustment needed
-	mov	ax,WORD PTR fs:[bx+MasterSegDefRecStruc.mssSegLength]	; get segment length low word
+	mov	ax,WORD PTR fs:[bx].MasterSegDefRecStruc.mssSegLength	; get segment length low word
 	xor	ah,ah
 	sub	ah,al			; compute segment adjustment byte to 256 roundup
 	mov	al,ah
@@ -923,42 +923,42 @@ mipage:
 mioff:
 	mov	dx,ax
 	movzx	edx,dx
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssSegLength]	; get segment length
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssSegLength	; get segment length
 	add	eax,edx			; compute new segment length after adjustment
-	mov	gs:[di+IndSegDefRecStruc.isdrSegOffset],eax	; save as offset of individual segment
+	mov	gs:[di].IndSegDefRecStruc.isdrSegOffset,eax	; save as offset of individual segment
 	add	eax,SegmentLength	; compute total segment length
 	cmp	eax,65536		; see if >64K segment
 	jbe	milenup			; no
-	test	fs:[bx+MasterSegDefRecStruc.mssFlags],SEGMENT32BITFLAG	; see if 32-bit segment
+	test	fs:[bx].MasterSegDefRecStruc.mssFlags,SEGMENT32BITFLAG	; see if 32-bit segment
 	jne	milenup			; yes
 
 	cmp	FlatModuleFlag,OFF	; see if flat module
 	je	mi16seg			; no
 	
 ; flat module, segment is 32-bit by definition
-	or	fs:[bx+MasterSegDefRecStruc.mssFlags],SEGMENT32BITFLAG	; flag 32-bit segment
+	or	fs:[bx].MasterSegDefRecStruc.mssFlags,SEGMENT32BITFLAG	; flag 32-bit segment
 	jmp	milenup
 
 ; segment is 16-bit and >64K, fatal error
 ; fs:bx -> master segdef record
 mi16seg:
-	lgs	bx,fs:[bx+MasterSegDefRecStruc.mssNamePtr]	; gs:bx -> nonnormalized text string
+	lgs	bx,fs:[bx].MasterSegDefRecStruc.mssNamePtr	; gs:bx -> nonnormalized text string
 	mov	al,SEGLEN64KERRORCODE	; flag segment length >64K
 	call	NormalizeErrorExit	; normalize text string, do linker error exit
 
 milenup:
-	mov	fs:[bx+MasterSegDefRecStruc.mssSegLength],eax	; update total segment length
+	mov	fs:[bx].MasterSegDefRecStruc.mssSegLength,eax	; update total segment length
 
 mi3:
-	cmp	WORD PTR fs:[bx+MasterSegDefRecStruc.mssFirstIndSegPtr+2],0	; see if first individual segdef
+	cmp	WORD PTR fs:[bx].MasterSegDefRecStruc.mssFirstIndSegPtr+2,0	; see if first individual segdef
 	je	mifirst			; yes
 
 ; update previously last individual segdef to point to this new one
 	push	fs			; save -> master segdef entry
 	mov	dx,bx
 	lfs	bx,PrevLastIndSegPtr	; fs:bx -> previously last
-	mov	WORD PTR fs:[bx+IndSegDefRecStruc.isdrNextIndSegPtr+0],di	; update next segdef pointer
-	mov	WORD PTR fs:[bx+IndSegDefRecStruc.isdrNextIndSegPtr+2],gs
+	mov	WORD PTR fs:[bx].IndSegDefRecStruc.isdrNextIndSegPtr+0,di	; update next segdef pointer
+	mov	WORD PTR fs:[bx].IndSegDefRecStruc.isdrNextIndSegPtr+2,gs
 	pop	fs
 	mov	bx,dx			; fs:bx -> master segdef entry
 
@@ -970,16 +970,16 @@ miret:
 
 ; absolute segment, so flag
 miabs:
-	or	gs:[di+IndSegDefRecStruc.isdrFlags],1
+	or	gs:[di].IndSegDefRecStruc.isdrFlags,1
 	mov	ax,SegFrameNumber
 	movzx	eax,ax
-	mov	gs:[di+IndSegDefRecStruc.isdrSegOffset],eax	; save frame number as segment offset
+	mov	gs:[di].IndSegDefRecStruc.isdrSegOffset,eax	; save frame number as segment offset
 	jmp	mi3
 
 ; first individual segment of segdef
 mifirst:
-	mov	WORD PTR fs:[bx+MasterSegDefRecStruc.mssFirstIndSegPtr+0],di	; update master first individual segdef pointer
-	mov	WORD PTR fs:[bx+MasterSegDefRecStruc.mssFirstIndSegPtr+2],gs
+	mov	WORD PTR fs:[bx].MasterSegDefRecStruc.mssFirstIndSegPtr+0,di	; update master first individual segdef pointer
+	mov	WORD PTR fs:[bx].MasterSegDefRecStruc.mssFirstIndSegPtr+2,gs
 	jmp	miret
 
 MakeIndSegDefEntry	ENDP
@@ -1384,7 +1384,7 @@ ggmainloop:
 	mov	bx,GRPDEFSYSVARSIZE	; gs:bx -> first entry
 
 ggentloop:
-	les	di,gs:[bx+GrpDefRecStruc.gdrGrpNamePtr]
+	les	di,gs:[bx].GrpDefRecStruc.gdrGrpNamePtr
 	lds	si,fs:GrpDefNamePtr
 
 ; ds:si -> current grpdef name
@@ -1443,14 +1443,14 @@ gginit:
 
 ; zero init entry
 	xor	eax,eax
-	mov	gs:[di+GrpDefRecStruc.gdrGrpOffset],eax	; zero init group offset
-	mov	gs:[di+GrpDefRecStruc.gdrGrpLen],eax
-	mov	gs:[di+GrpDefRecStruc.gdrFirstSegPtr],eax
-	mov	gs:[di+GrpDefRecStruc.gdrGrpFlags],ax	; init flags
+	mov	gs:[di].GrpDefRecStruc.gdrGrpOffset,eax	; zero init group offset
+	mov	gs:[di].GrpDefRecStruc.gdrGrpLen,eax
+	mov	gs:[di].GrpDefRecStruc.gdrFirstSegPtr,eax
+	mov	gs:[di].GrpDefRecStruc.gdrGrpFlags,ax	; init flags
 
 ; save pointer to group name
 	mov	eax,GrpDefNamePtr
-	mov	gs:[di+GrpDefRecStruc.gdrGrpNamePtr],eax
+	mov	gs:[di].GrpDefRecStruc.gdrGrpNamePtr,eax
 	jmp	ggret
 
 ; found matching grpdef entry, gs:bx -> matched entry
@@ -1542,8 +1542,8 @@ sgpinit:
 ; first grpdef of module, keep pointer to start of table pointer in i/o buffer head
 	mov	ax,fs			; ax:bx -> first group pointer entry
 	mov	fs,CurrentBaseOBJBuff	; fs -> i/o buffer base
-	mov	fs:[WORD PTR IOBuffHeaderStruc.ibhsPtrToGrpPtrs],bx
-	mov	fs:[WORD PTR IOBuffHeaderStruc.ibhsPtrToGrpPtrs+2],ax
+	mov	WORD PTR fs:[IOBuffHeaderStruc.ibhsPtrToGrpPtrs],bx
+	mov	WORD PTR fs:[IOBuffHeaderStruc.ibhsPtrToGrpPtrs+2],ax
 	mov	fs,ax			; fs:bx -> group pointer entry
 
 ; fs:bx -> group pointer table entry
@@ -1618,13 +1618,13 @@ AssignSegToGroup	PROC
 	mov	gs,dx			; gs:bx -> grouped individual segment entry, normalized
 
 astgetmast:
-	lgs	bx,gs:[bx+IndSegDefRecStruc.isdrMasterPtr]	; gs:bx -> master segdef entry of grouped segment
+	lgs	bx,gs:[bx].IndSegDefRecStruc.isdrMasterPtr	; gs:bx -> master segdef entry of grouped segment
 	pop	eax				; eax -> group entry
 	push	eax			; save back to stack
-	cmp	WORD PTR gs:[bx+MasterSegDefRecStruc.mssGroupPtr+2],0	; see if pre-existing group
+	cmp	WORD PTR gs:[bx].MasterSegDefRecStruc.mssGroupPtr+2,0	; see if pre-existing group
 	je	ast2			; no
 
-	cmp	gs:[bx+MasterSegDefRecStruc.mssGroupPtr],eax	; see if pre-existing group differs from current
+	cmp	gs:[bx].MasterSegDefRecStruc.mssGroupPtr,eax	; see if pre-existing group differs from current
 	jne	astdiff			; already member of different group than one specified
 
 astret:
@@ -1633,8 +1633,8 @@ astret:
 	ret
 
 ast2:
-	mov	gs:[bx+MasterSegDefRecStruc.mssGroupPtr],eax	; update group pointer
-	or	gs:[bx+MasterSegDefRecStruc.mssFlags],GROUPMEMBERFLAG	; flag member of group
+	mov	gs:[bx].MasterSegDefRecStruc.mssGroupPtr,eax	; update group pointer
+	or	gs:[bx].MasterSegDefRecStruc.mssFlags,GROUPMEMBERFLAG	; flag member of group
 	jmp	astret
 
 ; segment is already member of different group
@@ -1698,7 +1698,7 @@ gpshash:
 ; fs:bp -> symbol entry on record
 ; gs:bx -> current symbol name
 gpsmainloop:
-	les	di,fs:[bp+PubSymRecStruc.pssNamePtr]	; es:di -> symbol name on record, not normalized
+	les	di,fs:[bp].PubSymRecStruc.pssNamePtr	; es:di -> symbol name on record, not normalized
 	cmp	di,SIZEIOBUFFBLK-MAXOBJRECNAME	; check for possible name buffer overflow
 	jae	gpsesdi			; possible, normalize name
 
@@ -1715,9 +1715,9 @@ gpsdssi:
 ; new name greater than old name
 gpsnewgr:
 	xor	dl,dl			; zero dl to flag new > old
-	cmp	WORD PTR fs:[bp+PubSymRecStruc.pssHigherNamePtr+2],0	; see if next link
+	cmp	WORD PTR fs:[bp].PubSymRecStruc.pssHigherNamePtr+2,0	; see if next link
 	je	gpsnewsym		; no more names, this is a new symbol
-	lfs	bp,fs:[bp+PubSymRecStruc.pssHigherNamePtr]	; fs:bp -> symbol entry of higher record name
+	lfs	bp,fs:[bp].PubSymRecStruc.pssHigherNamePtr	; fs:bp -> symbol entry of higher record name
 	jmp	gpsmainloop	; try next
 
 ; normalize gs:bx source name for compare
@@ -1733,9 +1733,9 @@ gpsesdi:
 ; old name greater than new name
 gpsoldgr:
 	mov	dl,1			; set dl==1 to flag old>new
-	cmp	WORD PTR fs:[bp+PubSymRecStruc.pssLowerNamePtr+2],0	; see if next link
+	cmp	WORD PTR fs:[bp].PubSymRecStruc.pssLowerNamePtr+2,0	; see if next link
 	je	gpsnewsym		; no more names, this is a new symbol
-	lfs	bp,fs:[bp+PubSymRecStruc.pssLowerNamePtr]	; fs:bp -> symbol entry of lower record name
+	lfs	bp,fs:[bp].PubSymRecStruc.pssLowerNamePtr	; fs:bp -> symbol entry of lower record name
 	jmp	gpsmainloop	; try next
 
 gpslenok:
@@ -1774,7 +1774,7 @@ gpsmatch:
 ; check local status, one or other local both must match
 	cmp	IsLocalSymbol,0	; see if current symbol is local
 	setne	al			; set al to nonzero if local
-	test	fs:[di+PubSymRecStruc.pssFlags],LOCALSYMBOLFLAG
+	test	fs:[di].PubSymRecStruc.pssFlags,LOCALSYMBOLFLAG
 	setne	ah			; set ah to nonzero if local
 	mov	cl,al			; test local status
 	or	cl,ah
@@ -1787,7 +1787,7 @@ gpslocal:
 
 ; both symbols are local, ModuleCount must match
 	mov	eax,ModuleCount
-	cmp	fs:[di+PubSymRecStruc.pssModuleCount],eax
+	cmp	fs:[di].PubSymRecStruc.pssModuleCount,eax
 	jne	gpsnewgr		; no match, use higher name link for next compare
 
 ; duplicate entry, return pointer to it
@@ -1833,13 +1833,13 @@ gpsinit:
 
 ; init entry in block
 	mov	eax,PubSymNamePtr	; eax -> public symbol name
-	mov	gs:[di+PubSymRecStruc.pssNamePtr],eax	; init ssymbol name
+	mov	gs:[di].PubSymRecStruc.pssNamePtr,eax	; init ssymbol name
 
 	xor	eax,eax
-	mov	WORD PTR gs:[di+PubSymRecStruc.pssHigherNamePtr+2],ax	; init name pointer
-	mov	WORD PTR gs:[di+PubSymRecStruc.pssLowerNamePtr+2],ax
-	mov	gs:[di+PubSymRecStruc.pssModuleCount],eax
-	mov	gs:[di+PubSymRecStruc.pssFlags],ax
+	mov	WORD PTR gs:[di].PubSymRecStruc.pssHigherNamePtr+2,ax	; init name pointer
+	mov	WORD PTR gs:[di].PubSymRecStruc.pssLowerNamePtr+2,ax
+	mov	gs:[di].PubSymRecStruc.pssModuleCount,eax
+	mov	gs:[di].PubSymRecStruc.pssFlags,ax
 
 	cmp	PubSymChainFlag,OFF	; see if chaining symbol entries from previous
 	jne	gpschain		; yes
@@ -1855,14 +1855,14 @@ gpschain:
 	mov	fs,bx			; fs:si -> old entry
 	cmp	PubSymChainFlag,1	; see if new name is greater than parent
 	jne	gpslower			; no
-	mov	WORD PTR fs:[si+PubSymRecStruc.pssHigherNamePtr+2],gs
-	mov	WORD PTR fs:[si+PubSymRecStruc.pssHigherNamePtr+0],di
+	mov	WORD PTR fs:[si].PubSymRecStruc.pssHigherNamePtr+2,gs
+	mov	WORD PTR fs:[si].PubSymRecStruc.pssHigherNamePtr+0,di
 	jmp	gpsnewflag
 
 ; parent (old) name is greater than new name
 gpslower:
-	mov	WORD PTR fs:[si+PubSymRecStruc.pssLowerNamePtr+2],gs
-	mov	WORD PTR fs:[si+PubSymRecStruc.pssLowerNamePtr+0],di
+	mov	WORD PTR fs:[si].PubSymRecStruc.pssLowerNamePtr+2,gs
+	mov	WORD PTR fs:[si].PubSymRecStruc.pssLowerNamePtr+0,di
 
 gpsnewflag:
 	stc					; flag a new public
@@ -2011,14 +2011,14 @@ sspinit:
 ; first symbol of module, keep pointer to start of table pointer in i/o buffer head
 	mov	ax,fs			; ax:bx -> first symbol pointer entry
 	mov	fs,CurrentBaseOBJBuff	; fs -> i/o buffer base
-	mov	fs:[WORD PTR IOBuffHeaderStruc.ibhsPtrToSymPtrs],bx
-	mov	fs:[WORD PTR IOBuffHeaderStruc.ibhsPtrToSymPtrs+2],ax
+	mov	WORD PTR fs:[IOBuffHeaderStruc.ibhsPtrToSymPtrs],bx
+	mov	WORD PTR fs:[IOBuffHeaderStruc.ibhsPtrToSymPtrs+2],ax
 	mov	fs,ax			; fs:bx -> symbol pointer entry
 
 ; fs:bx -> symbol pointer table entry
 ; gs:di -> symbol entry
 ssp2:
-	mov	fs:[bx],di		; save pointer to symbol entry in table
+	mov	fs:[bx+0],di	; save pointer to symbol entry in table
 	mov	fs:[bx+2],gs
 
 	pop	fs				; restore critical registers
@@ -2092,10 +2092,10 @@ gcdinit:
 
 ; zero init entry
 	xor	eax,eax
-	mov	gs:[di+ComDatRecStruc.cdsLength],eax
-	mov	gs:[di+ComDatRecStruc.cdsIndSegDefPtr],eax
-	mov	gs:[di+ComDatRecStruc.cdsGrpDefPtr],eax
-	mov	gs:[di+ComDatRecStruc.cdsFlags],ax	; init flags
+	mov	gs:[di].ComDatRecStruc.cdsLength,eax
+	mov	gs:[di].ComDatRecStruc.cdsIndSegDefPtr,eax
+	mov	gs:[di].ComDatRecStruc.cdsGrpDefPtr,eax
+	mov	gs:[di].ComDatRecStruc.cdsFlags,ax	; init flags
 	ret
 GetComDatEntry	ENDP
 
@@ -2168,10 +2168,10 @@ gedinit:
 
 ; zero init entry
 	xor	eax,eax
-	mov	gs:[di+EXPDEFRecStruc.edsExportedFlag],al
-	mov	gs:[di+EXPDEFRecStruc.edsExportedNamePtr],eax
-	mov	gs:[di+EXPDEFRecStruc.edsInternalNamePtr],eax
-	mov	gs:[di+EXPDEFRecStruc.edsExportOrdinal],ax
+	mov	gs:[di].EXPDEFRecStruc.edsExportedFlag,al
+	mov	gs:[di].EXPDEFRecStruc.edsExportedNamePtr,eax
+	mov	gs:[di].EXPDEFRecStruc.edsInternalNamePtr,eax
+	mov	gs:[di].EXPDEFRecStruc.edsExportOrdinal,ax
 	ret
 GetEXPDEFEntry	ENDP
 
@@ -2242,11 +2242,11 @@ gidinit:
 
 ; zero init entry
 	xor	eax,eax
-	mov	gs:[di+IMPDEFRecStruc.idsOrdinalFlag],al
-	mov	gs:[di+IMPDEFRecStruc.idsInternalNamePtr],eax
-	mov	gs:[di+IMPDEFRecStruc.idsModuleNamePtr],eax
-	mov	gs:[di+IMPDEFRecStruc.idsEntryIdentPtr],eax
-	mov	gs:[di+IMPDEFRecStruc.idsGeneralFlags],al
+	mov	gs:[di].IMPDEFRecStruc.idsOrdinalFlag,al
+	mov	gs:[di].IMPDEFRecStruc.idsInternalNamePtr,eax
+	mov	gs:[di].IMPDEFRecStruc.idsModuleNamePtr,eax
+	mov	gs:[di].IMPDEFRecStruc.idsEntryIdentPtr,eax
+	mov	gs:[di].IMPDEFRecStruc.idsGeneralFlags,al
 	ret
 GetIMPDEFEntry	ENDP
 

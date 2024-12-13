@@ -396,7 +396,7 @@ ogp_done:
 pop_ret:
     ret
 
-ovl_bad_option:             ; bad overlay option specified
+ovl_bad_option::            ; bad overlay option specified
     mov ax,BAD_OPTION_ERR   ; error value
     jmp NEAR PTR link_error ; transfer control to error handler
 

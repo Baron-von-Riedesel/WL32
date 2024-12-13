@@ -56,16 +56,13 @@ EXTRN	reading_qlk_flag:BYTE,no_qlk_modules:BYTE
 ; initialized local variables
 
 ; byte values
-EVEN                        ; maximize speed on 8086 and better
 use_libs    DB  0           ; nonzero if libs used (not merely present)
-EVEN
 
 .DATA?
 
 ; uninitialized local variables
 
 ; byte values
-EVEN
 all_resolved    DB  ?       ; nonzero if total symbols == public symbols
 EVEN
 new_lib DB  ?               ; nonzero if new library being processed

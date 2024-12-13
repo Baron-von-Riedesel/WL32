@@ -179,7 +179,7 @@ WriteMAPFile	PROC
 	mov	MAPSYMBufferSelector,ax
 	mov	bx,OFFSET CreatingMAPText
 	call	DisplayLinkInfo
-	call	InitMAPFile
+	call	InitMapFile
 	call	MapSegments
 	call	MapGroups
 	call	MapPublics
@@ -437,9 +437,9 @@ wsfentloop:
 	jae	wsfnextblk		; no
 	cmp	ax,fs:[PubSymBlkStruc.psbCount]	; see if end entry in block
 	jae	wsfnextblk		; yes, try next block, if any (shouldn't be)
-	test	fs:[bx+PubSymRecStruc.pssFlags],LOCALSYMBOLFLAG
+	test	fs:[bx].PubSymRecStruc.pssFlags,LOCALSYMBOLFLAG
 	jne	wsfnextent		; don't show locals in public symbol list
-	test	fs:[bx+PubSymRecStruc.pssFlags],(ABSOLUTESYMBOLFLAG OR PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	fs:[bx].PubSymRecStruc.pssFlags,(ABSOLUTESYMBOLFLAG OR PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	je	wsfnextent		; unresolved, don't show
 
 ; save -> symbol
@@ -467,30 +467,30 @@ wsfshowloop:
 	lfs	bx,fs:[4*ebp]
 	inc	ebp				; ebp -> next pointer entry, if any
 	mov	di,OFFSET MAPFileBuffer	; init di -> write buffer
-	test	fs:[bx+PubSymRecStruc.pssFlags],ABSOLUTESYMBOLFLAG	; see if absolute symbol
+	test	fs:[bx].PubSymRecStruc.pssFlags,ABSOLUTESYMBOLFLAG	; see if absolute symbol
 	je	wsfnotabs	; not absolute
 
 ; absolute symbol
 	mov	[di+SymbolStruc.ssSymbolType],1	; flag absolute
-	mov	ax,WORD PTR fs:[bx+PubSymRecStruc.pssIndSegDefPtr]	; get frame number
+	mov	ax,WORD PTR fs:[bx].PubSymRecStruc.pssIndSegDefPtr	; get frame number
 	mov	[di+SymbolStruc.ssSymbolSeg],ax	; save frame
-	mov	eax,fs:[bx+PubSymRecStruc.pssOffset]	; get public offset
+	mov	eax,fs:[bx].PubSymRecStruc.pssOffset	; get public offset
 	mov	[di+SymbolStruc.ssSymbolDword],eax	; save symbol offset value
 	jmp	SHORT wsf2
 
 wsfnotabs:
 	mov	[di+SymbolStruc.ssSymbolType],0	; flag not absolute
-	lgs	si,fs:[bx+PubSymRecStruc.pssIndSegDefPtr]	; gs:si -> individual segdef
-	mov	eax,gs:[si+IndSegDefRecStruc.isdrSegOffset]	; get individual segment offset
-	lgs	si,gs:[si+IndSegDefRecStruc.isdrMasterPtr]	; gs:si -> master segdef
-	add	eax,fs:[bx+PubSymRecStruc.pssOffset]	; add in public offset
+	lgs	si,fs:[bx].PubSymRecStruc.pssIndSegDefPtr	; gs:si -> individual segdef
+	mov	eax,gs:[si].IndSegDefRecStruc.isdrSegOffset	; get individual segment offset
+	lgs	si,gs:[si].IndSegDefRecStruc.isdrMasterPtr	; gs:si -> master segdef
+	add	eax,fs:[bx].PubSymRecStruc.pssOffset	; add in public offset
 	mov	[di+SymbolStruc.ssSymbolDword],eax	; save symbol offset value
 	mov	ax,gs:[si].MasterSegDefRecStruc.mssSegmentID	; get segment identifier
 	mov	[di+SymbolStruc.ssSymbolSeg],ax	; save segment identifier for symbol
 
 wsf2:
 	add	di,OFFSET SymbolStruc.ssSymbolTLen	; di -> start of name storage
-	lds	si,fs:[bx+PubSymRecStruc.pssNamePtr]
+	lds	si,fs:[bx].PubSymRecStruc.pssNamePtr
 	call	NormalDSSISource	; normalize string
 	lodsb				; get name length byte
 	stosb				; save symbol name text byte
@@ -692,7 +692,7 @@ msprintloop:
 	je	msret			; no
 	mov	fs,ax			; fs:bx -> current printing segment master segdef block
 
-	test	fs:[bx+MasterSegDefRecStruc.mssFlags],(DEBUGSYMBOLSSEGMENTFLAG OR DEBUGTYPESSEGMENTFLAG)
+	test	fs:[bx].MasterSegDefRecStruc.mssFlags,(DEBUGSYMBOLSSEGMENTFLAG OR DEBUGTYPESSEGMENTFLAG)
 	jne	msnextent		; debug segment
 
 ; init the buffer for segment printing
@@ -704,14 +704,14 @@ msprintloop:
 	mov	di,dx			; di -> write buffer
 
 	stosb				; leading space
-	mov	edx,fs:[bx+MasterSegDefRecStruc.mssSegOffset]	; get segment start
+	mov	edx,fs:[bx].MasterSegDefRecStruc.mssSegOffset	; get segment start
 	call	DwordToAsciiHex
 	mov	ax,' '*256+'H'	; end with 'H' and following space
 	stosw
 
-	mov	edx,fs:[bx+MasterSegDefRecStruc.mssSegLength]	; get segment length
+	mov	edx,fs:[bx].MasterSegDefRecStruc.mssSegLength	; get segment length
 	mov	eax,edx
-	add	edx,fs:[bx+MasterSegDefRecStruc.mssSegOffset]	; add in segment start
+	add	edx,fs:[bx].MasterSegDefRecStruc.mssSegOffset	; add in segment start
 	or	eax,eax			; see if zero length segment, no adjustment to end
 	je	msprintend		; yes
 	dec	edx				; adjust segment end for relative zero
@@ -721,12 +721,12 @@ msprintend:
 	mov	ax,' '*256+'H'	; end with 'H' and following space
 	stosw
 
-	mov	edx,fs:[bx+MasterSegDefRecStruc.mssSegLength]	; get segment length
+	mov	edx,fs:[bx].MasterSegDefRecStruc.mssSegLength	; get segment length
 	call	DwordToAsciiHex	; print it
 	mov	ax,' '*256+'H'	; end with 'H' and following space
 	stosw
 
-	lds	si,fs:[bx+MasterSegDefRecStruc.mssNamePtr]
+	lds	si,fs:[bx].MasterSegDefRecStruc.mssNamePtr
 	call	NormalDSSISource	; normalize string
 	lodsb				; get name length byte
 	mov	cl,al
@@ -740,7 +740,7 @@ ms2:
 	mov	di,OFFSET MAPFileBuffer+55	; skip ahead to class column (pad segment name with spaces)
 
 msclass:
-	lds	si,fs:[bx+MasterSegDefRecStruc.mssClassPtr]
+	lds	si,fs:[bx].MasterSegDefRecStruc.mssClassPtr
 	call	NormalDSSISource	; normalize string
 	lodsb				; get name length byte
 	mov	cl,al			; cx holds length of name string (ch known zero)
@@ -771,8 +771,8 @@ msnumber:
 	pop	bx				; restore bx -> segment entry
 
 msnextent:
-	mov	ax,WORD PTR fs:[bx+MasterSegDefRecStruc.mssNextSegPtr]+2
-	mov	bx,WORD PTR fs:[bx+MasterSegDefRecStruc.mssNextSegPtr]
+	mov	ax,WORD PTR fs:[bx].MasterSegDefRecStruc.mssNextSegPtr+2
+	mov	bx,WORD PTR fs:[bx].MasterSegDefRecStruc.mssNextSegPtr+0
 	jmp	NEAR PTR msprintloop
 
 msret:
@@ -935,7 +935,7 @@ mgentloop:
 	mov	di,OFFSET MAPFileBuffer	; init di -> write buffer
 	mov	al,' '
 	stosb				; leading space
-	mov	edx,fs:[bx+GrpDefRecStruc.gdrGrpOffset]	; get group start
+	mov	edx,fs:[bx].GrpDefRecStruc.gdrGrpOffset	; get group start
 	shr	edx,4			; convert to paras
 	call	DwordToAsciiHex
 	mov	ax,'0'*256+':'	; follow with ':0'
@@ -945,7 +945,7 @@ mgentloop:
 	mov	ah,al			; two more spaces
 	stosw
 
-	lds	si,fs:[bx+GrpDefRecStruc.gdrGrpNamePtr]
+	lds	si,fs:[bx].GrpDefRecStruc.gdrGrpNamePtr
 	call	NormalDSSISource	; normalize string
 	lodsb				; get name length byte
 	mov	cl,al
@@ -1026,7 +1026,7 @@ mpentloop:
 	jae	mpnextblk		; no
 	cmp	ax,fs:[PubSymBlkStruc.psbCount]	; see if end entry in block
 	jae	mpnextblk		; yes, try next block, if any (shouldn't be)
-	test	fs:[bx+PubSymRecStruc.pssFlags],(LOCALSYMBOLFLAG OR ABSOLUTESYMBOLFLAG OR WEAKEXTERNFLAG OR LAZYEXTERNFLAG)
+	test	fs:[bx].PubSymRecStruc.pssFlags,(LOCALSYMBOLFLAG OR ABSOLUTESYMBOLFLAG OR WEAKEXTERNFLAG OR LAZYEXTERNFLAG)
 	jne	mpnextent		; don't show locals, absolutes, or weak/lazy externals in public symbol list
 
 ; save -> symbol
@@ -1156,9 +1156,9 @@ whileloop:
 	xor	ecx,ecx			; zero high bytes of register for following repe
 
 	lds	si,fs:[4*eax]	; ds:si -> a[j-h]
-	lds	si,[si+PubSymRecStruc.pssNamePtr]	; ds:si -> public name
+	lds	si,[si].PubSymRecStruc.pssNamePtr	; ds:si -> public name
 	les	di,gs:vValue	; es:di==v
-	les	di,es:[di+PubSymRecStruc.pssNamePtr]	; es:di -> public name
+	les	di,es:[di].PubSymRecStruc.pssNamePtr	; es:di -> public name
 
 ; a[j-h] > v
 	cmp	si,SIZEIOBUFFBLK
@@ -1353,23 +1353,23 @@ smawhileloop:
 
 ; a[j-h] > v
 	xor	eax,eax			; zero out public offset of first element
-	test	[si+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	[si].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	je	sma2			; unresolved, zero offset
-	mov	eax,[si+PubSymRecStruc.pssOffset]	; get in public offset
-	lds	si,[si+PubSymRecStruc.pssIndSegDefPtr]	; ds:si -> individual segdef
+	mov	eax,[si].PubSymRecStruc.pssOffset	; get in public offset
+	lds	si,[si].PubSymRecStruc.pssIndSegDefPtr	; ds:si -> individual segdef
 	add	eax,[si+IndSegDefRecStruc.isdrSegOffset]	; add in individual segment offset
 	lds	si,[si+IndSegDefRecStruc.isdrMasterPtr]	; ds:si -> master segdef
-	add	eax,[si+MasterSegDefRecStruc.mssSegOffset]	; add offset from start of program
+	add	eax,[si].MasterSegDefRecStruc.mssSegOffset	; add offset from start of program
 
 sma2:
 	xor	ecx,ecx			; zero out public offset of second element
-	test	es:[di+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	es:[di].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	je	sma3			; unresolved, zero offset
-	mov	ecx,es:[di+PubSymRecStruc.pssOffset]	; get in public offset
-	les	di,es:[di+PubSymRecStruc.pssIndSegDefPtr]	; es:di -> individual segdef
-	add	ecx,es:[di+IndSegDefRecStruc.isdrSegOffset]	; add in individual segment offset
-	les	di,es:[di+IndSegDefRecStruc.isdrMasterPtr]	; es:di -> master segdef
-	add	ecx,es:[di+MasterSegDefRecStruc.mssSegOffset]	; add offset from start of program
+	mov	ecx,es:[di].PubSymRecStruc.pssOffset	; get in public offset
+	les	di,es:[di].PubSymRecStruc.pssIndSegDefPtr	; es:di -> individual segdef
+	add	ecx,es:[di].IndSegDefRecStruc.isdrSegOffset	; add in individual segment offset
+	les	di,es:[di].IndSegDefRecStruc.isdrMasterPtr	; es:di -> master segdef
+	add	ecx,es:[di].MasterSegDefRecStruc.mssSegOffset	; add offset from start of program
 
 sma3:
 	cmp	eax,ecx			; compare public symbol absolute offsets
@@ -1416,7 +1416,7 @@ SortMapSymbolAddress	ENDP
 
 ; write map symbol
 
-WriteMAPSymbol	PROC
+WriteMapSymbol	PROC
 	push	PubNameSymbolCount	; save critical variable
 	mov	ebp,1			; ebp -> symbol pointer, start at 1, not 0
 
@@ -1428,11 +1428,11 @@ wmsshowloop:
 	mov	al,' '
 	stosb				; leading space
 	xor	edx,edx			; zero out public offset
-	test	fs:[bx+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	fs:[bx].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	je	wmsseg			; unresolved, zero offset
-	lgs	si,fs:[bx+PubSymRecStruc.pssIndSegDefPtr]	; gs:si -> individual segdef
-	lgs	si,gs:[si+IndSegDefRecStruc.isdrMasterPtr]	; gs:si -> master segdef
-	mov	edx,gs:[si+MasterSegDefRecStruc.mssSegOffset]	; get offset from start of program
+	lgs	si,fs:[bx].PubSymRecStruc.pssIndSegDefPtr	; gs:si -> individual segdef
+	lgs	si,gs:[si].IndSegDefRecStruc.isdrMasterPtr	; gs:si -> master segdef
+	mov	edx,gs:[si].MasterSegDefRecStruc.mssSegOffset	; get offset from start of program
 	shr	edx,4			; convert to paras
 
 wmsseg:
@@ -1440,13 +1440,13 @@ wmsseg:
 	mov	al,':'
 	stosb
 	xor	edx,edx
-	test	fs:[bx+PubSymRecStruc.pssFlags],(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
+	test	fs:[bx].PubSymRecStruc.pssFlags,(PUBLICSYMBOLFLAG OR NEARCOMSYMBOLFLAG OR FARCOMSYMBOLFLAG)
 	je	wmsoff			; unresolved, zero offset
-	mov	dl,BYTE PTR gs:[si+MasterSegDefRecStruc.mssSegOffset]	; get low byte offset from start of program
+	mov	dl,BYTE PTR gs:[si].MasterSegDefRecStruc.mssSegOffset	; get low byte offset from start of program
 	and	dl,0fh			; get master segment offset from para align (should always be zero in 3P mode)
-	lgs	si,fs:[bx+PubSymRecStruc.pssIndSegDefPtr]	; gs:si -> individual segdef
-	add	edx,gs:[si+IndSegDefRecStruc.isdrSegOffset]	; add in individual segment offset
-	add	edx,fs:[bx+PubSymRecStruc.pssOffset]	; add in public offset
+	lgs	si,fs:[bx].PubSymRecStruc.pssIndSegDefPtr	; gs:si -> individual segdef
+	add	edx,gs:[si].IndSegDefRecStruc.isdrSegOffset	; add in individual segment offset
+	add	edx,fs:[bx].PubSymRecStruc.pssOffset	; add in public offset
 
 wmsoff:
 	call	DwordToAsciiHex
@@ -1456,7 +1456,7 @@ wmsoff:
 	stosb
 
 	xor	ch,ch			; cx holds length of name string
-	lds	si,fs:[bx+PubSymRecStruc.pssNamePtr]
+	lds	si,fs:[bx].PubSymRecStruc.pssNamePtr
 	cmp	si,SIZEIOBUFFBLK
 	jb	wmsgetlen		; need not normalize name
 
@@ -1493,7 +1493,7 @@ wms2:
 
 	pop	PubNameSymbolCount	; restore critical variable
 	ret
-WriteMAPSymbol	ENDP
+WriteMapSymbol	ENDP
 
 ;*****************************
 ;* MAPENTRY                  *

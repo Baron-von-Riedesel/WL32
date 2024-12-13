@@ -1194,7 +1194,7 @@ get_file_name   PROC
     mov di,OFFSET DGROUP:parfilename	; point to buffer for file name
 
 ; alternate entry point allows nonroutine-set name buffer
-getfile_alt_entry:
+getfile_alt_entry::
 
 ; force file name to all caps
 gfn_loop:

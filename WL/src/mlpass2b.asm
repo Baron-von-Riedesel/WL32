@@ -54,8 +54,6 @@ EXTRN	is_local:BYTE,is_cextdef:BYTE
 
 ; initialized local variables
 
-EVEN                        ; maximize speed on 8086 and better
-
 ; word values
 ovl_code_count  DW  0       ; running count of overlaid code segments, used by Clarion code
 
@@ -65,7 +63,6 @@ ovl_code_count  DW  0       ; running count of overlaid code segments, used by C
 
 ; byte values
 
-EVEN                        ; maximize speed on 8086 and better
 acbp_byte   DB  ?           ; ACBP byte in segdef record
 EVEN
 is_comdef   DB  ?           ; nonzero if record is a COMDEF record

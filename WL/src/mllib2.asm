@@ -325,7 +325,7 @@ gcl_3:
 
 ; A WarpLink internal error has occurred, no more libraries were
 ; available before the count of all libraries was complete
-lib_internal:
+lib_internal::
     mov ax,INTERNAL_ERR     ; put warplink error code in ax
     mov cx,9                ; internal error value
     jmp NEAR PTR link_error ; transfer control to error handler

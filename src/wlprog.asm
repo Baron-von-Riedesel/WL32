@@ -302,7 +302,7 @@ cpfprot:
 	je	cpfprot2		; no
 	lgs	bx,FirstSegment	; gs:bx -> segment master entry
 	mov	si,OFFSET NEARText
-	les	di,gs:[bx+MasterSegDefRecStruc.mssClassPtr]	; es:di -> class name
+	les	di,gs:[bx].MasterSegDefRecStruc.mssClassPtr	; es:di -> class name
 	call	NormalESDIDest	; normalize the class name
 	cmp	BYTE PTR es:[di],4	; see if length matches
 	jne	cpfprot2		; no
@@ -321,7 +321,7 @@ cpfprot:
 	inc	TotalRelSegCount	; bump segment count to 2
 
 	mov	ecx,0fffffffch	; maxium segment length
-	mov	eax,gs:[bx+MasterSegDefRecStruc.mssSegLength]
+	mov	eax,gs:[bx].MasterSegDefRecStruc.mssSegLength
 	add	eax,3			; round up
 	jnc	cpfflat2		; no overflow
 	mov	eax,ecx			; set to highest segment length
@@ -457,10 +457,10 @@ ssgentloop:
 	jae	ssgnextblk		; yes, try next block, if any (shouldn't be)
 
 ; adjust first segment of group to have same length as group
-	test	fs:[bx+GrpDefRecStruc.gdrGrpFlags],GRPOFFSETSETFLAG
+	test	fs:[bx].GrpDefRecStruc.gdrGrpFlags,GRPOFFSETSETFLAG
 	je	ssgnextent		; no segment associated with group
-	lgs	si,fs:[bx+GrpDefRecStruc.gdrFirstSegPtr]	; gs:si -> first segment of group
-	mov	eax,fs:[bx+GrpDefRecStruc.gdrGrpLen]	; get group length
+	lgs	si,fs:[bx].GrpDefRecStruc.gdrFirstSegPtr	; gs:si -> first segment of group
+	mov	eax,fs:[bx].GrpDefRecStruc.gdrGrpLen	; get group length
 
 ; if using Clipper, set DGROUP to 64K
 IFDEF CLIPPER
@@ -469,7 +469,7 @@ IFDEF CLIPPER
 	mov	cx,bx			; ecx -> group entry
 	cmp	ecx,DGROUPPtr	; see if DGROUP
 	jne	ssglen			; no
-	mov	eax,gs:[si+MasterSegDefRecStruc.mssSegLength]	; get old segment length
+	mov	eax,gs:[si].MasterSegDefRecStruc.mssSegLength	; get old segment length
 	mov	ecx,10000h		; 64K DGROUP
 	sub	ecx,eax			; ecx holds expansion amount of DGROUP
 	mov	DGROUPSegLenAdjust,ecx	; save expansion amount of DGROUP so can adjust memory image
@@ -477,7 +477,7 @@ IFDEF CLIPPER
 ENDIF
 
 ssglen:
-	mov	gs:[si+MasterSegDefRecStruc.mssSegLength],eax	; update segment length
+	mov	gs:[si].MasterSegDefRecStruc.mssSegLength,eax	; update segment length
 
 ssgnextent:
 	add	bx,SIZE GrpDefRecStruc	; fs:bx -> next grpdef entry
@@ -518,7 +518,7 @@ w3pssegloop:
 	jne	w3psnextent		; debug segment
 
 w3pssave:
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssSegOffset]
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssSegOffset
 	stosd				; save segment offset for segment entry
 	call	Get3PSegmentType	; get type of segment (code/data/stack/const)
 
@@ -529,20 +529,20 @@ IFDEF CLARION
 	je	wp3sgran		; not a global data segment
 	push	eax			; save critical register
 	mov	eax,ProgramImageSize	; compute new segment size
-	sub	eax,fs:[bx+MasterSegDefRecStruc.mssSegOffset]
+	sub	eax,fs:[bx].MasterSegDefRecStruc.mssSegOffset
 	cmp	eax,65536
 	jb	clar2
 	mov	eax,65536
 
 clar2:
-	mov	fs:[bx+MasterSegDefRecStruc.mssSegLength],eax
+	mov	fs:[bx].MasterSegDefRecStruc.mssSegLength,eax
 	pop	eax				; restore critical register
 
 wp3sgran:
 ENDIF
 
 ; eax holds segment type
-	mov	edx,fs:[bx+MasterSegDefRecStruc.mssSegLength]
+	mov	edx,fs:[bx].MasterSegDefRecStruc.mssSegLength
 	cmp	edx,100000h		; see if >=1M (need 4K byte granularity)
 	jb	w3ps2			; no
 	shr	edx,0ch			; convert to 4K pages
@@ -622,8 +622,8 @@ Get3PSegmentType	PROC
 	push	es			; save critical registers
 	push	bx
 	push	di
-	les	di,fs:[bx+MasterSegDefRecStruc.mssNamePtr]
-	lgs	bx,fs:[bx+MasterSegDefRecStruc.mssClassPtr]
+	les	di,fs:[bx].MasterSegDefRecStruc.mssNamePtr
+	lgs	bx,fs:[bx].MasterSegDefRecStruc.mssClassPtr
 	cmp	bx,SIZEIOBUFFBLK-MAXOBJRECNAME	; check for possible overflow, normalize name if so
 	jb	g3ps2			; no normalization needed
 	call	NormalGSBXSource
@@ -709,7 +709,7 @@ g3pscl4:
 	jne	g3psstack		; no, won't match other CLARION check either
 	cmp	ch,5			; see if segment name at least five chars
 	jb	g3pscl5			; no
-	mov	eax,DWORD PTR _CODETexT
+	mov	eax,DWORD PTR _CODEText
 	cmp	eax,es:[si]		; see if matches "_COD"
 	jne	g3pscl5			; no
 	mov	al,_CODEText+4
@@ -866,7 +866,7 @@ IFDEF WATCOM_ASM
 ENDIF
 
 s3phsp:
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssSegLength]
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssSegLength
 	mov	NewHeader.NewEntryESP,eax	; save SP value
 
 s3ph2:
@@ -1238,7 +1238,7 @@ weeentloop:
 
 	push	bx			; save fs:bx -> entry
 	push	fs
-	lfs	si,fs:[bx+EXPDEFRecStruc.edsInternalNamePtr]
+	lfs	si,fs:[bx].EXPDEFRecStruc.edsInternalNamePtr
 	push	fs			; save original pointer
 	push	si
 	call	ReadByte	; get name length
@@ -1248,24 +1248,24 @@ weeentloop:
 	jne	weefind			; no
 	pop	fs				; fs -> expdef block
 	push	fs
-	lfs	si,fs:[bx+EXPDEFRecStruc.edsExportedNamePtr]
+	lfs	si,fs:[bx].EXPDEFRecStruc.edsExportedNamePtr
 
 weefind:
 	call	GetPubSymEntry	; find the internal symbol name, return gs:di -> entry
 	jc	weebad			; symbol name not found
 
 ; gs:di -> public symbol entry
-	lfs	si,gs:[di+PubSymRecStruc.pssIndSegDefPtr]	; fs:si -> individual segdef
-	mov	eax,fs:[si+IndSegDefRecStruc.isdrSegOffset]	; get individual segment offset
-	add	eax,gs:[di+PubSymRecStruc.pssOffset]	; add in public offset
+	lfs	si,gs:[di].PubSymRecStruc.pssIndSegDefPtr	; fs:si -> individual segdef
+	mov	eax,fs:[si].IndSegDefRecStruc.isdrSegOffset	; get individual segment offset
+	add	eax,gs:[di].PubSymRecStruc.pssOffset	; add in public offset
 	mov	DWORD PTR WorkingBuffer,eax	; save exported offset value
-	lfs	si,fs:[si+IndSegDefRecStruc.isdrMasterPtr]	; fs:si -> master segdef
+	lfs	si,fs:[si].IndSegDefRecStruc.isdrMasterPtr	; fs:si -> master segdef
 	mov	ax,fs:[si].MasterSegDefRecStruc.mssSegmentID	; get segment identifier
 	mov	WORD PTR WorkingBuffer+4,ax	; save exported segment value
 
 	pop	fs			; restore fs:bx -> expdef entry
 	pop	bx
-	lfs	si,fs:[bx+EXPDEFRecStruc.edsExportedNamePtr]	; fs:si -> exported name
+	lfs	si,fs:[bx].EXPDEFRecStruc.edsExportedNamePtr	; fs:si -> exported name
 	mov	di,OFFSET WorkingBuffer+6
 	call	ReadByte	; get symbol name length
 	mov	[di],al
@@ -1484,11 +1484,11 @@ wieblkloop1:
 wieentloop1:
 	push	cx			; save impdef entry count
 	push	bx			; save -> impdef entry
-	test	BYTE PTR gs:[bx+IMPDEFRecStruc.idsGeneralFlags],NEWMODULENAMEFLAG
+	test	BYTE PTR gs:[bx].IMPDEFRecStruc.idsGeneralFlags,NEWMODULENAMEFLAG
 	je	wienextent1		; not a new module name
 
 	push	si
-	lfs	si,gs:[bx+IMPDEFRecStruc.idsModuleNamePtr]	; fs:si -> module name
+	lfs	si,gs:[bx].IMPDEFRecStruc.idsModuleNamePtr	; fs:si -> module name
 	call	ReadByte	; get name length
 	mov	di,OFFSET WorkingBuffer+12	; di -> module name storage
 	mov	[di],al
@@ -1642,13 +1642,13 @@ wieblkloop2:
 wieentloop2:
 	push	cx			; save impdef entry count
 	push	bx			; save -> impdef entry
-	test	BYTE PTR gs:[bx+IMPDEFRecStruc.idsGeneralFlags],FLUSHIMPDEFFLAG
+	test	BYTE PTR gs:[bx].IMPDEFRecStruc.idsGeneralFlags,FLUSHIMPDEFFLAG
 	jne	wienextent2		; flush this import
-	cmp	BYTE PTR gs:[bx+IMPDEFRecStruc.idsOrdinalFlag],1
+	cmp	BYTE PTR gs:[bx].IMPDEFRecStruc.idsOrdinalFlag,1
 	je	wienextent2		; ordinal import, no need to keep name
 
 	push	si
-	lfs	si,gs:[bx+IMPDEFRecStruc.idsInternalNamePtr]	; fs:si -> function name
+	lfs	si,gs:[bx].IMPDEFRecStruc.idsInternalNamePtr	; fs:si -> function name
 	call	ReadByte	; get name length
 	mov	di,OFFSET WorkingBuffer+12	; di -> module name storage
 	mov	[di],al
@@ -1971,14 +1971,14 @@ SetupMZHeader	PROC
 	cmp	WORD PTR _ENDSegDefPtr+2,0	; see if stack segment in program
 	je	seh2			; no
 	lfs	bx,_ENDSegDefPtr	; fs:bx -> master segdef of stack segment
-	mov	eax,fs:[bx+MasterSegDefRecStruc.mssSegOffset]
+	mov	eax,fs:[bx].MasterSegDefRecStruc.mssSegOffset
 	mov	dl,al			; keep low byte
 	and	dl,0fh			; keep nonsegment value
 	xor	dh,dh			; dx holds offset from canonical segment
 	shr	eax,4			; convert to paragraphs
 	mov	MZHeader.ehSS,ax	; save EXE SS value
 
-	mov	ax,WORD PTR fs:[bx+MasterSegDefRecStruc.mssSegLength]
+	mov	ax,WORD PTR fs:[bx].MasterSegDefRecStruc.mssSegLength
 
 ; covered in segment resolution phase by adjusting stack segment length
 COMMENT !
@@ -1989,7 +1989,7 @@ COMMENT !
 	movzx	eax,ax
 	sub	ProgramImageSize,eax	; update program's stack value, image size
 	mov	ax,StackValue	; update stack length with option stack size
-	mov	WORD PTR fs:[bx+MasterSegDefRecStruc.mssSegLength],ax
+	mov	WORD PTR fs:[bx].MasterSegDefRecStruc.mssSegLength,ax
 	add	ProgramImageSize,eax	; update program image size
 END COMMENT !
 
@@ -2177,8 +2177,8 @@ webmainloop:
 	jne	webnextseg		; debug segment, ignore
 	call	DisplaySegmentName	; display segment name being processed
 
-	mov	ax,WORD PTR gs:[bx+MasterSegDefRecStruc.mssFirstIndSegPtr+2]
-	mov	di,WORD PTR gs:[bx+MasterSegDefRecStruc.mssFirstIndSegPtr+0]
+	mov	ax,WORD PTR gs:[bx].MasterSegDefRecStruc.mssFirstIndSegPtr+2
+	mov	di,WORD PTR gs:[bx].MasterSegDefRecStruc.mssFirstIndSegPtr+0
 
 ; ax:di -> individual segdef entry
 webindloop:
@@ -2187,14 +2187,14 @@ webindloop:
 	mov	es,ax			; es:di -> individual segdef entry
 
 ; see if data for segment
-	test	es:[di+IndSegDefRecStruc.isdrFlags],ASSOCIATEDDATAFLAG
+	test	es:[di].IndSegDefRecStruc.isdrFlags,ASSOCIATEDDATAFLAG
 	je	webnextind		; no data from segment, no file write needed
 
 	mov	PharLapModuleFlag,0	; init phar lap flag
 	mov	OS2ModuleFlag,0	; init os/2 flag
-	test	es:[di+IndSegDefRecStruc.isdrFlags],CREATEDSEGMENTFLAG
+	test	es:[di].IndSegDefRecStruc.isdrFlags,CREATEDSEGMENTFLAG
 	jne	webinit			; no obj base buffer, not a clipper or phar lap module
-	mov	ax,WORD PTR es:[di+IndSegDefRecStruc.isdrModulePtr]	; ax -> obj base buffer
+	mov	ax,WORD PTR es:[di].IndSegDefRecStruc.isdrModulePtr	; ax -> obj base buffer
 	mov	fs,ax
 	test	fs:[IOBuffHeaderStruc.ibhsFlags],ISPHARLAPMODFLAG	; see if phar lap module
 	setne	PharLapModuleFlag
@@ -2215,7 +2215,7 @@ ENDIF
 
 webinit:
 	mov	PublicNameIndex,0	; init public name index for COMDAT's
-	lfs	si,es:[di+IndSegDefRecStruc.isdrDataPtr]	; fs:si -> first L?DATA for segment
+	lfs	si,es:[di].IndSegDefRecStruc.isdrDataPtr	; fs:si -> first L?DATA for segment
 	call	ReadByte	; read type of data record
 	mov	dh,al			; save record value
 	call	ReadWordCX	; read record length into cx
@@ -2320,13 +2320,13 @@ webscan:
 	jmp	webrecloop
 
 webnextind:
-	mov	ax,WORD PTR es:[di+IndSegDefRecStruc.isdrNextIndSegPtr+2]
-	mov	di,WORD PTR es:[di+IndSegDefRecStruc.isdrNextIndSegPtr+0]	; ax:di -> next individaul segdef entry
+	mov	ax,WORD PTR es:[di].IndSegDefRecStruc.isdrNextIndSegPtr+2
+	mov	di,WORD PTR es:[di].IndSegDefRecStruc.isdrNextIndSegPtr+0	; ax:di -> next individaul segdef entry
 	jmp	NEAR PTR webindloop
 
 webnextseg:
-	mov	ax,WORD PTR gs:[bx+MasterSegDefRecStruc.mssNextSegPtr+2]
-	mov	bx,WORD PTR gs:[bx+MasterSegDefRecStruc.mssNextSegPtr+0]	; ax:bx -> next master segdef entry, if any
+	mov	ax,WORD PTR gs:[bx].MasterSegDefRecStruc.mssNextSegPtr+2
+	mov	bx,WORD PTR gs:[bx].MasterSegDefRecStruc.mssNextSegPtr+0	; ax:bx -> next master segdef entry, if any
 	jmp	NEAR PTR webmainloop
 
 ; comdat32 record
@@ -2391,8 +2391,8 @@ IFDEF WATCOM_ASM
 
 ; force zero'ing uninitialized data by writing to last byte of stack
 	lfs	si,_ENDSegDefPtr
-	les	di,fs:[si+MasterSegDefRecStruc.mssFirstIndSegPtr]	; es:di -> first segdef
-	mov	eax,fs:[si+MasterSegDefRecStruc.mssSegLength]
+	les	di,fs:[si].MasterSegDefRecStruc.mssFirstIndSegPtr	; es:di -> first segdef
+	mov	eax,fs:[si].MasterSegDefRecStruc.mssSegLength
 	dec	eax				; init segment write offset to length-1
 	push	ds
 	pop	fs
@@ -2534,9 +2534,9 @@ WriteLIDATABytes	ENDP
 ; destroys ax,dx
 
 RecurseLIDATA  PROC
-	call	ReadWordDecCx	; get repeat count
+	call	ReadWordDecCX	; get repeat count
 	mov	RepeatCount,ax	; save it
-	call	ReadWordDecCx	; get block count
+	call	ReadWordDecCX	; get block count
 	mov	BlockCount,ax	; save it
 	push	si			; save buffer position
 	push	fs			; 10/01/99, save segment in case of buffer block spanning
@@ -2580,7 +2580,7 @@ rlidnextrep:
 
 ; block size is zero, data follows
 rliddata:
-	call	ReadByteDecCx	; get length of data to write
+	call	ReadByteDecCX	; get length of data to write
 
 ; write the data bytes
 	push	cx			; save record's total data length
@@ -2647,7 +2647,7 @@ rlid3rep:
 
 rlid3scount:
 	mov	RepeatCount32,eax	; save it
-	call	ReadWordDecCx	; get block count
+	call	ReadWordDecCX	; get block count
 	mov	BlockCount,ax	; save it
 	push	si			; save buffer position
 	push	cx			; save record iterated data block length
@@ -2685,7 +2685,7 @@ rlid3nextrep:
 
 ; block size is zero, data follows
 rlid3data:
-	call	ReadByteDecCx	; get length of data to write
+	call	ReadByteDecCX	; get length of data to write
 
 ; write the data bytes
 	push	cx			; save record's total data length
@@ -2706,7 +2706,7 @@ rlid3data:
 
 ; phar lap module, 16-bit repeat count
 rlid3phar:
-	call	ReadWordDecCx	; get repeat count
+	call	ReadWordDecCX	; get repeat count
 	movzx	eax,ax		; extend to 32-bit for normal processing
 	jmp	rlid3scount
 

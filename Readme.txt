@@ -19,9 +19,9 @@
  in the corresponding .BAT files.
   Finally, WL32 isn't a CauseWay application anymore. To run it in plain
  DOS, HX's DPMI host HDPMI32 is searched. However, since WL32's /f option
- creates a CauseWay flat binary, the CauseWay extender CWSTUB.EXE must exist
- in this case - in either the current directory or the directory of the
- WL32.EXE binary.
+ creates a flat binary WITH the CauseWay extender stub CWSTUB.EXE, this
+ stub will be searched by WL32 in this case - in either the current directory
+ or the directory of the WL32.EXE binary.
 
 
  2. Distribution Files
@@ -61,15 +61,12 @@
  WLSYMTOK.INC
  INITPM.INC     initializes application as 32-bit DPMI client.
 
- Batch files used to build WL32.  WL32.BAT builds the Watcom
- C/C++ & Assembly Language version WL32.  CLARIT.BAT builds the
- Clarion-specific WL32.  CLIPIT.BAT builds the Clipper-specific
- WL32:
+ Batch files:
 
- MAKE.BAT       create WL32 with JWasm and WL32
- MAKEM.BAT      use Masm v6+ instead of JWasm
- MAKECLAR.BAT
- MAKECLIP.BAT
+ MAKE.BAT       builds standard WL32 with JWasm and WL32
+ MAKEM.BAT      like MAKE.BAT, but use Masm v6+ instead of JWasm
+ MAKECLAR.BAT   builds the Clarion-specific WL32
+ MAKECLIP.BAT   builds the Clipper-specific WL32
  DOALL.BAT      runs MAKE.BAT, MAKECLAR.BAT and MAKECLIP.BAT
 
  Linker response files:
