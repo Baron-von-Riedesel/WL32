@@ -24,12 +24,15 @@
 
 <P ALIGN=CENTER><FONT SIZE=4><B>2.&nbsp;&nbsp;&nbsp;WL32 OPTIONS</B></FONT></P>
 <FONT SIZE=3><P>WL32 options let you control how programs are linked and specify linker output while creating the programs. You can specify these linker options from the DOS command line, in a batch or make file, or in a response file. If you are using the optional morphing command feature described in the <I>Configuration Files</I> chapter, the options listed below may not appear the same as in your command line, response, batch, or make file. The formats listed in this chapter, however, are always valid.</P>
-<P>All options are case insensitive, e.g. both /b and /B refer to the beep when link is complete option. Type WL32 without parameters at the DOS command line to display a summary of linker options.</P></FONT>
+<P>All options are case insensitive, e.g. both /b and /B refer to the beep when link is complete option. Type WL32 without parameters at the DOS command line to display a summary of linker options.</P>
+<P>As default, WL32 will create a DOS extended binary in 3P format, assuming all pointers are <b>near</b> ( that is, the memory model
+ is supposed to be <b>small</b> or <b>tiny</b> ). The binary may be 16-bit or 32-bit, and the CauseWay DOS extender stub is added. 
+ The /3P, /ex or /f options may change this default behavior (see below).</P></FONT>
 
 <TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
 <TR><TD VALIGN="TOP"><P><FONT SIZE=3>/32 Allow <B>32</B>-bit segments for option <B>/ex</B>.</FONT></TD></TR>
 </TABLE>
-<FONT SIZE=3><P>This option makes WL32 accept 32-bit segments without warning.</P></FONT>
+<FONT SIZE=3><P>This option makes WL32 accept 32-bit segments for DOS EXE-format binaries without warning.</P></FONT>
 
 <TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
 <TR><TD VALIGN="TOP"><P><FONT SIZE=3>/3P Create protected-mode <B>3P</B> format without DOS extender (CWSTUB.EXE).</FONT></TD></TR>
@@ -59,22 +62,17 @@ isn't known by DOS and hence needs a program loader to run.</P></FONT>
 <TR><TD VALIGN="TOP"><P><FONT SIZE=3>/ex Create DOS <B>EX</B>E-format file.</FONT></TD></TR>
 </TABLE>
 <FONT SIZE=3><P>This option instructs WL32 to create a standard real mode DOS EXE- format file, similar to those created by
- non-DOS extended linkers such as TLink or Microsoft Link. Creating a standard DOS EXE-format file only works for programs
+ non-DOS extended linkers such as TLink or Microsoft Link. Creating a standard DOS EXE-format file usually only works for programs
  which do not exceed the DOS memory limit when fully loaded into memory. Medium to large-sized programs which require a
  DOS extender or overlays probably will not work when linked using the /ex option.</P></FONT>
 
 <TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
 <TR><TD VALIGN="TOP"><P><FONT SIZE=3>/f Create <B>f</B>lat memory model executable.</FONT></TD></TR>
 </TABLE>
-<FONT SIZE=3><P>This option directs WL32 to create an executable in 3P format (format specific to the CauseWay DOS extender )
- and adds a DOS extender stub, CWSTUB.EXE, to it. The executable may be a 16-bit or 32-bit program. 32-bit programs can 
- be either zero-based flat ( memory model FLAT ) or "near" ( memory model TINY or SMALL ).</P>
-
- <P>In case the VCPI API isn't available, the executable can only be launched by CWSTUB.EXE if a DPMI host is
- installed. The executables will then run as 16- or 32-bit clients, depending on their own "bitness".
-
- </P>
- </FONT>
+<FONT SIZE=3><P>This option directs WL32 to create a protected-mode application in <b>flat</b> format. 
+ <b>Flat</b> in this context means <b>zero-based</b> FLAT, that is, it's assumed that near pointers hold linear addresses.
+ WL32 will have to add <b>base relocations</b> to the 3P header. The flat memory model is restricted to 32-bit binaries.
+ </P></FONT>
 
 <TABLE BORDER CELLSPACING=2 CELLPADDING=8 WIDTH=400>
 <TR><TD VALIGN="TOP"><P><FONT SIZE=3>/fl Use <B>f</B>ast <B>l</B>oad EXE file DOS extender features.</FONT></TD></TR>

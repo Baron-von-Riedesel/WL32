@@ -121,7 +121,7 @@ EXTRN	ExecutableHeaderSize:DWORD
 EXTRN	HighestOffsetWritten:DWORD
 EXTRN	ModuleCount:DWORD
 EXTRN	OBJNameSelector:WORD,LIBNameSelector:WORD
-EXTRN	RelocEntryCount:DWORD
+;EXTRN	RelocEntryCount:DWORD
 
 ;*****************************
 ;* Code begins               *
@@ -234,8 +234,8 @@ WriteFile	PROC
 	push ecx
 	movzx ecx, cx
 	movzx edx, dx
-	mov	ah,40h			; write file
-	int	21h
+	mov ah,40h			; write file
+	int 21h
 	pop ecx
 	pop edx
 	jnc	wfret
@@ -246,6 +246,44 @@ WriteFile	PROC
 wfret:
 	ret
 WriteFile	ENDP
+
+; write file, upon entry bx == file handle, ecx==bytes to write,
+;  ds:edx -> write buffer
+; return eax == bytes written 
+;---
+
+WriteFile32	PROC
+ifdef CW
+	push edx
+wfloop:
+	push ecx
+	cmp ecx,0fff0h		; see if more than 64K-16 left
+	jbe wf2				; no
+	mov ecx,0fff0h		; set to maximum
+wf2:
+	mov ah,40h
+	int 21h
+	pop ecx
+	jc err
+	movzx eax,ax		; extend bytes written to 32-bits
+	add edx,eax
+;--- selector tiling in CW?
+	sub ecx,eax			; subtract bytes written off of bytes to write
+	jne wfloop			; not all written, keep looping
+	mov eax,edx
+	pop edx
+	sub eax,edx
+else
+;--- if WL32 runs as 32-bit DPMI client, nothing to do...
+	mov ah,40h			; write file
+	int 21h
+	jc err
+endif
+	ret
+err:
+	call DOSErrorExit; won't return   
+	ret
+WriteFile32	ENDP
 
 ;*****************************
 ;* SEEKTOENDOFFILE           *

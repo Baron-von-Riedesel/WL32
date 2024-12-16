@@ -1389,6 +1389,7 @@ cso2:
 	jne	csophcmp		; yes, check phases for match
 
 	call	GetDOSSEGType	; get class DOSSEG type, return in al
+	@dbgprintf <"ComputeSegOrder: class=%lS ax=%u",LF>,es::di,al
 	cmp	al,1			; see if code
 	jne	cso3			; no
 	mov	ax,DOSSEGCODEFLAG	; set appropriate bits
@@ -1745,11 +1746,11 @@ ComputeSegOrder	ENDP
 
 GetDOSSEGType	PROC
 	push	di			; save critical register
-	mov	dl,es:[di]		; get length byte of name
+	mov	dl,es:[di]		; get length byte of class name
 	xor	dh,dh			; length value to dx
 	add	di,dx
 	mov	bp,di
-	cmp	dl,3			; see if string length <4 bytes
+	cmp	dl,3			; see if string length < sizeof("CODE")
 	jbe	gdt2			; yes, automatic no match
 	sub	di,3			; back up to last four chars in name
 	mov	si,OFFSET CODEText
@@ -1764,11 +1765,14 @@ gdtret:
 ; check if not DGROUP segment
 gdt2:
 	push	bx			; save critical register
+;	@dbgprintf <"GetDOSSEGType: groupmember? [mssFlags=%X] & 8",LF>, fs:[bx].MasterSegDefRecStruc.mssFlags
 	test	fs:[bx].MasterSegDefRecStruc.mssFlags,GROUPMEMBERFLAG	; see if member of group
 	je	gdtnodg			; no, not a dgroup member by definition
 	lgs	bx,fs:[bx].MasterSegDefRecStruc.mssGroupPtr	; gs:bx -> group entry
 	lgs	bx,gs:[bx].GrpDefRecStruc.gdrGrpNamePtr	; gs:bx -> group name, not normalized
 	call	NormalGSBXSource	; safe to normalize to source buffer, destination buffer used by ComputeSegOrder
+
+	@dbgprintf <"GetDOSSEGType: segment belonging to %lS",LF>, gs::bx
 
 ; gs:bx -> group name, normalized
 ; compare against DGROUP with length prefix
@@ -1796,13 +1800,13 @@ gdtloop:
 	call	CaselessStrCmp	; see if match
 	jc	gdt4			; no match
 	mov	al,3			; flag BEGDATA
-	jmp	SHORT gdtret
+	jmp	gdtret
 
 ; not a DGROUP segment, failed group name match
 gdtnodg:
 	pop	bx				; restore critical register
 	mov	al,2			; flag not DGROUP
-	jmp	SHORT gdtret
+	jmp	gdtret
 
 gdt4:
 	cmp	dl,2			; see if string 2 or less bytes long
@@ -1813,7 +1817,7 @@ gdt4:
 	call	CaselessStrCmp	; see if match
 	jc	gdt5			; no match
 	mov	al,5			; flag BSS
-	jmp	SHORT gdtret
+	jmp	gdtret
 
 gdt5:
 	cmp	dl,4			; see if string 4 or less bytes long
@@ -1824,11 +1828,11 @@ gdt5:
 	call	CaselessStrCmp	; see if match
 	jc	gdt6			; no match
 	mov	al,6			; flag STACK
-	jmp	SHORT gdtret
+	jmp	gdtret
 
 gdt6:
 	mov	al,4			; DGROUP, not BEGDATA, BSS, or STACK
-	jmp	SHORT gdtret
+	jmp	gdtret
 
 GetDOSSEGType	ENDP
 

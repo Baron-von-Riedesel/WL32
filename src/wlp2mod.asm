@@ -1026,6 +1026,7 @@ ENDIF
 	je	p2frellid
 
 	movzx	ecx,cx		; extend to 32 bits for following addition
+	@dbgprintf <"Pass2FixuppProc: RelocEntryCount=%lX, adding %X",LF>,RelocEntryCount, cx
 	add	RelocEntryCount,ecx	; bump count of permanent relocation entries
 	push	es			; save critical register
 
@@ -1212,6 +1213,7 @@ rrlidrelblk:
 
 rrlid2:
 	inc	es:[RelocEntryBlkStruc.rebCount]	; bump count of entry
+	@dbgprintf <"RelocRecurseLIDATA: RelocEntryCount=%lX, incrementing",LF>,RelocEntryCount
 	inc	RelocEntryCount	; bump count of permanent relocation entries
 
 	mov	eax,DataOffset32	; data offset in ax
@@ -1828,7 +1830,7 @@ ENDIF
 	je	p2f3selfrel		; M bit reset, self-relative fixup
 
 IFDEF WATCOM_ASM
-	cmp	IsFlatOption,0	; see if flat option turned on
+	cmp	IsFlatOption,0	; option /f set?
 	je	p2f3cont		; no
 	mov	TargetSegment,0	; zero out the target segment
 
@@ -1875,7 +1877,7 @@ p2f3loc2:
 	add	fs:[bx],dh		; adjust high byte of word
 
 IFDEF WATCOM_ASM
-	cmp	IsFlatOption,0	; see if flat option turned on
+	cmp	IsFlatOption,0	; option /f set?
 	je	p2f3cont3		; no
 	test	Locat,MBITOFLOCAT	; check M bit for self-relative fixup
 	je	p2f3cont3		; M bit reset, self-relative fixup
@@ -2035,7 +2037,7 @@ p2f3loc32c:
 	add	fs:[bx],dh		; adjust high byte of high word
 
 IFDEF WATCOM_ASM
-	cmp	IsFlatOption,0	; see if flat option turned on
+	cmp	IsFlatOption,0	; option /f set?
 	je	p2f3cont4		; no
 	test	Locat,MBITOFLOCAT	; check M bit for self-relative fixup
 	je	p2f3cont4		; M bit reset, self-relative fixup
@@ -2109,7 +2111,7 @@ ENDIF
 
 IFDEF WATCOM_ASM
 p2f3chk48rel:
-	cmp	IsFlatOption,0	; see if flat option turned on
+	cmp	IsFlatOption,0	; option /f set?
 	je	p2f3segshared	; no
 	mov	dx,8000h		; flags 32-bit offset relocation entry
 	add	dx,DataRecordOffset	; dx -> relocation fixup location relative L?DATA record
@@ -2131,7 +2133,7 @@ p2f3chklow:
 	add	fs:[bx],dl
 
 IFDEF WATCOM_ASM
-	cmp	IsFlatOption,0	; see if flat option turned on
+	cmp	IsFlatOption,0	; option /f set?
 	je	p2f3cont5		; no
 	test	Locat,MBITOFLOCAT	; check M bit for self-relative fixup
 	je	p2f3cont5		; M bit reset, self-relative fixup
@@ -2274,6 +2276,7 @@ END COMMENT !
 	je	p2f3rellid
 
 	movzx	ecx,cx		; extend to 32 bits for following addition
+	@dbgprintf <"Pass2Fixupp32Proc: RelocEntryCount=%lX, adding %X",LF>,RelocEntryCount, cx
 	add	RelocEntryCount,ecx	; bump count of permanent relocation entries
 	push	es			; save critical register
 
@@ -2499,6 +2502,7 @@ rrlid3relblk:
 
 rrlid32:
 	inc	es:[RelocEntryBlkStruc.rebCount]	; bump count of entry
+	@dbgprintf <"RelocRecurseLIDATA32: RelocEntryCount=%lX, incrementing",LF>,RelocEntryCount
 	inc	RelocEntryCount	; bump count of permanent relocation entries
 
 	mov	eax,DataOffset32	; data offset in ax
@@ -3193,7 +3197,7 @@ p2m34:
 	call	GetFrameAddress	; the fixup frame address
 
 IFDEF WATCOM_ASM
-	cmp	IsFlatOption,0	; see if flat option turned on
+	cmp	IsFlatOption,0	; option /f set?
 	je	p2m3cont		; no
 	mov	TargetSegment,0	; zero out the target segment
 
@@ -3676,6 +3680,7 @@ irlidrelblk:
 
 irlid2:
 	inc	es:[RelocEntryBlkStruc.rebCount]	; bump count of entry
+	@dbgprintf <"IMPDEFRecurseLIDATA: RelocEntryCount=%lX, incrementing",LF>,RelocEntryCount
 	inc	RelocEntryCount	; bump count of permanent relocation entries
 
 	mov	eax,DataOffset32	; data offset in ax
@@ -3844,6 +3849,7 @@ irlid3relblk:
 
 irlid32:
 	inc	es:[RelocEntryBlkStruc.rebCount]	; bump count of entry
+	@dbgprintf <"IMPDEFRecurseLIDATA32: RelocEntryCount=%lX, incrementing",LF>,RelocEntryCount
 	inc	RelocEntryCount	; bump count of permanent relocation entries
 
 	mov	eax,DataOffset32	; data offset in ax

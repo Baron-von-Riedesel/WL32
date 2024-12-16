@@ -96,7 +96,7 @@ Summary1Text	DB	' Usage: WL32 [options] objs[,exefile][,mapfile][,libs]',CR,LF
 CRLFText		DB	CR,LF	; double duty as printable CR/LF
 				DB	CR,LF
 				DB	' /32         No warning on 32-bit segments (option /ex)', CR,LF
-				DB	' /3p         Create 3P format binary without DOS extender stub',CR,LF
+				DB	' /3p         Create plain 3P format binary without stub',CR,LF
 SpaceSlash		DB	' /b          Beep the speaker at linker completion',CR,LF
 IFDEF WATCOM_ASM
 				DB	' /cs         Perform Case Sensitive symbols link',CR,LF
@@ -104,7 +104,7 @@ IFDEF WATCOM_ASM
 ENDIF
 				DB	' /ex         Create DOS MZ EXE-format file',CR,LF
 IFDEF WATCOM_ASM
-				DB	' /f          Create 3P format binary with DOS extender stub CWSTUB.EXE (def.)',CR,LF
+				DB	' /f          Create zero-based Flat binary',CR,LF
 ENDIF
 				DB	' /fl         Use Fast Load EXE file DOS extender feature',CR,LF
 IFDEF CLIPPER
@@ -134,6 +134,9 @@ ENDIF
 IFDEF WATCOM_ASM
 				DB	' /zu         Zero fill Uninitialized segments',CR,LF
 ENDIF
+				DB CR,LF
+				DB	' If neither /3p nor /ex are set, a binary with DOS extender stub CWSTUB.EXE',CR,LF
+				DB	' will be created.',CR,LF                
 Summary1TextStop	=	$
 
 	DB	sizeof EXEText

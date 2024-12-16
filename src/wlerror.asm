@@ -439,7 +439,7 @@ LinkerErrorFeedback	ENDP
 
 DOSErrorExit	PROC
 	push	ss
-	pop	ds				; ensure that ds -> data
+	pop	ds				; ensure that ds == DGROUP
 	call	DOSErrorFeedback
 ;@@@	call	CleanupForExit	; clean up any interim system changes made
 	call	TerminateToDOS	; no return

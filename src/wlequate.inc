@@ -14,6 +14,23 @@
 
 LINKERNAME	textequ	<"WL32">
 
+ifdef _DEBUG
+dprintf proto c :ptr byte, :vararg
+@dbgprintf macro fmtstr:req, args:vararg
+local sym
+CONST segment
+sym db fmtstr,0
+CONST ends
+ ifnb <args>
+	invoke dprintf, addr sym, args
+ else
+	invoke dprintf, addr sym
+ endif
+endm
+else
+@dbgprintf textequ <;>
+endif
+
 ; general use equates
 STDIN	EQU 0			; standard input device
 STDOUT	EQU 1			; standard output device
@@ -163,14 +180,15 @@ TBITOFFIXDATA	EQU	8
 PBITOFFIXDATA	EQU	4
 TARGTFIELDOFFIXDATA	EQU	3
 MBITOFLOCAT		EQU	40h
-LOWORDERBYTELOC	EQU	0
-OFFSETLOC	EQU	(1 SHL 2)
-SEGMENTLOC	EQU	(2 SHL 2)
-POINTERLOC	EQU	(3 SHL 2)
+
+LOWORDERBYTELOC	EQU	0       ;8-Bit ofs (LoByte) fixup
+OFFSETLOC	EQU	(1 SHL 2)   ;16-Bit ofs
+SEGMENTLOC	EQU	(2 SHL 2)   ;Base
+POINTERLOC	EQU	(3 SHL 2)   ;32-bit Seg:Ofs
 OFFSETLOC5	EQU	(5 SHL 2)
-OFFSET32LOC	EQU	(9 SHL 2)
-POINTER48LOC	EQU	(11 SHL 2)
-OFFSET32LOC13	EQU	(13 SHL 2)
+OFFSET32LOC	EQU	(9 SHL 2)   ;32-bit ofs
+POINTER48LOC	EQU	(11 SHL 2) ;48-bit Seg:ofs
+OFFSET32LOC13	EQU	(13 SHL 2) ;???
 LOCFIELDOFLOCAT	EQU	3ch
 STARTBITOFMODTYPE	EQU	40h
 

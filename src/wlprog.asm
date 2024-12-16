@@ -33,7 +33,7 @@ INCLUDE WLDATA.INC
 ; procedures
 PUBLIC	CreateProgramFile
 
-; public for debugger
+; publics for debugger
 PUBLIC	WriteEXEBody,Write3PRelEntries
 
 IFDEF DLLSUPPORT
@@ -67,7 +67,7 @@ PreviousFilePosition	DD	?	; file position previous to export/import info
 PublicNameIndex	DW	?	; current COMDAT public name index
 RepeatCount	DW	?		; LIDATA repeat count
 RepeatCount32	DD	?	; LIDATA32 repeat count
-WL32FileHandle	DW	?	; file handle for reading WL32 file (for DOS extender)
+StubFileHandle	DW	?	; file handle for reading extender stub file (for DOS extender)
 
 ; variables used in shell sort
 iValue	DD	?
@@ -238,6 +238,7 @@ EXTRN	ReadDwordDecCX:PROC
 EXTRN	ScanAhead:PROC
 EXTRN	SeekToEndOfFile:PROC
 EXTRN	WriteFile:PROC
+EXTRN	WriteFile32:PROC
 EXTRN	WriteToIOBuffer:PROC
 EXTRN	Zero64KIOBlock:PROC
 
@@ -261,6 +262,7 @@ NoStartAddressWarning PROTO
 ; create the program
 
 CreateProgramFile	PROC
+	@dbgprintf <"CreateProgramFile enter",LF>
 	call	OpenExecutableFile	; open executable file
 	mov	bx,OFFSET CreatingEXEText
 	call	DisplayLinkInfo
@@ -287,11 +289,15 @@ hasentrypoint:
 	call	WriteEXEBody	; write the EXE body, program image
 	call	SetupMZHeader	; setup EXE header
 	call	WriteMZHeader	; write true EXE header values
+	@dbgprintf <"CreateProgramFile exit",LF>
 	ret
 
 ; creating 3P protected mode EXE file
 cpfprot:
+	@dbgprintf <"CreateProgramFile: write CW 3P binary, TotalSegCount=%u, IsAny32BitSeg=%u",LF>, TotalRelSegCount, IsAny32BitSegFlag
+	@dbgprintf <"CreateProgramFile: write DOS extender stub",LF>
 	call	WriteDOSExtender	; write DOS extender from start of WL32.EXE
+	@dbgprintf <"CreateProgramFile: write 3P header",LF>
 	call	Write3PHeader	; write the 3P header, dummy placeholders
 
 ; check if 4G flat model
@@ -315,6 +321,7 @@ cpfprot:
 ; seg 0 class data, base 0, limit -1
 ; seg 1 class code, base 0, limit segment length rounded up to dword
 ; set FlatSegmentFlag=ON (Segment ID=0, Segment length=FlatStackSegLen)
+	@dbgprintf <"CreateProgramFile: 4G flat",LF>
 	mov	FlatSegmentFlag,ON
 	mov	NewHeader.NewEntryCS,1
 	mov	NewHeader.NewEntrySS,0	; save SS value
@@ -357,7 +364,7 @@ cpfflat4:
 	or	eax,CODESEGMENTTYPE	; flag as code segment
 
 IFDEF WATCOM_ASM
-	cmp	IsFlatOption,0
+	cmp	IsFlatOption,0	; option /f set?
 	je	cpfflat5		; NEAR, but not flat
 	or	eax,TRUEFLATSEGMENTFLAG	; flag as true flat segment (not near)
 
@@ -370,7 +377,7 @@ ENDIF
 	or	eax,GRANULARITY4K OR DATASEGMENTTYPE	; merge in 4K granularity and segment type
 
 IFDEF WATCOM_ASM
-	cmp	IsFlatOption,0
+	cmp	IsFlatOption,0	; option /f set?
 	je	cpfflat6		; NEAR, but not flat
 	or	eax,TRUEFLATSEGMENTFLAG	; flag as true flat segment (not near)
 
@@ -381,7 +388,7 @@ ENDIF
 
 	mov	bx,ExecutableFileHandle
 	mov	dx,OFFSET FlatSegmentInfo
-	mov	cx,16			; two entries
+	mov	cx,sizeof FlatSegmentInfo	; two entries
 	call	WriteFile	; write the segment entries for flat model
 	jmp	cpfprotrel	; bypass nonflat code routines
 
@@ -400,9 +407,11 @@ ENDIF
 
 cpfseggrp:
 	call	SetSegGrpLength	; set first segment of groups with group length
+	@dbgprintf <"CreateProgramFile: write segment table",LF>
 	call	Write3PSegEntries	; write segment entries
 
 cpfprotrel:
+	@dbgprintf <"CreateProgramFile: write relocation table (%lX)",LF>, RelocEntryCount
 	call	Write3PRelEntries	; write relocation entries
 
 IFDEF DLLSUPPORT
@@ -428,6 +437,7 @@ ENDIF
 	call	WriteEXEBody	; write the 3P body (same as EXE), program image
 	call	Setup3PHeader	; setup 3P header
 	call	Write3PHeader	; write true 3P header values
+	@dbgprintf <"CreateProgramFile exit",LF>
 	ret
 CreateProgramFile	ENDP
 
@@ -517,7 +527,7 @@ w3pssegloop:
 	test	fs:[bx].MasterSegDefRecStruc.mssFlags,(DEBUGSYMBOLSSEGMENTFLAG OR DEBUGTYPESSEGMENTFLAG)
 	jne	w3psnextent		; debug segment
 
-w3pssave:
+	@dbgprintf <"Write3PSegEntries: segment >%lS<",LF>, fs:[bx].MasterSegDefRecStruc.mssNamePtr
 	mov	eax,fs:[bx].MasterSegDefRecStruc.mssSegOffset
 	stosd				; save segment offset for segment entry
 	call	Get3PSegmentType	; get type of segment (code/data/stack/const)
@@ -559,7 +569,7 @@ w3pssize:
 	or	eax,edx			; merge in segment default size (16/32 bit)
 
 IFDEF WATCOM_ASM
-	cmp	IsFlatOption,0	; see if flat option turned on
+	cmp	IsFlatOption,0	; option /f set?
 	je	w3pscont		; no
 	test	fs:[bx].MasterSegDefRecStruc.mssFlags,SEGMENT32BITFLAG	; see if 32-bit segment
 	je	w3pscont		; no
@@ -947,9 +957,9 @@ w3prloop:
 	je	w3prsort		; no
 	mov	fs,ax			; fs -> relocation entry block
 	mov	ecx,esi			; get bytes to write
-	cmp	ecx,(SIZERELOCENTRYBLK-RELOCENTRYSYSVARSIZE)/2	; see if more than one block left
+	cmp	ecx,(SIZERELOCENTRYBLK - RELOCENTRYSYSVARSIZE)/2	; see if more than one block left
 	jbe	w3pr2			; no
-	mov	cx,(SIZERELOCENTRYBLK-RELOCENTRYSYSVARSIZE)/2
+	mov	cx,(SIZERELOCENTRYBLK - RELOCENTRYSYSVARSIZE)/2
 
 ; cx holds bytes to convert and store for this block
 ; fs -> relocation entry block
@@ -965,9 +975,9 @@ w3prcsloop:
 	shl	eax,4			; convert to offset
 
 w3compabs:
-	add	eax,fs:[bx]		; compute absolute 32-bit offset
-	DB	67h				; make 32-bit stosd
-	stosd				; save offset
+	add	eax,fs:[bx+0]	; compute absolute 32-bit offset
+;	DB	67h				; make 32-bit stosd
+	stosd es:[edi]		; save offset
 	add	bx,8			; move to next entry, if any
 	dec	cx				; drop count of entries to update
 	jne	w3prcsloop		; more to convert and store
@@ -1011,8 +1021,8 @@ w3prsort:
 	cmp	eax,1
 	jbe	w3prwrite		; sorted by definition
 
-	push	ds
-	pop	gs				; gs -> DGROUP
+;	push	ds
+;	pop	gs				; gs -> DGROUP
 
 ; sort the offsets, es -> pointer buffer
 	xor	ebx,ebx
@@ -1046,16 +1056,16 @@ shlhloop:
 ; for(i=h+1...
 	mov	eax,edx
 	inc	eax
-	mov	gs:iValue,eax
+	mov	iValue,eax
 
 ; for(...;i<=N;...){
 shliloop:
-	mov	eax,gs:iValue
-	cmp	eax,gs:RelocEntryCount
+	mov	eax,iValue
+	cmp	eax,RelocEntryCount
 	ja	shlnexth
 
 	mov	ecx,es:[4*eax]
-	mov	gs:vValue,ecx	; v=a[i]
+	mov	vValue,ecx	; v=a[i]
 	mov	ebx,eax			; j=i
 
 ; while(j>h && a[j-h]>v){
@@ -1068,7 +1078,7 @@ shlwhileloop:
 
 ; a[j-h] > v
 	mov	eax,es:[4*eax]	; a[j-h], first offset
-	cmp	eax,gs:vValue	; compare absolute offsets
+	cmp	eax,vValue	; compare absolute offsets
 	jb	shlwhilefail	; first < second, a[j-h]<v
 
 ; change the element
@@ -1077,12 +1087,12 @@ shlwhileloop:
 	jmp	shlwhileloop
 
 shlwhilefail:
-	mov	eax,gs:vValue
+	mov	eax,vValue
 	mov	es:[4*ebx],eax	; a[j]=v
 
 ; for(...;i++){
-	inc	gs:iValue
-	jmp	NEAR PTR shliloop
+	inc	iValue
+	jmp	shliloop
 
 ; for (...;h/=3){
 shlnexth:
@@ -1092,38 +1102,26 @@ shlnexth:
 	mov	cl,3
 	div	ecx
 	mov	edx,eax
-	jmp	NEAR PTR shlhloop
+	jmp	shlhloop
 
 shlsortend:
-	mov	ax,DGROUP
-	mov	ds,ax
+;	push ss
+;	pop ds
 
 w3prwrite:
 	mov	esi,RelocEntryCount
 	shl	esi,2			; convert entries to bytes
 	mov	edx,4			; init relocation entry offset, relative 1 (dword)
 	mov	bx,ExecutableFileHandle
-	push	ds			; save ds -> wl32 data
+	push	ds			; save ds -> DGROUP
 	push	es
-	pop	ds				; ds:dx -> bytes to write
-
-w3prwrloop:
-	mov	ecx,esi			; get bytes to write
-	cmp	ecx,0fff0h		; see if more than 64K-16 left
-	jbe	w3prwrite2		; no
-	mov	cx,0fff0h		; set to maximum
-
-w3prwrite2:
-	call	WriteFile	; write the relocation entries
-	movzx	eax,ax		; extend bytes written to 32-bits
-	add	edx,eax
-	sub	esi,eax			; subtract bytes written off of bytes to write
-	jne	w3prwrloop		; not all written, keep looping
-
+	pop	ds				; ds:edx -> bytes to write
+	mov ecx,esi			; ecx bytes to write
+	call WriteFile32
 	pop	ds				; restore ds -> wl32 data
 	mov	ax,es			; memory for relocation sort table no longer required, free it
 	push	ds
-	pop	es				; es -> wl32 data
+	pop	es				; es -> DGROUP
 	call	ReleaseMemory
 
 w3prret:
@@ -1176,20 +1174,13 @@ WriteExportEntries	PROC
 	xor	edx,edx			; edx -> offset
 
 ; do a dummy placeholder write for expdef header info
-weewloop1:
-	mov	ecx,edi
-	cmp	ecx,0fff0h		; see if past max bytes to write
-	jbe	weewrite1		; no
-	mov	cx,0fff0h		; set bytes to write to max
 
-weewrite1:
-	call	WriteFile
-	movzx	eax,ax
-	sub	edi,eax			; update bytes to write
-	jne	weewloop1		; don't need to update offset since it's dummy data
+	mov	ecx,edi
+	call	WriteFile32
+
 	push	ds
 	pop	es				; es -> expdef storage
-	pop	ds				; restore ds -> wl32 data
+	pop	ds				; restore ds = DGROUP
 
 	xor	edi,edi			; edi offsets into expdef entry info
 	mov	es:[edi],esi	; expdef count in position zero
@@ -1350,19 +1341,10 @@ weeupsize:
 
 ; write the updated expdef header info
 ; ebp stills holds total expdef header bytes
-weewloop2:
-	mov	ecx,ebp
-	cmp	ecx,0fff0h		; see if past max bytes to write
-	jbe	weewrite2		; no
-	mov	cx,0fff0h		; set bytes to write to max
 
-weewrite2:
-	call	WriteFile
-	movzx	eax,ax
-	add	edx,eax			; update offset
-	sub	ebp,eax			; update bytes to write
-	jne	weewloop2
-	pop	ds				; restore ds -> wl32 data
+	mov	ecx,ebp
+	call	WriteFile32
+	pop	ds				; restore ds = DGROUP
 
 	mov	ax,es			; memory for export entry table no longer required, free it
 	push	ds
@@ -1420,7 +1402,7 @@ WriteImportEntries	PROC
 ; seek to end of file (end of import entries)
 	mov	bx,ExecutableFileHandle
 	call	SeekToEndOfFile
-	mov	WORD PTR PreviousFilePosition,ax
+	mov	WORD PTR PreviousFilePosition+0,ax
 	mov	WORD PTR PreviousFilePosition+2,dx
 
 ; do a dummy placeholder write for impdef header info
@@ -1452,20 +1434,11 @@ WriteImportEntries	PROC
 	xor	edx,edx			; edx -> offset
 
 ; do a dummy placeholder write for table
-tabwloop1:
 	mov	ecx,edi
-	cmp	ecx,0fff0h		; see if past max bytes to write
-	jbe	tabwrite1		; no
-	mov	cx,0fff0h		; set bytes to write to max
-
-tabwrite1:
-	call	WriteFile
-	movzx	eax,ax
-	sub	edi,eax			; update bytes to write
-	jne	tabwloop1		; don't need to update offset since it's dummy data
+	call WriteFile32
 	push	ds
 	pop	es				; es -> module table storage
-	pop	ds				; restore ds -> wl32 data
+	pop	ds				; restore ds = DGROUP
 
 	mov	eax,NewHeader.NewImportModCnt
 	xor	esi,esi			; es:esi -> module count/offset table
@@ -1570,19 +1543,9 @@ wiemoddone:
 	lsl	ebp,eax
 	inc	ebp				; ebp == total table size
 
-tabwloop2:
 	mov	ecx,ebp
-	cmp	ecx,0fff0h		; see if past max bytes to write
-	jbe	tabwrite2		; no
-	mov	cx,0fff0h		; set bytes to write to max
-
-tabwrite2:
-	call	WriteFile
-	movzx	eax,ax
-	add	edx,eax			; update offset
-	sub	ebp,eax			; update bytes to write
-	jne	tabwloop2
-	pop	ds				; restore ds -> wl32 data
+	call	WriteFile32
+	pop	ds				; restore ds = DGROUP
 
 	mov	ax,es			; memory for export entry table no longer required, free it
 	push	ds
@@ -1590,7 +1553,7 @@ tabwrite2:
 	call	ReleaseMemory
 
 	call	SeekToEndOfFile
-	mov	WORD PTR FilePositionBookmark,ax	; save pointer to start of function offset table
+	mov	WORD PTR FilePositionBookmark+0,ax	; save pointer to start of function offset table
 	mov	WORD PTR FilePositionBookmark+2,dx
 	push	dx
 	push	ax
@@ -1611,20 +1574,11 @@ tabwrite2:
 	xor	edx,edx			; edx -> offset
 
 ; do a dummy placeholder write for table
-tabwloop3:
 	mov	ecx,edi
-	cmp	ecx,0fff0h		; see if past max bytes to write
-	jbe	tabwrite3		; no
-	mov	cx,0fff0h		; set bytes to write to max
-
-tabwrite3:
-	call	WriteFile
-	movzx	eax,ax
-	sub	edi,eax			; update bytes to write
-	jne	tabwloop3		; don't need to update offset since it's dummy data
+	call	WriteFile32
 	push	ds
 	pop	es				; es -> module table storage
-	pop	ds				; restore ds -> wl32 data
+	pop	ds				; restore ds = DGROUP
 
 ;	mov	ebp,TotalIMPDEFFuncCount	; total count of functions
 	mov	ebp,TotalIMPDEFCount
@@ -1730,18 +1684,8 @@ wiefuncdone:
 	lsl	ebp,eax
 	inc	ebp				; ebp == total table size
 
-tabwloop4:
 	mov	ecx,ebp
-	cmp	ecx,0fff0h		; see if past max bytes to write
-	jbe	tabwrite4		; no
-	mov	cx,0fff0h		; set bytes to write to max
-
-tabwrite4:
-	call	WriteFile
-	movzx	eax,ax
-	add	edx,eax			; update offset
-	sub	ebp,eax			; update bytes to write
-	jne	tabwloop4
+	call	WriteFile32
 	pop	ds				; restore ds -> wl32 data
 
 	mov	ax,es			; memory for function table no longer required, free it
@@ -1770,20 +1714,9 @@ tabwrite4:
 	mov	edi,TotalIMPDEFFixupSize
 	mov	ds,IMPDEFFixupSel	; ds -> fixup entry storage
 	xor	edx,edx			; edx -> offset
-
-wiewloop:
 	mov	ecx,edi
-	cmp	ecx,0fff0h		; see if past max bytes to write
-	jbe	wiewrite		; no
-	mov	cx,0fff0h		; set bytes to write to max
-
-wiewrite:
-	call	WriteFile
-	movzx	eax,ax
-	add	edx,eax			; update offset
-	sub	edi,eax			; update bytes to write
-	jne	wiewloop
-	pop	ds				; restore ds -> wl32 data
+	call	WriteFile32
+	pop	ds				; restore ds = DGROUP
 
 	call	SeekToEndOfFile	; get new file size after impdef entry additions
 	push	dx
@@ -1879,7 +1812,7 @@ isnotbs:
 extenderfound:
 
 	mov	bx,ax			; save file handle
-	mov	WL32FileHandle,ax
+	mov	StubFileHandle,ax
 
 	cmp	IsThreePOption,OFF	; see if creating 3P file only (no DOS extender header)
 	jne	wderet			; yes, leave DOS extender size at 0, no extender setup
@@ -1911,6 +1844,9 @@ wde2:
 	mov	DOSExtenderSize,eax	; save size of DOS extender
 	mov	esi,eax
 
+	push	ds
+	mov	ds,IOBlockSeg	; ds:dx -> i/o buffer block
+	xor	dx,dx
 wdefileloop:
 	mov	ecx,esi			; get bytes to write
 	cmp	ecx,0fff0h		; see if past max bytes to read/write
@@ -1918,24 +1854,18 @@ wdefileloop:
 	mov	cx,0fff0h		; set bytes to write to max
 
 wderead:
-	xor	dx,dx
-	mov	bx,WL32FileHandle
-	push	ds
-	mov	ds,IOBlockSeg	; ds:dx -> i/o buffer block
+	mov	bx,ss:StubFileHandle
 	call	ReadFile	; read DOS extender
-	pop	ds				; restore ds -> wl32 data
 	movzx	eax,ax
 	sub	esi,eax			; update bytes to read/write
-	mov	bx,ExecutableFileHandle
-	push	ds
-	mov	ds,IOBlockSeg	; ds:dx -> i/o buffer block
+	mov	bx,ss:ExecutableFileHandle
 	call	WriteFile	; write DOS extender
-	pop	ds				; restore ds -> wl32 data
 	or	esi,esi			; see if more bytes to read/write
 	jne	wdefileloop		; yes
+	pop	ds				; restore ds = DGROUP
 
-; close the WL32 file
-	mov	bx,WL32FileHandle
+; close the stub file
+	mov	bx,StubFileHandle
 	mov	ah,3eh
 	int	21h
 

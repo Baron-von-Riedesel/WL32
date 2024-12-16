@@ -112,9 +112,16 @@ EXTRN	TerminateToDOS:PROC
 ;* Code routines             *
 ;*****************************
 
+ifndef CW
 	include initpm.inc
+endif
+
+ifdef _DEBUG
+	include dprintf.inc
+endif
 
 start:
+ifndef CW
 	mov ax, DGROUP	; setup small model: DS=SS=DGROUP
 	mov ds, ax
 	mov dx, ss
@@ -132,6 +139,14 @@ start:
 	int 21h
 	call InitPM		; enter PM - won't return on errors
 	call PatchSegRelocs; patch all DGROUP segrefs with selector
+else
+	mov ax,@data
+	mov ds,ax
+	lsl cx,ax
+	inc cx
+	mov ss,ax		; SS must be DGROUP
+	mov sp,cx
+endif
 
 if 1				; clear _BSS segment
 externdef _edata:abs
@@ -151,7 +166,7 @@ endif
 ;* MAIN                      *
 ;*****************************
 
-main		PROC
+main	PROC
 
 	call	Setup		; get system variables and values, trap control C
 	cmp	IsArgsFlag,FALSE	; check for arguments to linker
@@ -209,7 +224,7 @@ DoTerminate:
 
 	call	TerminateToDOS	; no return
 
-main		ENDP
+main	ENDP
 
 _TEXT ENDS
 

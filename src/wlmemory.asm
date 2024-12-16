@@ -23,7 +23,12 @@ DGROUP	GROUP CONST,_BSS,_DATA
 ;* Equates                   *
 ;*****************************
 
-_DOSMEMFN	EQU	1	;0 = use int 21h for memory allocation, 1 = use CW DPMI extensions
+;--- _DOSMEMFN: 1 = use int 21h for memory allocation, 0 = use CW DPMI extensions
+ifdef CW
+_DOSMEMFN	EQU 0
+else
+_DOSMEMFN	EQU 1
+endif
 
 ;*****************************
 ;* Include files             *
@@ -33,7 +38,14 @@ INCLUDE WLEQUATE.INC
 INCLUDE WLDATA.INC
 INCLUDE	WLERRCOD.INC
 ife _DOSMEMFN
-INCLUDE	CW.INC
+Sys macro typ
+	mov ax, typ
+	int 31h
+endm
+GetMem		equ	0ff0bh	; alloc mem, size in CX:DX
+ResMem		equ	0ff0dh	; resize mem, new size in CX:DX
+ResMem32	equ	0ff0eh	; resize mem, new size in ECX
+RelSel		equ	0ff0fh	; release mem, selector in BX
 endif
 ;*****************************
 ;* Public declarations       *
@@ -118,7 +130,7 @@ IF	_DOSMEMFN
 	jc	AllocFail
 ELSE
 	xor	cx,cx			; zero high word of allocation
-	sys	GetMem
+	Sys	GetMem
 	jc	AllocFail
 	mov	ax,bx			; move selector in bx to ax
 ENDIF
@@ -155,7 +167,7 @@ IF	_DOSMEMFN
 	int	21h
 	jc	AllocBigFail
 ELSE
-	sys	GetMem
+	Sys	GetMem
 	jc	AllocBigFail
 	mov	ax,bx			; move selector in bx to ax
 ENDIF
@@ -196,7 +208,7 @@ IF	_DOSMEMFN
 ELSE
 	mov	bx,ax			; selector value to bx
 	xor	cx,cx			; zero high word of allocation
-	sys	ResMem			; resize previously allocated memory block
+	Sys	ResMem			; resize previously allocated memory block
 	jc	SizeFail
 ENDIF
 	pop	ax				; restore critical registers
@@ -236,7 +248,7 @@ IF	_DOSMEMFN
 ELSE
 	mov	ecx,edx
 	mov	bx,ax			; selector value to bx
-	sys	ResMem32		; resize previously allocated memory block
+	Sys	ResMem32		; resize previously allocated memory block
 	jc	SizeFail32
 ENDIF
 	pop	ax				; restore critical registers
@@ -268,7 +280,7 @@ IF	_DOSMEMFN
 	jc	ReleaseFail
 ELSE
 	mov	bx,ax
-	sys	RelSel
+	Sys	RelSel
 	jc	ReleaseFail
 ENDIF
 	pop	ebx				; restore critical registers
